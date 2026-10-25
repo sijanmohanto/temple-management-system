@@ -19,11 +19,11 @@ class SetLocale
 
         $locale = session('locale');
 
-        if (!$locale && Auth::check() && Auth::user()->preferred_locale) {
+        if (! $locale && Auth::check() && Auth::user()->preferred_locale) {
             $locale = Auth::user()->preferred_locale;
         }
 
-        if (!$locale || !in_array($locale, $supportedLocales, true)) {
+        if (! $locale || ! in_array($locale, $supportedLocales, true)) {
             $locale = config('app.locale', 'en');
         }
 

@@ -115,7 +115,7 @@ class User extends Authenticatable
     {
         $roleModel = is_string($role) ? Role::where('slug', $role)->firstOrFail() : $role;
 
-        if (!$this->roles->contains('id', $roleModel->id)) {
+        if (! $this->roles->contains('id', $roleModel->id)) {
             $this->roles()->attach($roleModel->id, ['created_at' => now()]);
             $this->load('roles');
         }
@@ -148,7 +148,7 @@ class User extends Authenticatable
     public function getPrimaryRoleTitleAttribute(): string
     {
         $firstRole = $this->roles->first();
-        if (!$firstRole) {
+        if (! $firstRole) {
             return app()->getLocale() === 'bn' ? 'ব্যবহারকারী' : 'User';
         }
 
