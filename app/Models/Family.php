@@ -68,13 +68,17 @@ class Family extends Model
     /**
      * Scope for search.
      */
-    public function scopeSearch(Builder $query, ?string $term): Builder
+    public function scopeSearch(Builder $query, string|array|null $term): Builder
     {
+        if (is_array($term)) {
+            $term = $term['value'] ?? '';
+        }
+
         if (empty($term)) {
             return $query;
         }
 
-        $clean = trim($term);
+        $clean = trim((string) $term);
 
         return $query->where(function (Builder $q) use ($clean) {
             $q->where('family_code', 'like', "%{$clean}%")

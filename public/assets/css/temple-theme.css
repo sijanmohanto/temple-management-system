@@ -288,3 +288,65 @@ body {
         display: block;
     }
 }
+
+/* --------------------------------------------------------------------------
+ * Phase 2.1 UI Standardization (Select2, DataTables, Toastr)
+ * -------------------------------------------------------------------------- */
+/* Select2 Temple Theme overrides */
+.select2-container--bootstrap-5 .select2-selection {
+    border-color: #dee2e6;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.select2-container--bootstrap-5.select2-container--focus .select2-selection,
+.select2-container--bootstrap-5.select2-container--open .select2-selection {
+    border-color: var(--temple-maroon) !important;
+    box-shadow: 0 0 0 0.25rem rgba(117, 20, 28, 0.25) !important;
+}
+
+.select2-container--bootstrap-5 .select2-dropdown .select2-results__option--highlighted {
+    background-color: var(--temple-maroon) !important;
+    color: #ffffff !important;
+}
+
+.select2-container--bootstrap-5 .select2-dropdown {
+    border-color: var(--temple-maroon);
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* DataTables Temple Theme overrides */
+div.dataTables_wrapper div.dataTables_paginate ul.pagination .page-item.active .page-link {
+    background-color: var(--temple-maroon) !important;
+    border-color: var(--temple-maroon) !important;
+    color: #ffffff !important;
+}
+
+div.dataTables_wrapper div.dataTables_paginate ul.pagination .page-link {
+    color: var(--temple-maroon);
+}
+
+div.dataTables_wrapper div.dataTables_filter input,
+div.dataTables_wrapper div.dataTables_length select {
+    border-radius: 0.375rem;
+    border: 1px solid #dee2e6;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.875rem;
+}
+
+div.dataTables_wrapper div.dataTables_filter input:focus,
+div.dataTables_wrapper div.dataTables_length select:focus {
+    border-color: var(--temple-maroon);
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(117, 20, 28, 0.25);
+}
+
+/* Toastr Notification Polish */
+#toast-container > div {
+    border-radius: 0.75rem !important;
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15) !important;
+    opacity: 0.96 !important;
+    font-family: inherit;
+}
+

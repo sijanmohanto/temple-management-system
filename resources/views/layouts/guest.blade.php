@@ -11,6 +11,8 @@
     <link rel="stylesheet" href="{{ asset('assets/vendor/bootstrap/bootstrap.min.css') }}">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="{{ asset('assets/vendor/bootstrap/bootstrap-icons.min.css') }}">
+    <!-- Toastr Notifications CSS -->
+    <link rel="stylesheet" href="{{ asset('assets/vendor/toastr/toastr.min.css') }}">
     <!-- Custom Temple Theme -->
     <link rel="stylesheet" href="{{ asset('assets/css/temple-theme.css') }}">
 
@@ -70,6 +72,28 @@
     <script src="{{ asset('assets/vendor/jquery/jquery.min.js') }}"></script>
     <!-- Bootstrap 5 Bundle JS -->
     <script src="{{ asset('assets/vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
+    <!-- Toastr Notifications JS -->
+    <script src="{{ asset('assets/vendor/toastr/toastr.min.js') }}"></script>
+
+    <!-- Global Temple Configuration -->
+    <script>
+        window.TempleConfig = {
+            locale: "{{ app()->getLocale() }}",
+            flashes: {
+                success: @json(session('success')),
+                error: @json(session('error')),
+                warning: @json(session('warning')),
+                info: @json(session('info'))
+            },
+            validationErrors: @json($errors->all()),
+            i18n: {
+                loading: @json(__('common.loading')),
+                processing: @json(__('common.processing')),
+                validationError: @json(__('common.validation_error_occurred'))
+            }
+        };
+    </script>
+    <script src="{{ asset('assets/js/temple-ui.js') }}"></script>
 
     @stack('scripts')
 </body>

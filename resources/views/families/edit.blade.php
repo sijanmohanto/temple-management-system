@@ -47,7 +47,7 @@
 
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">{{ __('families.primary_contact') }}</label>
-                                <select name="primary_contact_person_id" class="form-select @error('primary_contact_person_id') is-invalid @enderror">
+                                <select name="primary_contact_person_id" class="form-select select2 @error('primary_contact_person_id') is-invalid @enderror" data-placeholder="{{ __('families.select_primary_contact') }}">
                                     <option value="">{{ __('families.select_primary_contact') }}</option>
                                     @foreach($people as $person)
                                         <option value="{{ $person->id }}" {{ old('primary_contact_person_id', $family->primary_contact_person_id) == $person->id ? 'selected' : '' }}>

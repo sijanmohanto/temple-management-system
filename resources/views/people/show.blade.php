@@ -220,7 +220,7 @@
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+                        <table class="table table-hover align-middle mb-0 w-100" id="personCommitteesTable">
                             <thead class="table-light">
                                 <tr>
                                     <th class="ps-4">{{ __('committees.committee') }}</th>
@@ -371,3 +371,16 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+@if($person->committeeMemberships->count() > 0)
+<script>
+    $(document).ready(function() {
+        TempleUI.initDataTable('#personCommitteesTable', {
+            pageLength: 5,
+            lengthMenu: [[5, 10, 25], [5, 10, 25]]
+        });
+    });
+</script>
+@endif
+@endpush

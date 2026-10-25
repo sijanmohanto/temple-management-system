@@ -84,7 +84,7 @@
                     @endif
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+                    <table class="table table-hover align-middle mb-0 w-100" id="activeMembersTable">
                         <thead class="table-light">
                             <tr>
                                 <th class="ps-4">{{ __('people.person') }}</th>
@@ -246,7 +246,7 @@
                     </h5>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+                    <table class="table table-hover align-middle mb-0 w-100" id="historicalMembersTable">
                         <thead class="table-light">
                             <tr>
                                 <th class="ps-4">{{ __('people.person') }}</th>
@@ -353,7 +353,7 @@
 
                         <div class="mb-3">
                             <label class="form-label fw-semibold small">{{ __('families.select_person') }} <span class="text-danger">*</span></label>
-                            <select name="person_id" class="form-select" required>
+                            <select name="person_id" class="form-select select2" required>
                                 <option value="">-- Choose Existing Devotee --</option>
                                 @foreach($availablePeople as $person)
                                     <option value="{{ $person->id }}">
@@ -403,3 +403,23 @@
     </div>
 @endif
 @endsection
+
+@push('scripts')
+<script>
+    $(document).ready(function() {
+        TempleUI.initDataTable('#activeMembersTable', {
+            pageLength: 10,
+            columnDefs: [
+                { orderable: false, targets: 4 }
+            ]
+        });
+
+        TempleUI.initDataTable('#historicalMembersTable', {
+            pageLength: 10,
+            columnDefs: [
+                { orderable: false, targets: 5 }
+            ]
+        });
+    });
+</script>
+@endpush

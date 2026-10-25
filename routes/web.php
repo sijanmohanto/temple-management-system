@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CommitteeController;
 use App\Http\Controllers\DashboardController;
@@ -7,7 +8,6 @@ use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\PersonController;
 use App\Http\Controllers\ProfileController;
-use App\Models\AuditLog;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -54,6 +54,7 @@ Route::middleware('auth')->group(function () {
     |--------------------------------------------------------------------------
     */
     // People Management
+    Route::get('/people/search', [PersonController::class, 'search'])->name('people.search');
     Route::get('/people', [PersonController::class, 'index'])->name('people.index');
     Route::get('/people/create', [PersonController::class, 'create'])->name('people.create');
     Route::post('/people', [PersonController::class, 'store'])->name('people.store');
@@ -64,6 +65,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/people/{person}/toggle-status', [PersonController::class, 'toggleStatus'])->name('people.toggle-status');
 
     // Family Management
+    Route::get('/families/search', [FamilyController::class, 'search'])->name('families.search');
     Route::get('/families', [FamilyController::class, 'index'])->name('families.index');
     Route::get('/families/create', [FamilyController::class, 'create'])->name('families.create');
     Route::post('/families', [FamilyController::class, 'store'])->name('families.store');
@@ -92,11 +94,7 @@ Route::middleware('auth')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::middleware('role:super_admin')->group(function () {
-        Route::get('/admin/audit-logs', function () {
-            $logs = AuditLog::with('user')->latest()->paginate(20);
-
-            return view('admin.audit_logs', compact('logs'));
-        })->name('admin.audit-logs');
+        Route::get('/admin/audit-logs', [AuditLogController::class, 'index'])->name('admin.audit-logs');
     });
 
     Route::middleware('role:super_admin,treasurer')->group(function () {
