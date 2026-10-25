@@ -1,0 +1,73 @@
+<?php
+
+return [
+    'app_name' => 'মন্দির ব্যবস্থাপনা সিস্টেম',
+    'app_subtitle' => 'বাঙালি সনাতন মন্দির ও ভক্ত কল্যাণ পোর্টাল',
+    'temple_motto' => 'ধর্ম, সেবা ও ভক্তি',
+    'language' => 'ভাষা',
+    'english' => 'English',
+    'bengali' => 'বাংলা',
+    'locale_switched' => 'ভাষা সফলভাবে পরিবর্তন করা হয়েছে।',
+
+    // General Actions
+    'save' => 'সংরক্ষণ করুন',
+    'save_changes' => 'পরিবর্তন সংরক্ষণ করুন',
+    'cancel' => 'বাতিল',
+    'edit' => 'সম্পাদনা',
+    'delete' => 'মুছুন',
+    'view' => 'দেখুন',
+    'back' => 'পেছনে যান',
+    'submit' => 'জমা দিন',
+    'confirm' => 'নিশ্চিত করুন',
+    'close' => 'বন্ধ করুন',
+    'search' => 'অনুসন্ধান করুন...',
+    'filter' => 'ফিল্টার',
+    'reset' => 'রিসেট',
+    'actions' => 'কার্যক্রম',
+    'details' => 'বিস্তারিত',
+    'status' => 'স্থিতি',
+    'created_at' => 'তৈরির সময়',
+    'updated_at' => 'হালনাগাদের সময়',
+    'yes' => 'হ্যাঁ',
+    'no' => 'না',
+    'all' => 'সকল',
+    'none' => 'কিছুই নয়',
+    'print' => 'প্রিন্ট',
+    'download' => 'ডাউনলোড',
+    'export' => 'রপ্তানি',
+
+    // Statuses
+    'status_active' => 'সক্রিয়',
+    'status_inactive' => 'নিষ্ক্রিয়',
+    'status_pending' => 'অপেক্ষমাণ',
+    'status_approved' => 'অনুমোদিত',
+    'status_rejected' => 'প্রত্যাখ্যাত',
+    'status_verified' => 'যাচাইকৃত',
+    'status_completed' => 'সম্পন্ন',
+
+    // Profile
+    'profile' => 'প্রোফাইল',
+    'profile_settings' => 'প্রোফাইল সেটিংস',
+    'profile_information' => 'ব্যক্তিগত তথ্য',
+    'profile_updated' => 'প্রোফাইল সফলভাবে হালনাগাদ করা হয়েছে।',
+    'password_updated' => 'পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে।',
+    'current_password' => 'বর্তমান পাসওয়ার্ড',
+    'new_password' => 'নতুন পাসওয়ার্ড',
+    'confirm_password' => 'নতুন পাসওয়ার্ড নিশ্চিত করুন',
+    'preferred_language' => 'পছন্দের ভাষা',
+    'phone_number' => 'ফোন নম্বর',
+    'address' => 'ঠিকানা',
+    'last_login' => 'সর্বশেষ প্রবেশ',
+
+    // Alerts
+    'success' => 'সফল',
+    'error' => 'ত্রুটি',
+    'warning' => 'সতর্কতা',
+    'info' => 'তথ্য',
+    'no_records' => 'কোনো তথ্য পাওয়া যায়নি।',
+    'under_construction' => 'এই মডিউলটি দ্বিতীয় ধাপে বাস্তবায়িত হবে।',
+
+    // Footer
+    'copyright' => 'সর্বস্বত্ব সংরক্ষিত।',
+    'footer_note' => 'স্বচ্ছ মন্দির প্রশাসন ও ভক্ত সেবায় নিবেদিত।',
+];

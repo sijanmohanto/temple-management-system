@@ -1,0 +1,290 @@
+:root {
+    --temple-maroon: #75141c;
+    --temple-maroon-dark: #560e15;
+    --temple-saffron: #d97706;
+    --temple-saffron-light: #fef3c7;
+    --temple-gold: #b45309;
+    --temple-bg: #f8fafc;
+    --temple-card-bg: #ffffff;
+    --temple-border: #e2e8f0;
+    --temple-text: #1e293b;
+    --temple-muted: #64748b;
+    --sidebar-width: 270px;
+}
+
+body {
+    background-color: var(--temple-bg);
+    color: var(--temple-text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Hind Siliguri", "SolaimanLipi", Arial, sans-serif;
+    min-height: 100vh;
+}
+
+/* Layout Wrapper */
+.app-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar */
+.app-sidebar {
+    width: var(--sidebar-width);
+    background: #1e1b18;
+    color: #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    transition: transform 0.25s ease-in-out;
+    z-index: 1040;
+}
+
+.sidebar-header {
+    padding: 1.25rem 1.25rem;
+    background: linear-gradient(135deg, var(--temple-maroon), var(--temple-maroon-dark));
+    border-bottom: 2px solid var(--temple-saffron);
+}
+
+.sidebar-brand {
+    color: #ffffff;
+    font-size: 1.15rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    text-decoration: none;
+}
+
+.sidebar-menu {
+    flex-grow: 1;
+    padding: 1rem 0.75rem;
+    overflow-y: auto;
+}
+
+.sidebar-heading {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9ca3af;
+    padding: 0.75rem 0.75rem 0.35rem 0.75rem;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.85rem;
+    border-radius: 0.5rem;
+    color: #d1d5db;
+    text-decoration: none;
+    font-size: 0.92rem;
+    font-weight: 500;
+    transition: all 0.15s ease-in-out;
+    margin-bottom: 0.2rem;
+}
+
+.sidebar-link i {
+    font-size: 1.15rem;
+    color: #f59e0b;
+}
+
+.sidebar-link:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+}
+
+.sidebar-link.active {
+    background: linear-gradient(90deg, var(--temple-maroon), rgba(117, 20, 28, 0.85));
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    border-left: 4px solid var(--temple-saffron);
+}
+
+.sidebar-link.disabled-future {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Main Content Area */
+.app-main {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+/* Navbar */
+.app-navbar {
+    height: 64px;
+    background-color: #ffffff;
+    border-bottom: 1px solid var(--temple-border);
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.temple-btn-maroon {
+    background-color: var(--temple-maroon);
+    border-color: var(--temple-maroon);
+    color: #ffffff;
+    font-weight: 500;
+}
+
+.temple-btn-maroon:hover,
+.temple-btn-maroon:focus {
+    background-color: var(--temple-maroon-dark);
+    border-color: var(--temple-maroon-dark);
+    color: #ffffff;
+}
+
+.temple-btn-saffron {
+    background-color: var(--temple-saffron);
+    border-color: var(--temple-saffron);
+    color: #ffffff;
+    font-weight: 500;
+}
+
+.temple-btn-saffron:hover {
+    background-color: var(--temple-gold);
+    border-color: var(--temple-gold);
+    color: #ffffff;
+}
+
+/* Language Switcher */
+.lang-badge {
+    padding: 0.35rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid var(--temple-border);
+    color: var(--temple-text);
+    background: #ffffff;
+    transition: all 0.2s;
+}
+
+.lang-badge.active {
+    background-color: var(--temple-maroon);
+    color: #ffffff;
+    border-color: var(--temple-maroon);
+}
+
+/* Content Container */
+.app-content {
+    flex-grow: 1;
+    padding: 1.75rem 1.5rem;
+}
+
+/* Footer */
+.app-footer {
+    background-color: #ffffff;
+    border-top: 1px solid var(--temple-border);
+    padding: 1rem 1.5rem;
+    font-size: 0.85rem;
+    color: var(--temple-muted);
+}
+
+/* Stat Cards */
+.stat-card {
+    background: #ffffff;
+    border-radius: 0.75rem;
+    border: 1px solid var(--temple-border);
+    padding: 1.25rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.07);
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+}
+
+/* Om Icon / Temple Emblem */
+.temple-emblem {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #fef3c7;
+    color: var(--temple-gold);
+    font-weight: 800;
+    font-size: 1.2rem;
+    border: 2px solid var(--temple-saffron);
+}
+
+/* Role Badges */
+.badge-role-super_admin {
+    background-color: #991b1b;
+    color: #ffffff;
+}
+
+.badge-role-temple_admin {
+    background-color: #1e40af;
+    color: #ffffff;
+}
+
+.badge-role-treasurer {
+    background-color: #065f46;
+    color: #ffffff;
+}
+
+.badge-role-committee_member {
+    background-color: #7c2d12;
+    color: #ffffff;
+}
+
+.badge-role-volunteer {
+    background-color: #4338ca;
+    color: #ffffff;
+}
+
+.badge-role-devotee {
+    background-color: #4b5563;
+    color: #ffffff;
+}
+
+/* Mobile Sidebar Toggle */
+@media (max-width: 991.98px) {
+    .app-sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        transform: translateX(-100%);
+    }
+
+    .app-sidebar.show {
+        transform: translateX(0);
+    }
+
+    .sidebar-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1035;
+        display: none;
+    }
+
+    .sidebar-backdrop.show {
+        display: block;
+    }
+}
