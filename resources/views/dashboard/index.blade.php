@@ -33,7 +33,72 @@
         </div>
     </div>
 
-    <!-- Statistics Overview Cards -->
+    <!-- Community & People Stats Row (Phase 2) -->
+    @if(Auth::user()->hasPermission('view_people'))
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-xl-3">
+                <a href="{{ route('people.index') }}" class="text-decoration-none">
+                    <div class="stat-card border-start border-4 border-primary">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-muted small fw-semibold mb-1">{{ __('dashboard.total_people') }}</div>
+                                <div class="fs-3 fw-bold text-dark">{{ $stats['total_people'] }}</div>
+                            </div>
+                            <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                                <i class="bi bi-people"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-sm-6 col-xl-3">
+                <a href="{{ route('families.index') }}" class="text-decoration-none">
+                    <div class="stat-card border-start border-4 border-info">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-muted small fw-semibold mb-1">{{ __('dashboard.total_families') }}</div>
+                                <div class="fs-3 fw-bold text-dark">{{ $stats['total_families'] }}</div>
+                            </div>
+                            <div class="stat-icon bg-info bg-opacity-10 text-info">
+                                <i class="bi bi-house-heart"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-sm-6 col-xl-3">
+                <a href="{{ route('committees.index') }}" class="text-decoration-none">
+                    <div class="stat-card border-start border-4 border-warning">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="text-muted small fw-semibold mb-1">{{ __('dashboard.active_committees') }}</div>
+                                <div class="fs-3 fw-bold text-dark">{{ $stats['active_committees'] }}</div>
+                            </div>
+                            <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                                <i class="bi bi-award"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-sm-6 col-xl-3">
+                <div class="stat-card border-start border-4 border-success">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="text-muted small fw-semibold mb-1">Active Devotees</div>
+                            <div class="fs-3 fw-bold text-success">{{ $stats['active_people'] }}</div>
+                        </div>
+                        <div class="stat-icon bg-success bg-opacity-10 text-success">
+                            <i class="bi bi-person-check"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
     <div class="row g-3 mb-4">
         <div class="col-sm-6 col-xl-3">
             <div class="stat-card">
@@ -119,16 +184,22 @@
                 <div class="card-body p-4 d-flex flex-column">
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <span class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary fs-4">
-                            <i class="bi bi-diagram-3"></i>
+                            <i class="bi bi-people-fill"></i>
                         </span>
-                        <span class="badge bg-secondary">Phase 2</span>
+                        <span class="badge bg-success">Phase 2 Active</span>
                     </div>
                     <h5 class="fw-bold mb-2">{{ __('dashboard.people_summary_title') }}</h5>
                     <p class="text-muted small flex-grow-1">
                         {{ __('dashboard.people_summary_desc') }}
                     </p>
                     <div class="pt-2 border-top">
-                        <span class="text-muted small"><i class="bi bi-person-lines-fill me-1"></i> Decoupled Person Registry</span>
+                        @if(Auth::user()->hasPermission('view_people'))
+                            <a href="{{ route('people.index') }}" class="btn btn-sm btn-outline-primary rounded-pill w-100">
+                                <i class="bi bi-arrow-right me-1"></i> Browse Directory
+                            </a>
+                        @else
+                            <span class="text-muted small"><i class="bi bi-person-lines-fill me-1"></i> Decoupled Person Registry</span>
+                        @endif
                     </div>
                 </div>
             </div>

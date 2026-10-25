@@ -22,7 +22,7 @@ class AuditLogger
             'model_id' => $model?->getKey(),
             'ip_address' => Request::ip(),
             'user_agent' => Request::userAgent(),
-            'properties' => !empty($properties) ? $properties : null,
+            'properties' => ! empty($properties) ? $properties : null,
         ]);
     }
 }

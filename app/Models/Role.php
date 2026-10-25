@@ -56,7 +56,7 @@ class Role extends Model
     {
         $permModel = is_string($permission) ? Permission::where('slug', $permission)->firstOrFail() : $permission;
 
-        if (!$this->permissions->contains('id', $permModel->id)) {
+        if (! $this->permissions->contains('id', $permModel->id)) {
             $this->permissions()->attach($permModel->id, ['created_at' => now()]);
             $this->load('permissions');
         }

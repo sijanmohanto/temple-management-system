@@ -17,17 +17,21 @@
         </a>
 
         <!-- Module 1: People & Devotees -->
-        <div class="sidebar-heading">{{ __('nav.people_management') }}</div>
-        <a href="#peopleModule" class="sidebar-link disabled-future" title="{{ __('common.under_construction') }}">
-            <i class="bi bi-people"></i>
-            <span>{{ __('nav.people_list') }}</span>
-            <span class="badge bg-secondary ms-auto" style="font-size: 0.65rem;">P2</span>
-        </a>
-        <a href="#committeeModule" class="sidebar-link disabled-future" title="{{ __('common.under_construction') }}">
-            <i class="bi bi-award"></i>
-            <span>{{ __('nav.committee') }}</span>
-            <span class="badge bg-secondary ms-auto" style="font-size: 0.65rem;">P2</span>
-        </a>
+        @if(Auth::user()->hasPermission('view_people'))
+            <div class="sidebar-heading">{{ __('nav.people_management') }}</div>
+            <a href="{{ route('people.index') }}" class="sidebar-link {{ request()->routeIs('people.*') ? 'active' : '' }}">
+                <i class="bi bi-people"></i>
+                <span>{{ __('nav.people_list') }}</span>
+            </a>
+            <a href="{{ route('families.index') }}" class="sidebar-link {{ request()->routeIs('families.*') ? 'active' : '' }}">
+                <i class="bi bi-house-heart"></i>
+                <span>{{ __('nav.families') }}</span>
+            </a>
+            <a href="{{ route('committees.index') }}" class="sidebar-link {{ request()->routeIs('committees.*') ? 'active' : '' }}">
+                <i class="bi bi-award"></i>
+                <span>{{ __('nav.committee') }}</span>
+            </a>
+        @endif
 
         <!-- Module 2 & 3: Puja & Events -->
         <div class="sidebar-heading">{{ __('nav.events_puja') }}</div>
@@ -95,7 +99,7 @@
             <span class="badge bg-success">{{ __('common.status_active') }}</span>
         </div>
         <div class="mt-1" style="font-size: 0.75rem;">
-            v1.0 (Phase 1 Foundation)
+            v1.1 (Phase 2 People & Committees)
         </div>
     </div>
 </aside>

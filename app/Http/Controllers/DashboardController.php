@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
+use App\Models\Committee;
+use App\Models\Family;
+use App\Models\Person;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -22,6 +25,10 @@ class DashboardController extends Controller
             'active_users' => User::where('status', 'active')->count(),
             'total_roles' => Role::count(),
             'total_audit_logs' => AuditLog::count(),
+            'total_people' => Person::count(),
+            'active_people' => Person::where('status', 'active')->count(),
+            'total_families' => Family::count(),
+            'active_committees' => Committee::where('status', 'active')->count(),
         ];
 
         // Retrieve latest audit logs for administrator visibility

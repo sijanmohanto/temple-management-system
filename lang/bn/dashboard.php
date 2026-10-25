@@ -10,6 +10,9 @@ return [
     'active_users' => 'সক্রিয় একাউন্ট',
     'system_roles' => 'সিস্টেম ভূমিকা',
     'audit_events' => 'নথিভুক্ত অডিট রেকর্ড',
+    'total_people' => 'নিবন্ধিত ভক্ত ও সদস্য',
+    'total_families' => 'পারিবারিক ইউনিট',
+    'active_committees' => 'সক্রিয় কমিটি',
 
     // Phase 2 Preview Widgets
     'financial_summary_title' => 'কেন্দ্রীয় আর্থিক খতিয়ান (২য় ধাপের পূর্বাভাস)',

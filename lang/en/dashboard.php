@@ -10,6 +10,9 @@ return [
     'active_users' => 'Active Accounts',
     'system_roles' => 'System Roles',
     'audit_events' => 'Audit Events Logged',
+    'total_people' => 'Devotees Registered',
+    'total_families' => 'Family Units',
+    'active_committees' => 'Active Committees',
 
     // Phase 2 Preview Widgets
     'financial_summary_title' => 'Central Ledger Status (Phase 2 Preview)',
