@@ -74,7 +74,7 @@
                     @endif
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+                    <table class="table table-hover align-middle mb-0 w-100" id="familyMembersTable">
                         <thead class="table-light">
                             <tr>
                                 <th class="ps-4">{{ __('people.person_code') }}</th>
@@ -164,7 +164,7 @@
 
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold small">{{ __('families.select_person') }}</label>
-                                    <select name="person_id" class="form-select" required>
+                                    <select name="person_id" class="form-select select2" data-placeholder="-- Choose Devotee --" required>
                                         <option value="">-- Choose Devotee --</option>
                                         @foreach($unassignedPeople as $person)
                                             <option value="{{ $person->id }}">
@@ -261,3 +261,18 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+@if($family->members->count() > 0)
+<script>
+    $(document).ready(function() {
+        TempleUI.initDataTable('#familyMembersTable', {
+            pageLength: 10,
+            columnDefs: [
+                { orderable: false, targets: 4 }
+            ]
+        });
+    });
+</script>
+@endif
+@endpush

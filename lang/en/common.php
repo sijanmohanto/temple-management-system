@@ -67,6 +67,14 @@ return [
     'no_records' => 'No records found.',
     'under_construction' => 'This module is scheduled for Phase 2 implementation.',
 
+    // Loading & UI
+    'loading' => 'Loading...',
+    'processing' => 'Processing...',
+    'submitting' => 'Submitting...',
+    'please_wait' => 'Please wait...',
+    'error_occurred' => 'An error occurred while processing your request.',
+    'validation_error_occurred' => 'Please correct the highlighted validation errors.',
+
     // Footer
     'copyright' => 'All rights reserved.',
     'footer_note' => 'Dedicated to transparent temple administration and community service.',

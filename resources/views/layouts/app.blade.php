@@ -11,6 +11,14 @@
     <link rel="stylesheet" href="{{ asset('assets/vendor/bootstrap/bootstrap.min.css') }}">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="{{ asset('assets/vendor/bootstrap/bootstrap-icons.min.css') }}">
+    <!-- Toastr Notifications CSS -->
+    <link rel="stylesheet" href="{{ asset('assets/vendor/toastr/toastr.min.css') }}">
+    <!-- Select2 CSS with Bootstrap 5 Theme -->
+    <link rel="stylesheet" href="{{ asset('assets/vendor/select2/select2.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/vendor/select2/select2-bootstrap-5-theme.min.css') }}">
+    <!-- DataTables Bootstrap 5 CSS -->
+    <link rel="stylesheet" href="{{ asset('assets/vendor/datatables/dataTables.bootstrap5.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/vendor/datatables/responsive.bootstrap5.min.css') }}">
     <!-- Custom Temple Theme -->
     <link rel="stylesheet" href="{{ asset('assets/css/temple-theme.css') }}">
 
@@ -43,6 +51,43 @@
     <script src="{{ asset('assets/vendor/jquery/jquery.min.js') }}"></script>
     <!-- Bootstrap 5 Bundle JS -->
     <script src="{{ asset('assets/vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
+    <!-- Toastr Notifications JS -->
+    <script src="{{ asset('assets/vendor/toastr/toastr.min.js') }}"></script>
+    <!-- Select2 JS -->
+    <script src="{{ asset('assets/vendor/select2/select2.min.js') }}"></script>
+    <!-- DataTables JS & Responsive -->
+    <script src="{{ asset('assets/vendor/datatables/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ asset('assets/vendor/datatables/dataTables.bootstrap5.min.js') }}"></script>
+    <script src="{{ asset('assets/vendor/datatables/dataTables.responsive.min.js') }}"></script>
+    <script src="{{ asset('assets/vendor/datatables/responsive.bootstrap5.min.js') }}"></script>
+
+    <!-- Global Temple Configuration -->
+    <script>
+        window.TempleConfig = {
+            locale: "{{ app()->getLocale() }}",
+            flashes: {
+                success: @json(session('success')),
+                error: @json(session('error')),
+                warning: @json(session('warning')),
+                info: @json(session('info'))
+            },
+            validationErrors: @json($errors->all()),
+            i18n: {
+                loading: @json(__('common.loading')),
+                processing: @json(__('common.processing')),
+                validationError: @json(__('common.validation_error_occurred'))
+            },
+            select2i18n: {
+                placeholder: @json(__('select2.placeholder')),
+                noResults: @json(__('select2.no_results')),
+                searching: @json(__('select2.searching'))
+            },
+            datatablesLanguage: @json(trans('datatables'))
+        };
+    </script>
+
+    <!-- Centralized Temple UI Module -->
+    <script src="{{ asset('assets/js/temple-ui.js') }}"></script>
 
     <!-- Sidebar Responsive Toggle Script -->
     <script>

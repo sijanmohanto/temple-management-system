@@ -23,7 +23,7 @@
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover align-middle mb-0 w-100" id="auditLogsTable">
                     <thead class="table-light text-muted small text-uppercase">
                         <tr>
                             <th class="ps-4">ID</th>
@@ -37,7 +37,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($logs as $log)
+                        @foreach($logs as $log)
                             <tr>
                                 <td class="ps-4 text-muted small">#{{ $log->id }}</td>
                                 <td class="text-nowrap text-muted small">
@@ -71,23 +71,50 @@
                                     @endif
                                 </td>
                             </tr>
-                        @empty
-                            <tr>
-                                <td colspan="8" class="text-center py-4 text-muted">
-                                    {{ __('common.no_records') }}
-                                </td>
-                            </tr>
-                        @endforelse
+                        @endforeach
                     </tbody>
                 </table>
             </div>
 
-            @if($logs->hasPages())
-                <div class="p-3 border-top">
-                    {{ $logs->links() }}
-                </div>
-            @endif
+            <div id="auditLogsNativePagination">
+                @if($logs->hasPages())
+                    <div class="p-3 border-top">
+                        {{ $logs->links() }}
+                    </div>
+                @endif
+            </div>
         </div>
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    $(document).ready(function() {
+        var auditLogsTable = TempleUI.initDataTable('#auditLogsTable', {
+            serverSide: true,
+            processing: true,
+            deferLoading: {{ $logs->total() }},
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+            order: [[0, 'desc']],
+            ajax: {
+                url: "{{ route('admin.audit-logs') }}"
+            },
+            columns: [
+                { data: 0, name: 'id', className: 'ps-4' },
+                { data: 1, name: 'created_at' },
+                { data: 2, name: 'user', orderable: false },
+                { data: 3, name: 'action' },
+                { data: 4, name: 'description' },
+                { data: 5, name: 'model_type' },
+                { data: 6, name: 'ip_address' },
+                { data: 7, name: 'metadata', orderable: false, className: 'pe-4' }
+            ]
+        });
+
+        // Hide native pagination once DataTables handles it
+        $('#auditLogsNativePagination').hide();
+    });
+</script>
+@endpush

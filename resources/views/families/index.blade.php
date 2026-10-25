@@ -19,128 +19,128 @@
         @endif
     </div>
 
-    <!-- Search & Filter Card -->
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-body p-3 p-md-4">
-            <form method="GET" action="{{ route('families.index') }}" class="row g-3">
-                <div class="col-md-8 col-lg-6">
-                    <div class="input-group">
-                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-                        <input type="text" name="search" class="form-control bg-light border-start-0" 
-                               placeholder="Search by family code, name, phone, area..." 
-                               value="{{ $search }}">
-                    </div>
-                </div>
-                <div class="col-md-4 col-lg-3 d-flex gap-2">
-                    <button type="submit" class="btn btn-dark rounded-pill px-4">
-                        <i class="bi bi-funnel me-1"></i> {{ __('common.filter') }}
-                    </button>
-                    <a href="{{ route('families.index') }}" class="btn btn-outline-secondary rounded-pill px-3">
-                        <i class="bi bi-arrow-counterclockwise"></i>
-                    </a>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <!-- Families Table Card -->
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th class="ps-4">{{ __('families.family_code') }}</th>
-                        <th>{{ __('families.family_name') }}</th>
-                        <th>{{ __('families.primary_contact') }}</th>
-                        <th>{{ __('families.phone') }}</th>
-                        <th>{{ __('families.area') }}</th>
-                        <th>{{ __('families.members_count') }}</th>
-                        <th>{{ __('common.status') }}</th>
-                        <th class="text-end pe-4">{{ __('common.actions') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($families as $family)
+        <div class="card-body p-3 p-md-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 w-100" id="familiesDataTable">
+                    <thead class="table-light">
                         <tr>
-                            <td class="ps-4">
-                                <span class="badge bg-light text-dark border font-monospace">{{ $family->family_code }}</span>
-                            </td>
-                            <td>
-                                <a href="{{ route('families.show', $family) }}" class="fw-bold text-dark text-decoration-none">
-                                    {{ $family->family_name }}
-                                </a>
-                            </td>
-                            <td>
-                                @if($family->primaryContact)
-                                    <a href="{{ route('people.show', $family->primaryContact) }}" class="text-decoration-none fw-semibold">
-                                        <i class="bi bi-person me-1"></i> {{ $family->primaryContact->name }}
+                            <th class="ps-3">{{ __('families.family_code') }}</th>
+                            <th>{{ __('families.family_name') }}</th>
+                            <th>{{ __('families.primary_contact') }}</th>
+                            <th>{{ __('families.phone') }}</th>
+                            <th>{{ __('families.area') }}</th>
+                            <th>{{ __('families.members_count') }}</th>
+                            <th>{{ __('common.status') }}</th>
+                            <th class="text-end pe-3">{{ __('common.actions') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($families as $family)
+                            <tr>
+                                <td class="ps-3">
+                                    <span class="badge bg-light text-dark border font-monospace">{{ $family->family_code }}</span>
+                                </td>
+                                <td>
+                                    <a href="{{ route('families.show', $family) }}" class="fw-bold text-dark text-decoration-none">
+                                        {{ $family->family_name }}
                                     </a>
-                                @else
-                                    <span class="text-muted small">{{ __('families.no_primary_contact') }}</span>
-                                @endif
-                            </td>
-                            <td>{{ $family->phone ?? '—' }}</td>
-                            <td>{{ $family->area ?? '—' }}</td>
-                            <td>
-                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1">
-                                    <i class="bi bi-people me-1"></i> {{ $family->members_count }}
-                                </span>
-                            </td>
-                            <td>
-                                @if($family->isActive())
-                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
-                                        {{ __('common.status_active') }}
+                                </td>
+                                <td>
+                                    @if($family->primaryContact)
+                                        <a href="{{ route('people.show', $family->primaryContact) }}" class="text-decoration-none fw-semibold">
+                                            <i class="bi bi-person me-1"></i> {{ $family->primaryContact->name }}
+                                        </a>
+                                    @else
+                                        <span class="text-muted small">{{ __('families.no_primary_contact') }}</span>
+                                    @endif
+                                </td>
+                                <td>{{ $family->phone ?? '—' }}</td>
+                                <td>{{ $family->area ?? '—' }}</td>
+                                <td>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1">
+                                        <i class="bi bi-people me-1"></i> {{ $family->members_count }}
                                     </span>
-                                @else
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border">
-                                        {{ __('common.status_inactive') }}
-                                    </span>
-                                @endif
-                            </td>
-                            <td class="text-end pe-4">
-                                <div class="btn-group btn-group-sm">
-                                    <a href="{{ route('families.show', $family) }}" class="btn btn-outline-primary" title="{{ __('common.view') }}">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-
-                                    @if(Auth::user()->hasPermission('manage_people'))
-                                        <a href="{{ route('families.edit', $family) }}" class="btn btn-outline-secondary" title="{{ __('common.edit') }}">
-                                            <i class="bi bi-pencil"></i>
+                                </td>
+                                <td>
+                                    @if($family->isActive())
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
+                                            {{ __('common.status_active') }}
+                                        </span>
+                                    @else
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border">
+                                            {{ __('common.status_inactive') }}
+                                        </span>
+                                    @endif
+                                </td>
+                                <td class="text-end pe-3">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ route('families.show', $family) }}" class="btn btn-outline-primary" title="{{ __('common.view') }}">
+                                            <i class="bi bi-eye"></i>
                                         </a>
 
-                                        @if($family->canBeSafelyDeleted())
-                                            <form method="POST" action="{{ route('families.destroy', $family) }}" class="d-inline"
-                                                  onsubmit="return confirm('{{ __('families.delete_confirm') }}')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-outline-danger" title="{{ __('common.delete') }}">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
-                                        @endif
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="8" class="text-center py-5 text-muted">
-                                <i class="bi bi-house-x fs-1 d-block mb-2 text-secondary opacity-50"></i>
-                                {{ __('families.no_families_found') }}
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                                        @if(Auth::user()->hasPermission('manage_people'))
+                                            <a href="{{ route('families.edit', $family) }}" class="btn btn-outline-secondary" title="{{ __('common.edit') }}">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
 
-        @if($families->hasPages())
-            <div class="card-footer bg-white border-0 py-3">
-                <div class="d-flex justify-content-center">
-                    {{ $families->links() }}
-                </div>
+                                            @if($family->canBeSafelyDeleted())
+                                                <form method="POST" action="{{ route('families.destroy', $family) }}" class="d-inline"
+                                                      onsubmit="return confirm('{{ __('families.delete_confirm') }}')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-outline-danger" title="{{ __('common.delete') }}">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
-        @endif
+
+            <div id="familiesNativePagination" class="mt-3">
+                @if($families->hasPages())
+                    <div class="d-flex justify-content-center">
+                        {{ $families->links() }}
+                    </div>
+                @endif
+            </div>
+        </div>
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    $(document).ready(function() {
+        var familiesTable = TempleUI.initDataTable('#familiesDataTable', {
+            serverSide: true,
+            processing: true,
+            deferLoading: {{ $families->total() }},
+            pageLength: 15,
+            lengthMenu: [[10, 15, 25, 50, 100], [10, 15, 25, 50, 100]],
+            ajax: {
+                url: "{{ route('families.index') }}"
+            },
+            columns: [
+                { data: 0, name: 'family_code' },
+                { data: 1, name: 'family_name' },
+                { data: 2, name: 'primary_contact', orderable: false },
+                { data: 3, name: 'phone' },
+                { data: 4, name: 'area' },
+                { data: 5, name: 'members_count' },
+                { data: 6, name: 'status' },
+                { data: 7, name: 'actions', orderable: false, className: 'text-end pe-3' }
+            ]
+        });
+
+        $('#familiesNativePagination').hide();
+    });
+</script>
+@endpush

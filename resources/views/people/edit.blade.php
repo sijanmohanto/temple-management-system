@@ -165,7 +165,7 @@
 
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">{{ __('families.family') }}</label>
-                                <select name="family_id" class="form-select @error('family_id') is-invalid @enderror">
+                                <select name="family_id" class="form-select select2 @error('family_id') is-invalid @enderror" data-placeholder="{{ __('people.no_family_assigned') }}">
                                     <option value="">{{ __('people.no_family_assigned') }}</option>
                                     @foreach($families as $family)
                                         <option value="{{ $family->id }}" {{ old('family_id', $person->family_id) == $family->id ? 'selected' : '' }}>

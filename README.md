@@ -48,6 +48,27 @@ A modular, secure enterprise web application designed for a Bengali Hindu temple
   - Resident, Donor, Committee Member, and Volunteer.
   - Single devotee can hold multiple classifications concurrently without duplicate assignments.
 
+### 3. Phase 2.1: UI Standardization (Completed & Verified)
+- **DataTables**:
+  - jQuery DataTables with Bootstrap 5 theme and responsive plugins bundled offline.
+  - Server-side processing for high-volume People and Family listings with `deferLoading` for instant initial rendering.
+  - Client-side DataTables with localized empty/pagination controls on Committee memberships, Family member listings, and Audit logs.
+  - Strict server-enforced authorization and query eager-loading (`with(['family', 'classifications'])`).
+- **Global Toastr Notifications**:
+  - Centralized in `temple-ui.js` and `window.TempleConfig`.
+  - Replaced duplicate Bootstrap alert banners with elegant Toastr notifications for all session flashes and AJAX actions.
+  - Field-level form validation styling (`is-invalid` / `invalid-feedback`) preserved for accessibility without alert banner duplication.
+- **Button Loading Indicators**:
+  - Global form submit listener adding spinner and localized loading label (`__('common.loading')`).
+  - Auto-disables action buttons to prevent accidental double submissions.
+  - Automatically resets button state on AJAX errors.
+- **Select2 Dropdowns**:
+  - Searchable dropdowns with Bootstrap 5 styling across People, Family, and Committee forms and filters.
+  - Modal-aware dropdown parenting (`dropdownParent`).
+  - Dedicated search endpoints (`/people/search`, `/families/search`) with server authorization.
+- **Dual Localization**:
+  - Full English and Bengali parity in `lang/en/datatables.php`, `lang/bn/datatables.php`, `lang/en/select2.php`, and `lang/bn/select2.php`.
+
 ---
 
 ## Directory & Setup
@@ -70,7 +91,7 @@ php artisan db:seed
 
 ### 2. Running Automated Tests
 
-Run the full automated test suite (54 tests, 139 assertions, executed with in-memory SQLite):
+Run the full automated test suite (67 tests, 232 assertions, executed with in-memory SQLite):
 ```bash
 php artisan test
 ```

@@ -169,13 +169,17 @@ class Person extends Model
     /**
      * Scope for searching people.
      */
-    public function scopeSearch(Builder $query, ?string $term): Builder
+    public function scopeSearch(Builder $query, string|array|null $term): Builder
     {
+        if (is_array($term)) {
+            $term = $term['value'] ?? '';
+        }
+
         if (empty($term)) {
             return $query;
         }
 
-        $clean = trim($term);
+        $clean = trim((string) $term);
 
         return $query->where(function (Builder $q) use ($clean) {
             $q->where('person_code', 'like', "%{$clean}%")
@@ -194,7 +198,10 @@ class Person extends Model
     public function scopeFilter(Builder $query, array $filters): Builder
     {
         if (! empty($filters['search'])) {
-            $query->search($filters['search']);
+            $searchTerm = is_array($filters['search']) ? ($filters['search']['value'] ?? '') : $filters['search'];
+            if (! empty($searchTerm)) {
+                $query->search((string) $searchTerm);
+            }
         }
 
         if (! empty($filters['status']) && in_array($filters['status'], ['active', 'inactive'])) {

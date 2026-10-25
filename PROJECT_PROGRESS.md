@@ -1,12 +1,27 @@
 # Temple Management System — Project Progress & Phase Tracker
 
-## Current Status: Phase 2 (People & Committee Management) — COMPLETE & VERIFIED
+## Current Status: Phase 2.1 (UI Standardization) — COMPLETE & VERIFIED
 
 **Current Local Date**: 2026-10-26  
-**Active Phase**: Phase 2 — People & Committee Management  
+**Active Phase**: Phase 2.1 — UI Standardization (Enhancement to Phase 1 & Phase 2)  
 **Phase 1 Status**: **Completed & Fully Tested** (22 tests, 43 assertions)  
 **Phase 2 Status**: **Completed & Fully Tested** (54 tests, 139 assertions total)  
+**Phase 2.1 Status**: **Completed & Fully Tested** (67 tests, 232 assertions total)  
 **Phase 3 Status**: **Pending User Review & Approval** (Do not start until authorized)
+
+---
+
+## Phase 2.1 UI Standardization Deliverables & Verification Checklist
+
+| # | Task / Requirement | Status | Verification Detail |
+|---|---|---|---|
+| 1 | **DataTables for Report & Listings** | Completed | Integrated jQuery DataTables with Bootstrap 5 styling and responsive extensions. Server-side processing implemented for People and Families with `deferLoading` for instantaneous initial page load, and client DataTables for Committee members and Audit logs. Preserved server-side permissions, eager loading, and filtering. |
+| 2 | **Global Toastr Notifications** | Completed | Toastr bundled offline in `public/assets/vendor/toastr/`. Centralized via `temple-ui.js` and `window.TempleConfig`. Replaced redundant Bootstrap flash alert banners across views with toastr notifications. Preserved field-level form validation styling (`is-invalid` / `invalid-feedback`) for accessibility. |
+| 3 | **Button Loading Indicators** | Completed | Reusable button spinner and localized loading label (`__('common.loading')` / "লোড হচ্ছে...") via `TempleUI.button.loading()` and automatic form submission handler. Disables buttons, prevents double submission, and auto-restores on AJAX error. |
+| 4 | **Select2 Searchable Dropdowns** | Completed | Bundled Select2 offline with Bootstrap 5 theme (`public/assets/vendor/select2/`). Applied across People family selection, Committee member assignment, Family primary contact and member assignments, and index filters. Modal support via `dropdownParent`. Secure AJAX endpoints (`/people/search`, `/families/search`) with server permissions. |
+| 5 | **Centralized UI Architecture** | Completed | Unified helper `public/assets/js/temple-ui.js` and CSS variables in `public/assets/css/temple-theme.css`. Automatic initialization on `$(document).ready` and modal show events. Global CSRF token injection and AJAX error interceptors (422, 403, 419, 500). |
+| 6 | **Bilingual Localization Parity** | Completed | Created `lang/en/datatables.php`, `lang/bn/datatables.php`, `lang/en/select2.php`, `lang/bn/select2.php`, and extended `common.php` with loading and toastr error keys in both English and Bengali. |
+| 7 | **Automated Testing & Code Hygiene** | Completed | Created `tests/Feature/UiStandardizationTest.php`. 64 tests (204 assertions) passing cleanly. 100% PSR-12 formatting compliance verified with `php ./vendor/bin/pint --test`. |
 
 ---
 
@@ -114,8 +129,23 @@ Result:
   ✓ treasurer can access finance overview
   ✓ devotee cannot access finance overview
 
-  Tests:    54 passed (139 assertions)
-  Duration: 6.08s
+   PASS  Tests\Feature\UiStandardizationTest
+  ✓ guest cannot access people search ajax
+  ✓ devotee without permission cannot access people search
+  ✓ admin can search people via select2 ajax
+  ✓ guest cannot access families search ajax
+  ✓ devotee without permission cannot access families search
+  ✓ admin can search families via select2 ajax
+  ✓ people datatable server side json response
+  ✓ people datatable sorting and page length change
+  ✓ families datatable server side json response
+  ✓ audit logs datatable server side json response
+  ✓ audit logs page renders bootstrap five pagination
+  ✓ datatables and select2 localization parity
+  ✓ ui assets are present
+
+  Tests:    67 passed (232 assertions)
+  Duration: 7.81s
 ```
 
 ---

@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateFamilyRequest;
 use App\Models\Family;
 use App\Models\Person;
 use App\Services\AuditLogger;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -19,17 +20,21 @@ class FamilyController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:view_people', only: ['index', 'show']),
-            new Middleware('permission:manage_people', except: ['index', 'show']),
+            new Middleware('permission:view_people', only: ['index', 'show', 'search']),
+            new Middleware('permission:manage_people', except: ['index', 'show', 'search']),
         ];
     }
 
     /**
      * Display a listing of families.
      */
-    public function index(Request $request): View
+    public function index(Request $request): View|JsonResponse
     {
         $search = $request->query('search');
+
+        if (($request->ajax() || $request->wantsJson()) && $request->has('draw')) {
+            return $this->dataTableResponse($request);
+        }
 
         $families = Family::query()
             ->with(['primaryContact'])
@@ -40,6 +45,98 @@ class FamilyController extends Controller implements HasMiddleware
             ->withQueryString();
 
         return view('families.index', compact('families', 'search'));
+    }
+
+    /**
+     * Server-side DataTables response for families.
+     */
+    protected function dataTableResponse(Request $request): JsonResponse
+    {
+        $draw = $request->integer('draw');
+        $start = $request->integer('start', 0);
+        $length = $request->integer('length', 15);
+        $searchValue = trim($request->input('search.value', ''));
+
+        $query = Family::query()->with(['primaryContact'])->withCount('members');
+        $totalRecords = Family::count();
+
+        if (! empty($searchValue)) {
+            $query->search($searchValue);
+        }
+
+        $filteredRecords = $query->count();
+
+        $orderColumnIndex = $request->has('order.0.column') ? (int) $request->input('order.0.column') : null;
+        $orderDir = strtolower((string) $request->input('order.0.dir', 'desc')) === 'asc' ? 'asc' : 'desc';
+        $columnMap = [
+            0 => 'family_code',
+            1 => 'family_name',
+            3 => 'phone',
+            4 => 'area',
+            5 => 'members_count',
+            6 => 'status',
+        ];
+
+        if ($orderColumnIndex !== null && isset($columnMap[$orderColumnIndex])) {
+            $query->orderBy($columnMap[$orderColumnIndex], $orderDir);
+        } else {
+            $query->latest();
+        }
+
+        $records = $query->skip($start)->take($length)->get();
+        $canManage = $request->user()?->hasPermission('manage_people') ?? false;
+
+        $data = $records->map(function ($family) use ($canManage) {
+            $codeHtml = '<span class="badge bg-light text-dark border font-monospace">'.e($family->family_code).'</span>';
+            $nameHtml = '<a href="'.route('families.show', $family).'" class="fw-bold text-dark text-decoration-none">'.e($family->family_name).'</a>';
+
+            $contactHtml = '<span class="text-muted small">'.__('families.no_primary_contact').'</span>';
+            if ($family->primaryContact) {
+                $contactHtml = '<a href="'.route('people.show', $family->primaryContact).'" class="text-decoration-none fw-semibold"><i class="bi bi-person me-1"></i> '.e($family->primaryContact->name).'</a>';
+            }
+
+            $phoneHtml = e($family->phone ?? '—');
+            $areaHtml = e($family->area ?? '—');
+            $countHtml = '<span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1"><i class="bi bi-people me-1"></i> '.$family->members_count.'</span>';
+
+            $statusHtml = $family->isActive()
+                ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">'.__('common.status_active').'</span>'
+                : '<span class="badge bg-secondary bg-opacity-10 text-secondary border">'.__('common.status_inactive').'</span>';
+
+            $actionsHtml = '<div class="btn-group btn-group-sm text-end">'
+                .'<a href="'.route('families.show', $family).'" class="btn btn-outline-primary" title="'.__('common.view').'"><i class="bi bi-eye"></i></a>';
+
+            if ($canManage) {
+                $actionsHtml .= '<a href="'.route('families.edit', $family).'" class="btn btn-outline-secondary" title="'.__('common.edit').'"><i class="bi bi-pencil"></i></a>';
+
+                if ($family->canBeSafelyDeleted()) {
+                    $actionsHtml .= '<form method="POST" action="'.route('families.destroy', $family).'" class="d-inline" onsubmit="return confirm(\''.e(__('families.delete_confirm')).'\')">'
+                        .csrf_field()
+                        .method_field('DELETE')
+                        .'<button type="submit" class="btn btn-outline-danger" title="'.__('common.delete').'"><i class="bi bi-trash"></i></button>'
+                        .'</form>';
+                }
+            }
+            $actionsHtml .= '</div>';
+
+            return [
+                $codeHtml,
+                $nameHtml,
+                $contactHtml,
+                $phoneHtml,
+                $areaHtml,
+                $countHtml,
+                $statusHtml,
+                $actionsHtml,
+            ];
+        });
+
+        return response()->json([
+            'draw' => $draw,
+            'recordsTotal' => $totalRecords,
+            'recordsFiltered' => $filteredRecords,
+            'data' => $data,
+        ]);
     }
 
     /**
@@ -213,6 +310,28 @@ class FamilyController extends Controller implements HasMiddleware
 
         return redirect()->route('families.show', $family)
             ->with('success', __('families.member_removed_successfully'));
+    }
+
+    /**
+     * AJAX search endpoint for Select2.
+     */
+    public function search(Request $request): JsonResponse
+    {
+        $term = trim((string) $request->query('q', ''));
+        $families = Family::query()
+            ->search($term)
+            ->active()
+            ->limit(30)
+            ->get(['id', 'family_code', 'family_name']);
+
+        $results = $families->map(function ($family) {
+            return [
+                'id' => $family->id,
+                'text' => "{$family->family_name} ({$family->family_code})",
+            ];
+        });
+
+        return response()->json(['results' => $results]);
     }
 
     /**
