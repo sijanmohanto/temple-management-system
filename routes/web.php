@@ -4,6 +4,9 @@ use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CommitteeController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EventCategoryController;
+use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventDashboardController;
 use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\PersonController;
@@ -86,6 +89,27 @@ Route::middleware('auth')->group(function () {
     Route::post('/committees/{committee}/members', [CommitteeController::class, 'addMember'])->name('committees.members.add');
     Route::put('/committees/{committee}/members/{membership}', [CommitteeController::class, 'updateMember'])->name('committees.members.update');
     Route::post('/committees/{committee}/members/{membership}/end', [CommitteeController::class, 'endMembership'])->name('committees.members.end');
+
+    // Event & Puja Management
+    Route::get('/events/dashboard', [EventDashboardController::class, 'index'])->name('events.dashboard');
+    Route::get('/events', [EventController::class, 'index'])->name('events.index');
+    Route::get('/events/create', [EventController::class, 'create'])->name('events.create');
+    Route::post('/events', [EventController::class, 'store'])->name('events.store');
+    Route::get('/events/{event}', [EventController::class, 'show'])->name('events.show');
+    Route::get('/events/{event}/edit', [EventController::class, 'edit'])->name('events.edit');
+    Route::put('/events/{event}', [EventController::class, 'update'])->name('events.update');
+    Route::delete('/events/{event}', [EventController::class, 'destroy'])->name('events.destroy');
+    Route::post('/events/{event}/transition', [EventController::class, 'transition'])->name('events.transition');
+    Route::post('/events/{event}/close', [EventController::class, 'close'])->name('events.close');
+    Route::post('/events/{event}/reopen', [EventController::class, 'reopen'])->name('events.reopen');
+    Route::post('/events/{event}/adjust', [EventController::class, 'adjust'])->name('events.adjust');
+
+    // Event Categories
+    Route::get('/events-categories', [EventCategoryController::class, 'index'])->name('events.categories.index');
+    Route::post('/events-categories', [EventCategoryController::class, 'store'])->name('events.categories.store');
+    Route::put('/events-categories/{category}', [EventCategoryController::class, 'update'])->name('events.categories.update');
+    Route::delete('/events-categories/{category}', [EventCategoryController::class, 'destroy'])->name('events.categories.destroy');
+    Route::post('/events-categories/{category}/toggle-status', [EventCategoryController::class, 'toggleStatus'])->name('events.categories.toggle-status');
 
     /*
     |--------------------------------------------------------------------------

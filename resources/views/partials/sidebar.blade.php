@@ -34,17 +34,21 @@
         @endif
 
         <!-- Module 2 & 3: Puja & Events -->
-        <div class="sidebar-heading">{{ __('nav.events_puja') }}</div>
-        <a href="#pujaModule" class="sidebar-link disabled-future" title="{{ __('common.under_construction') }}">
-            <i class="bi bi-calendar-event"></i>
-            <span>{{ __('nav.puja_editions') }}</span>
-            <span class="badge bg-secondary ms-auto" style="font-size: 0.65rem;">P2</span>
-        </a>
-        <a href="#pledgesModule" class="sidebar-link disabled-future" title="{{ __('common.under_construction') }}">
-            <i class="bi bi-journal-bookmark"></i>
-            <span>{{ __('nav.pledges') }}</span>
-            <span class="badge bg-secondary ms-auto" style="font-size: 0.65rem;">P2</span>
-        </a>
+        @if(Auth::user()->hasPermission('view_events'))
+            <div class="sidebar-heading">{{ __('nav.events_puja') }}</div>
+            <a href="{{ route('events.dashboard') }}" class="sidebar-link {{ request()->routeIs('events.dashboard') ? 'active' : '' }}">
+                <i class="bi bi-speedometer"></i>
+                <span>{{ __('events.dashboard') }}</span>
+            </a>
+            <a href="{{ route('events.index') }}" class="sidebar-link {{ request()->routeIs('events.index') || request()->routeIs('events.show') || request()->routeIs('events.create') || request()->routeIs('events.edit') ? 'active' : '' }}">
+                <i class="bi bi-calendar-event"></i>
+                <span>{{ __('events.events') }}</span>
+            </a>
+            <a href="{{ route('events.categories.index') }}" class="sidebar-link {{ request()->routeIs('events.categories.*') ? 'active' : '' }}">
+                <i class="bi bi-tags"></i>
+                <span>{{ __('events.categories') }}</span>
+            </a>
+        @endif
 
         <!-- Module 4 & 5: Central Finance -->
         <div class="sidebar-heading">{{ __('nav.finance') }}</div>
