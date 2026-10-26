@@ -114,6 +114,22 @@ class Event extends Model
     }
 
     /**
+     * Pledges made for this event.
+     */
+    public function pledges(): HasMany
+    {
+        return $this->hasMany(Pledge::class);
+    }
+
+    /**
+     * Payments collected for this event.
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(CollectionPayment::class);
+    }
+
+    /**
      * Localized name attribute.
      */
     public function getNameAttribute(): string

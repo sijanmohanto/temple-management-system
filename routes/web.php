@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\CollectionDashboardController;
+use App\Http\Controllers\CollectionPaymentController;
+use App\Http\Controllers\CollectionReportController;
 use App\Http\Controllers\CommitteeController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventCategoryController;
@@ -9,8 +12,11 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventDashboardController;
 use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\LanguageController;
+use App\Http\Controllers\MonthlyContributionController;
 use App\Http\Controllers\PersonController;
+use App\Http\Controllers\PledgeController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReceiptController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -110,6 +116,46 @@ Route::middleware('auth')->group(function () {
     Route::put('/events-categories/{category}', [EventCategoryController::class, 'update'])->name('events.categories.update');
     Route::delete('/events-categories/{category}', [EventCategoryController::class, 'destroy'])->name('events.categories.destroy');
     Route::post('/events-categories/{category}/toggle-status', [EventCategoryController::class, 'toggleStatus'])->name('events.categories.toggle-status');
+
+    // Phase 4: Donations, Pledges & Collections
+    Route::get('/collections/dashboard', [CollectionDashboardController::class, 'index'])->name('collections.dashboard');
+
+    // Pledges
+    Route::get('/pledges', [PledgeController::class, 'index'])->name('pledges.index');
+    Route::get('/pledges/create', [PledgeController::class, 'create'])->name('pledges.create');
+    Route::post('/pledges', [PledgeController::class, 'store'])->name('pledges.store');
+    Route::get('/pledges/{pledge}', [PledgeController::class, 'show'])->name('pledges.show');
+    Route::get('/pledges/{pledge}/edit', [PledgeController::class, 'edit'])->name('pledges.edit');
+    Route::put('/pledges/{pledge}', [PledgeController::class, 'update'])->name('pledges.update');
+    Route::delete('/pledges/{pledge}', [PledgeController::class, 'destroy'])->name('pledges.destroy');
+
+    // Collection Payments
+    Route::get('/collections', [CollectionPaymentController::class, 'index'])->name('collections.index');
+    Route::get('/collections/create', [CollectionPaymentController::class, 'create'])->name('collections.create');
+    Route::post('/collections', [CollectionPaymentController::class, 'store'])->name('collections.store');
+    Route::get('/collections/payer-obligations', [CollectionPaymentController::class, 'payerObligations'])->name('collections.payer-obligations');
+    Route::get('/collections/{payment}', [CollectionPaymentController::class, 'show'])->name('collections.show');
+    Route::post('/collections/{payment}/verify', [CollectionPaymentController::class, 'verify'])->name('collections.verify');
+    Route::post('/collections/{payment}/reject', [CollectionPaymentController::class, 'reject'])->name('collections.reject');
+    Route::post('/collections/{payment}/reverse', [CollectionPaymentController::class, 'reverse'])->name('collections.reverse');
+
+    // Monthly Committee Contributions
+    Route::get('/committee-contributions', [MonthlyContributionController::class, 'index'])->name('contributions.index');
+    Route::post('/committee-contributions', [MonthlyContributionController::class, 'store'])->name('contributions.store');
+    Route::post('/committee-contributions/bulk-generate', [MonthlyContributionController::class, 'bulkGenerate'])->name('contributions.bulk-generate');
+    Route::post('/committee-contributions/{contribution}/waive', [MonthlyContributionController::class, 'waive'])->name('contributions.waive');
+
+    // Receipts
+    Route::get('/receipts', [ReceiptController::class, 'index'])->name('receipts.index');
+    Route::get('/receipts/{receipt}', [ReceiptController::class, 'show'])->name('receipts.show');
+    Route::get('/receipts/{receipt}/print', [ReceiptController::class, 'print'])->name('receipts.print');
+    Route::get('/receipts/{receipt}/download', [ReceiptController::class, 'download'])->name('receipts.download');
+
+    // Collection Reports
+    Route::get('/collections-reports', [CollectionReportController::class, 'index'])->name('collections.reports.index');
+    Route::get('/collections-reports/event-summary', [CollectionReportController::class, 'eventSummary'])->name('collections.reports.event-summary');
+    Route::get('/collections-reports/outstanding-pledges', [CollectionReportController::class, 'outstandingPledges'])->name('collections.reports.outstanding-pledges');
+    Route::get('/collections-reports/committee-contributions', [CollectionReportController::class, 'committeeContributions'])->name('collections.reports.committee-contributions');
 
     /*
     |--------------------------------------------------------------------------

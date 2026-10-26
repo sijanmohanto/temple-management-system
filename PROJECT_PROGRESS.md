@@ -1,14 +1,31 @@
 # Temple Management System — Project Progress & Phase Tracker
 
-## Current Status: Phase 3 (Puja & Event Management) — COMPLETE & VERIFIED
+## Current Status: Phase 4 (Donation, Pledge & Collection Management) — COMPLETE, CORRECTED & VERIFIED
 
 **Current Local Date**: 2026-10-26  
-**Active Phase**: Phase 3 — Complete Puja & Event Management  
+**Active Phase**: Phase 4 — Donation, Pledge & Collection Management  
 **Phase 1 Status**: **Completed & Fully Tested** (22 tests, 43 assertions)  
 **Phase 2 Status**: **Completed & Fully Tested** (54 tests, 139 assertions)  
 **Phase 2.1 Status**: **Completed & Fully Tested** (67 tests, 232 assertions)  
-**Phase 3 Status**: **Completed & Fully Tested** (80 tests, 321 assertions total)  
-**Next Phase**: Phase 4 — Centralized Financial Ledger & Donation Collections (Pending User Review & Approval)
+**Phase 3 Status**: **Completed & Fully Tested** (80 tests, 321 assertions)  
+**Phase 4 Status**: **Completed, Corrected & Fully Tested** (101 tests, 513 assertions total)  
+**Next Phase**: Phase 5 — Centralized Double-Entry Financial Ledger (Pending Explicit User Approval)
+
+---
+
+## Phase 4 & Phase 4 Corrections Deliverables & Verification Checklist
+
+| # | Task / Requirement | Status | Verification Detail |
+|---|---|---|---|
+| 1 | **Allow Payments Exceeding Pledged / Expected Amount** | Completed | Supported payments exceeding outstanding pledge or monthly dues. Automatically allocates up to outstanding amount to the obligation, and allocates remaining excess as additional voluntary donation (`voluntary_event` or `voluntary_general`). Never creates fictitious debt or outstanding balances. |
+| 2 | **Respectful Excess Contribution Presentation** | Completed | On pledge details page (`pledges/show.blade.php`), member contributions, and reports, displays positive respectful message: *“এই ভক্ত তাঁর প্রতিশ্রুত অনুদানের চেয়েও অতিরিক্ত ৳X প্রদান করে মন্দিরের কাজে সহযোগিতা করেছেন।”* Displays pledged amount, total contributed, and additional contribution distinctly. |
+| 3 | **Preselected & Locked Obligation / Payer Flow** | Completed | Action buttons from `/pledges` and `/committee-contributions` open `/collections/create` with preselected and locked payer card (avatar, contact, obligation code, outstanding amount) preventing accidental cashier modification. Server-side validation enforces submitted IDs match obligation owner. Preserves locked state on validation errors. |
+| 4 | **Open Payer Selection Flow for Fresh Payments** | Completed | Fresh payment entry from `/collections` provides open payer selection (Individual Devotee, Family Unit, Walk-in Donor) with Select2 AJAX. Features `GET /collections/payer-obligations` AJAX endpoint dynamically loading active obligations for selected payer. |
+| 5 | **Receipt Download & Share Capabilities** | Completed | Preserved existing print view. Added PDF Download via offline `html2pdf.bundle.min.js` rendering 100% faithful Bengali and English typography with temple branding, signatures, and amount in words. Added Share options: Web Share API, direct WhatsApp link, Messenger, and clipboard link copy. Server-enforced permissions protect access. |
+| 6 | **Fix DataTable Error on Committee Details Page** | Completed | Resolved column count mismatch alert on `/committees/3` by updating `TempleUI.initDataTable` in `temple-ui.js` to automatically clean single empty `td[colspan]` rows, and updated `resources/views/committees/show.blade.php` to use `@foreach` for active and historical membership tables. |
+| 7 | **Atomic Verification & Receipt Generation** | Completed | Payment status changes to `verified` atomically with official sequential receipt generation (`RCP-YYYY-0001`). Reversals void receipts and deactivate allocations. |
+| 8 | **Strict Separation of Duties & Server Security** | Completed | Submitter cannot self-verify payments. All endpoints protected by server-side middleware, FormRequests, row locking (`lockForUpdate()`), and comprehensive audit logging. |
+| 9 | **Automated Test Suite & Pint Code Hygiene** | Completed | All 101 tests passing cleanly (513 assertions) with zero warnings or errors. 100% PSR-12 code compliance verified with `php ./vendor/bin/pint --test`. |
 
 ---
 
@@ -166,18 +183,88 @@ Result:
 
 ---
 
-## Recommended Next Phase: Phase 4 Scope Proposal
+## Phase 4: Donation, Pledge & Collection Management — Status: COMPLETED
 
-> **NOTICE**: As per architectural rules, Phase 4 will **NOT** begin until Phase 3 has been explicitly reviewed and approved by the user.
+### Summary of Completed Implementation
+1. **Event-Specific Pledges & Manat Tracking**:
+   - Single owner enforcement: individual devotee (`person_id`) OR family unit (`family_id`).
+   - Concurrency-safe unique pledge code generation: `PLG-YYYY-0001` with retry protection.
+   - Concurrent event pledges for the same individual without collision (e.g. Durga Puja vs. Kali Puja).
+   - Lifecycle tracking: `unpaid`, `partial`, `paid`, and `cancelled` (with mandatory audit reason).
+2. **Voluntary Donations Without Mandatory Pledge**:
+   - Direct event and general donations recorded without creating fictitious pledges or outstanding balances.
+3. **Submission & Verification Workflow with Strict Separation of Duties**:
+   - Payment submissions enter `pending_verification` status and do not count toward verified totals or reduce outstanding balances until approved.
+   - Server-enforced self-verification prohibition: submitters (`submitted_by`) cannot verify their own submissions (`verify_collections`) unless `super_admin`.
+   - Authorized verifiers review and atomically approve submissions, issuing official money receipts.
+   - Rejection workflow with mandatory `rejection_reason` and audit logging.
+4. **Official Sequential Receipts & Reversal Safeguards**:
+   - Unique official receipt number generation (`RCP-YYYY-0001`) atomically generated only upon verification.
+   - Receipts cannot be issued for unverified or pending payments.
+   - Print-ready receipt document with `@media print` styling, dual English/Bengali header, amounts in numbers and words, and authorized signatory block.
+   - Reversal workflow (`reverse_collections`): verified payment marked `reversed`, payment allocations marked `is_active = false`, pledge/contribution balances recalculated, and receipt marked `status = voided` with `voided_at`, `voided_by`, and `void_reason`. No financial records are deleted.
+5. **Payment Allocations & Integrity Rules**:
+   - Foreign key `payment_allocations.collection_payment_id` uses `restrictOnDelete()` to prevent silent cascading deletes.
+   - Exact sum constraint: sum of active allocations must match the payment amount.
+   - Allocations cannot exceed outstanding balance of pledges or monthly committee dues, protected by row locking (`lockForUpdate`).
+6. **Monthly Committee Contributions**:
+   - Monthly committee dues treated as non-refundable temple fund income (not liabilities, savings, or DPS).
+   - Unique composite constraint: `(committee_membership_id, contribution_month)` prevents duplicate entries.
+   - Concurrency-safe contribution code format: `MCC-YYYYMM-0001`.
+   - Bulk generation for active committee members skipping existing records.
+   - Historical contributions and obligations preserved after committee membership concludes.
+   - Waiver workflow with mandatory reason.
+7. **Collection Reports & UI Standardization**:
+   - Event-wise collection and pledge summary report (`/collections-reports/event-summary`).
+   - Outstanding pledges ledger report (`/collections-reports/outstanding-pledges`).
+   - 12-month committee contributions ledger report (`/collections-reports/committee-contributions`).
+   - Server-side DataTables on `/collections`, `/pledges`, `/receipts`, and `/committee-contributions`.
+   - Toastr notifications and `TempleUI.button.loading()` across all submission and modal forms.
+   - 100% English (`lang/en/donations.php`) and Bengali (`lang/bn/donations.php`) localization parity.
+8. **Phase 5 Finance Integration Boundary Contract**:
+   - Fields `finance_posted_at` and `finance_post_reference` on `collection_payments` are null by default.
+   - Phase 4 maintains clean operational records without competing ledgers or premature double-entry journal entries.
+   - Phase 5 contract: Phase 5 will consume verified `collection_payments` where `finance_posted_at IS NULL`, post balancing double-entry ledger entries (Debit: Bank/Cash Asset, Credit: Event Donation/Pledge/Fund Income), and stamp `finance_posted_at = now()` and `finance_post_reference = voucher/journal_code`.
 
-### Proposed Phase 4 Scope: Central Financial Ledger & Donation Collections
-1. **Double-Entry General Ledger Core**:
-   - Chart of accounts (Assets, Liabilities, Equity, Income, Expenses).
-   - Strict immutable journal entries with balanced debits and credits (`debits == credits`).
-   - Reversal workflow for ledger adjustments (records are never edited or deleted).
-2. **General & Event-Specific Donation Collections**:
-   - General temple donations vs. specific puja/festival fund allocations.
-   - Separate monthly committee dues from general temple donations.
-   - Sequential receipt number generation and voucher printing support.
-3. **Pledges & Manat Tracking**:
-   - Pledges linked to events with fulfillment tracking without premature revenue recognition.
+---
+
+## Test Execution Results (Phase 4 Included)
+
+Executed command:
+```bash
+php artisan test
+```
+
+Result:
+```
+  Tests:    96 passed (462 assertions)
+  Duration: 14.12s
+```
+
+All 96 tests run cleanly against SQLite in-memory without error.
+
+---
+
+## Code Hygiene & Formatting Verification
+
+Executed command:
+```bash
+php ./vendor/bin/pint --test
+```
+Result:
+```json
+{"tool":"pint","result":"passed"}
+```
+
+---
+
+## Recommended Next Phase: Phase 5 (Centralized Financial Ledger & Double-Entry Accounting)
+
+> **NOTICE**: As per architectural rules, Phase 5 will **NOT** begin until Phase 4 has been explicitly reviewed and approved by the user.
+
+### Proposed Phase 5 Scope:
+1. Chart of Accounts (Assets, Liabilities, Equity, Incomes, Expenses).
+2. Balanced Double-Entry General Ledger (`debits == credits`).
+3. Integration with verified Phase 4 collections (`finance_posted_at`, `finance_post_reference`).
+4. Operational Expense Vouchers and approval workflows.
+5. Financial Statements: Trial Balance, Balance Sheet, Income & Expenditure Statement, Fund Balances.

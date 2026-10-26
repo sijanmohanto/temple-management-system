@@ -50,18 +50,51 @@
             </a>
         @endif
 
-        <!-- Module 4 & 5: Central Finance -->
-        <div class="sidebar-heading">{{ __('nav.finance') }}</div>
+        <!-- Module 4 & 5: Collections, Pledges & Finance -->
+        <div class="sidebar-heading">{{ __('donations.collections_management') }}</div>
+        @if(Auth::user()->hasPermission('view_collections'))
+            <a href="{{ route('collections.dashboard') }}" class="sidebar-link {{ request()->routeIs('collections.dashboard') ? 'active' : '' }}">
+                <i class="bi bi-speedometer2"></i>
+                <span>{{ __('donations.dashboard') }}</span>
+            </a>
+            <a href="{{ route('collections.index') }}" class="sidebar-link {{ request()->routeIs('collections.index') || request()->routeIs('collections.show') || request()->routeIs('collections.create') ? 'active' : '' }}">
+                <i class="bi bi-cash-coin"></i>
+                <span>{{ __('donations.payments') }}</span>
+            </a>
+        @endif
+
+        @if(Auth::user()->hasPermission('view_pledges'))
+            <a href="{{ route('pledges.index') }}" class="sidebar-link {{ request()->routeIs('pledges.*') ? 'active' : '' }}">
+                <i class="bi bi-journal-bookmark"></i>
+                <span>{{ __('donations.pledges') }}</span>
+            </a>
+        @endif
+
+        @if(Auth::user()->hasPermission('view_committee_contributions'))
+            <a href="{{ route('contributions.index') }}" class="sidebar-link {{ request()->routeIs('contributions.*') ? 'active' : '' }}">
+                <i class="bi bi-calendar-check"></i>
+                <span>{{ __('donations.committee_contributions') }}</span>
+            </a>
+        @endif
+
+        @if(Auth::user()->hasPermission('view_receipts'))
+            <a href="{{ route('receipts.index') }}" class="sidebar-link {{ request()->routeIs('receipts.*') ? 'active' : '' }}">
+                <i class="bi bi-receipt"></i>
+                <span>{{ __('donations.receipts') }}</span>
+            </a>
+        @endif
+
+        @if(Auth::user()->hasPermission('view_collection_reports'))
+            <a href="{{ route('collections.reports.index') }}" class="sidebar-link {{ request()->routeIs('collections.reports.*') ? 'active' : '' }}">
+                <i class="bi bi-file-earmark-bar-graph"></i>
+                <span>{{ __('donations.reports') }}</span>
+            </a>
+        @endif
+
         @if(Auth::user()->hasAnyRole(['super_admin', 'treasurer']))
             <a href="{{ route('finance.overview') }}" class="sidebar-link {{ request()->routeIs('finance.*') ? 'active' : '' }}">
                 <i class="bi bi-cash-stack"></i>
-                <span>{{ __('nav.ledger') }}</span>
-            </a>
-        @else
-            <a href="#ledgerPreview" class="sidebar-link disabled-future" title="{{ __('common.under_construction') }}">
-                <i class="bi bi-cash-coin"></i>
-                <span>{{ __('nav.donations') }}</span>
-                <span class="badge bg-secondary ms-auto" style="font-size: 0.65rem;">P2</span>
+                <span>{{ __('nav.ledger') }} (P5)</span>
             </a>
         @endif
 

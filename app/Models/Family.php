@@ -41,6 +41,22 @@ class Family extends Model
     }
 
     /**
+     * Pledges made by this family.
+     */
+    public function pledges(): HasMany
+    {
+        return $this->hasMany(Pledge::class);
+    }
+
+    /**
+     * Payments made by this family.
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(CollectionPayment::class, 'payer_family_id');
+    }
+
+    /**
      * Determine if family is active.
      */
     public function isActive(): bool
