@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CommitteeMembership extends Model
 {
@@ -44,6 +45,14 @@ class CommitteeMembership extends Model
     public function person(): BelongsTo
     {
         return $this->belongsTo(Person::class);
+    }
+
+    /**
+     * Monthly contributions for this membership tenure.
+     */
+    public function monthlyContributions(): HasMany
+    {
+        return $this->hasMany(MonthlyCommitteeContribution::class, 'committee_membership_id');
     }
 
     /**

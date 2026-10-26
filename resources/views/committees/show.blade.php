@@ -95,7 +95,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($activeMemberships as $membership)
+                            @foreach($activeMemberships as $membership)
                                 <tr>
                                     <td class="ps-4">
                                         <a href="{{ route('people.show', $membership->person) }}" class="fw-bold text-dark text-decoration-none">
@@ -226,13 +226,7 @@
                                         @endif
                                     </td>
                                 </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">
-                                        {{ __('committees.no_active_members') }}
-                                    </td>
-                                </tr>
-                            @endforelse
+                            @endforeach
                         </tbody>
                     </table>
                 </div>
@@ -258,7 +252,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($historicalMemberships as $past)
+                            @foreach($historicalMemberships as $past)
                                 <tr>
                                     <td class="ps-4">
                                         <a href="{{ route('people.show', $past->person) }}" class="fw-semibold text-dark text-decoration-none">
@@ -280,13 +274,7 @@
                                         </a>
                                     </td>
                                 </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="text-center py-4 text-muted">
-                                        {{ __('committees.no_historical_members') }}
-                                    </td>
-                                </tr>
-                            @endforelse
+                            @endforeach
                         </tbody>
                     </table>
                 </div>

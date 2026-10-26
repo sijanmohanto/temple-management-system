@@ -159,6 +159,12 @@
             return $table.DataTable();
         }
 
+        // Clean single colspan empty row if present to prevent DataTables column count mismatch
+        var $rows = $table.find('tbody tr');
+        if ($rows.length === 1 && $rows.first().find('td[colspan]').length) {
+            $table.find('tbody').empty();
+        }
+
         var baseOptions = {
             responsive: true,
             pageLength: 25,

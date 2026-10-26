@@ -69,6 +69,22 @@ class Person extends Model
     }
 
     /**
+     * Pledges made by this person.
+     */
+    public function pledges(): HasMany
+    {
+        return $this->hasMany(Pledge::class);
+    }
+
+    /**
+     * Collection payments made by this person.
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(CollectionPayment::class, 'payer_person_id');
+    }
+
+    /**
      * Committee memberships (both active and historical terms).
      */
     public function committeeMemberships(): HasMany

@@ -169,4 +169,27 @@ class CommitteeManagementTest extends TestCase
         $this->assertEquals(2, $person->committeeMemberships()->count());
         $this->assertEquals(1, Person::where('name_en', 'Subrata Majumder')->count());
     }
+
+    public function test_committee_show_renders_cleanly_with_zero_historical_members(): void
+    {
+        $committee = Committee::factory()->create([
+            'name_en' => 'Executive Committee 2026-2028',
+            'status' => 'active',
+        ]);
+
+        $person = Person::factory()->create(['name_en' => 'Active Member']);
+        CommitteeMembership::factory()->create([
+            'committee_id' => $committee->id,
+            'person_id' => $person->id,
+            'status' => 'active',
+        ]);
+
+        // Historical members count is 0
+        $this->assertEquals(0, $committee->pastMemberships()->count());
+
+        $response = $this->actingAs($this->superAdmin)->get(route('committees.show', $committee));
+        $response->assertStatus(200);
+        $response->assertSee('Active Member');
+        $response->assertSee('historicalMembersTable');
+    }
 }
