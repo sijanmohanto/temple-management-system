@@ -1,44 +1,32 @@
 # Temple Management System — Project Progress & Phase Tracker
 
-## Current Status: Phase 2.1 (UI Standardization) — COMPLETE & VERIFIED
+## Current Status: Phase 3 (Puja & Event Management) — COMPLETE & VERIFIED
 
 **Current Local Date**: 2026-10-26  
-**Active Phase**: Phase 2.1 — UI Standardization (Enhancement to Phase 1 & Phase 2)  
+**Active Phase**: Phase 3 — Complete Puja & Event Management  
 **Phase 1 Status**: **Completed & Fully Tested** (22 tests, 43 assertions)  
-**Phase 2 Status**: **Completed & Fully Tested** (54 tests, 139 assertions total)  
-**Phase 2.1 Status**: **Completed & Fully Tested** (67 tests, 232 assertions total)  
-**Phase 3 Status**: **Pending User Review & Approval** (Do not start until authorized)
+**Phase 2 Status**: **Completed & Fully Tested** (54 tests, 139 assertions)  
+**Phase 2.1 Status**: **Completed & Fully Tested** (67 tests, 232 assertions)  
+**Phase 3 Status**: **Completed & Fully Tested** (80 tests, 321 assertions total)  
+**Next Phase**: Phase 4 — Centralized Financial Ledger & Donation Collections (Pending User Review & Approval)
 
 ---
 
-## Phase 2.1 UI Standardization Deliverables & Verification Checklist
+## Phase 3 Puja & Event Management Deliverables & Verification Checklist
 
 | # | Task / Requirement | Status | Verification Detail |
 |---|---|---|---|
-| 1 | **DataTables for Report & Listings** | Completed | Integrated jQuery DataTables with Bootstrap 5 styling and responsive extensions. Server-side processing implemented for People and Families with `deferLoading` for instantaneous initial page load, and client DataTables for Committee members and Audit logs. Preserved server-side permissions, eager loading, and filtering. |
-| 2 | **Global Toastr Notifications** | Completed | Toastr bundled offline in `public/assets/vendor/toastr/`. Centralized via `temple-ui.js` and `window.TempleConfig`. Replaced redundant Bootstrap flash alert banners across views with toastr notifications. Preserved field-level form validation styling (`is-invalid` / `invalid-feedback`) for accessibility. |
-| 3 | **Button Loading Indicators** | Completed | Reusable button spinner and localized loading label (`__('common.loading')` / "লোড হচ্ছে...") via `TempleUI.button.loading()` and automatic form submission handler. Disables buttons, prevents double submission, and auto-restores on AJAX error. |
-| 4 | **Select2 Searchable Dropdowns** | Completed | Bundled Select2 offline with Bootstrap 5 theme (`public/assets/vendor/select2/`). Applied across People family selection, Committee member assignment, Family primary contact and member assignments, and index filters. Modal support via `dropdownParent`. Secure AJAX endpoints (`/people/search`, `/families/search`) with server permissions. |
-| 5 | **Centralized UI Architecture** | Completed | Unified helper `public/assets/js/temple-ui.js` and CSS variables in `public/assets/css/temple-theme.css`. Automatic initialization on `$(document).ready` and modal show events. Global CSRF token injection and AJAX error interceptors (422, 403, 419, 500). |
-| 6 | **Bilingual Localization Parity** | Completed | Created `lang/en/datatables.php`, `lang/bn/datatables.php`, `lang/en/select2.php`, `lang/bn/select2.php`, and extended `common.php` with loading and toastr error keys in both English and Bengali. |
-| 7 | **Automated Testing & Code Hygiene** | Completed | Created `tests/Feature/UiStandardizationTest.php`. 64 tests (204 assertions) passing cleanly. 100% PSR-12 formatting compliance verified with `php ./vendor/bin/pint --test`. |
-
----
-
-## Phase 2 Deliverables & Verification Checklist
-
-| # | Task / Requirement | Status | Verification Detail |
-|---|---|---|---|
-| 1 | **People Management Core** | Completed | Created `people` schema with unique sequential code generator (`DEV-XXXXX`), demographic, lineage (gotra, parents, spouse), contact, address, status, notes. Full CRUD, search, filter, pagination, safe toggle status. |
-| 2 | **Duplicate Profile Detection** | Completed | Built `DuplicateDetectionService` detecting duplicate candidate profiles on phone, email, and name + DOB / father name combinations without auto-merging records. Real-time AJAX and form-level warning banner with override confirmation. |
-| 3 | **Family Unit Management** | Completed | Created `families` schema with unique code generator (`FAM-XXXX`), household details, primary contact link, and relationship mapping. Prevented unsafe deletion of families when active members are assigned. |
-| 4 | **Committee & Term Management** | Completed | Created `committees` and `committee_memberships` supporting configurable committee codes, bilingual names, terms, start dates, and optional conclusion dates. Multi-term support preserving historical records without record deletion. |
-| 5 | **Decoupled Identity & No Duplicate Person** | Completed | Assigning committee members and family members selects exclusively from existing people in directory. Adding committee members never creates duplicate person profiles. |
-| 6 | **Simultaneous Classifications** | Completed | Implemented `classifications` (`resident`, `donor`, `committee_member`, `volunteer`) with `person_classifications` pivot. Allows multiple classifications per person simultaneously with unique assignment constraints. |
-| 7 | **Bilingual Localization (EN & BN)** | Completed | Complete language parity in `lang/en/` and `lang/bn/` across `people.php`, `families.php`, `committees.php`, `classifications.php`, and `dashboard.php`. |
-| 8 | **Security & Authorization** | Completed | Reused Phase 1 session authentication with server-side permission checks (`permission:view_people`, `permission:manage_people`, `permission:manage_committee`), `HasMiddleware` on controllers, Form Requests, and confidential private notes masking. |
-| 9 | **Audit Logging** | Completed | Integrated `AuditLogger::log()` across person creation, update, deactivation, family member assignments, and committee tenure conclusions. |
-| 10 | **Automated Testing Suite** | Completed | 54 tests (139 assertions) passing cleanly in SQLite in-memory and MySQL migrations verified. Pint code formatting clean. |
+| 1 | **Event Data Model & Migrations** | Completed | Created `event_categories`, `events`, and `event_lifecycle_logs` tables. Sequential per-year code format `EVT-YYYY-0001` with thread-safe `lockForUpdate()`. Independent start/end dates and collection window dates. Strict foreign keys and soft deletes. |
+| 2 | **Configurable Event Categories** | Completed | Full CRUD and management for religious and community event categories (Durga Puja, Lakshmi Puja, Kali Puja, Saraswati Puja, Shivaratri, etc.) with bilingual names, slugs, and descriptions. Safe deletion protection (`canBeSafelyDeleted()`) preventing deletion of system or referenced categories. |
+| 3 | **Multiple Concurrent Events** | Completed | Database and model architecture explicitly supports arbitrary numbers of overlapping and concurrent active events across different venues and liturgical years. |
+| 4 | **Independent Collection Periods** | Completed | Flexible collection start and end dates allowing donation/pledge collection to start in preceding calendar years (e.g., event year 2027 starting collections in Dec 2026) or continue post-event. |
+| 5 | **Status Transition State Machine** | Completed | Structured lifecycle states: `draft` -> `upcoming` -> `active` -> `closing` -> `closed`. Atomic transition enforcement in `EventLifecycleService` with structured logging. Direct transition to `closed` is prohibited; formal closing workflow is mandatory. |
+| 6 | **Two Distinct Closing Modes** | Completed | **Mode A (`close_and_lock`)**: Complete immutability, blocks standard and post-closing edits, requires privileged reopening.<br>**Mode B (`close_with_authorized_adjustments`)**: Marked closed, blocks ordinary CRUD, permits authorized non-structural metadata adjustments (venue, descriptions) with mandatory reason and diff logging. |
+| 7 | **Privileged Reopening Workflow** | Completed | Reopening requires permission (`reopen_events`), target status (`active` or `upcoming`), and mandatory justification. Reopening permanently preserves prior closing mode, reason, and closing timestamp in `event_lifecycle_logs` diff. |
+| 8 | **Audit Trail & Lifecycle History** | Completed | Comprehensive logging of all transitions, closures, reopenings, and adjustments into `event_lifecycle_logs` and centralized `AuditLogger`. Formatted diff inspection collapse for adjustments. |
+| 9 | **UI Standardization & Integration** | Completed | Implemented Event Dashboard, DataTables listing with server-side processing (`deferLoading`), Select2 filters (year, category, status), detailed show view with status banners, and modal dialogs with button loading indicators. |
+| 10 | **Bilingual Localization (EN & BN)** | Completed | Full 100% parity across `lang/en/events.php` and `lang/bn/events.php` for all labels, statuses, closing modes, modal notices, and feedback messages. |
+| 11 | **Automated Test Suite & Code Hygiene** | Completed | Added `tests/Feature/EventManagementTest.php`. 80 tests passing (321 assertions). 100% PSR-12 compliance verified via `php ./vendor/bin/pint --test`. |
 
 ---
 
@@ -88,6 +76,21 @@ Result:
   ✓ guest is redirected to login from dashboard
   ✓ authenticated user can view dashboard
   ✓ user can view and update profile
+
+   PASS  Tests\Feature\EventManagementTest
+  ✓ guest cannot access events dashboard or list
+  ✓ user without permission cannot access events
+  ✓ authorized user can view events dashboard and list
+  ✓ authorized user can create event with independent collection period
+  ✓ event code increments per year independently
+  ✓ system supports multiple concurrent active events
+  ✓ event lifecycle transitions
+  ✓ closing mode a close and lock blocks ordinary and post closing modifications
+  ✓ closing mode b permits authorized adjustments with reason and diff logging
+  ✓ privileged reopening preserves historical closing details
+  ✓ draft event can be deleted but non draft cannot
+  ✓ event category management and safe deletion
+  ✓ datatable server side json response for events
 
    PASS  Tests\Feature\ExampleTest
   ✓ the application returns a successful response
@@ -144,8 +147,8 @@ Result:
   ✓ datatables and select2 localization parity
   ✓ ui assets are present
 
-  Tests:    67 passed (232 assertions)
-  Duration: 7.81s
+  Tests:    80 passed (321 assertions)
+  Duration: 9.58s
 ```
 
 ---
@@ -163,15 +166,18 @@ Result:
 
 ---
 
-## Recommended Next Phase: Phase 3 Scope Proposal
+## Recommended Next Phase: Phase 4 Scope Proposal
 
-> **NOTICE**: As per architectural rules, Phase 3 will **NOT** begin until Phase 2 has been explicitly reviewed and approved by the user.
+> **NOTICE**: As per architectural rules, Phase 4 will **NOT** begin until Phase 3 has been explicitly reviewed and approved by the user.
 
-### Proposed Phase 3 Scope: Events, Festivals & Puja Editions
-1. **Puja & Festival Management**:
-   - Master religious calendar and recurring puja definitions.
-   - Specific puja editions with event dates, tithi, budgets, and coordinators.
-2. **Puja Editions Schedules & Daily Ritual Timings**:
-   - Aarti, pushpanjali, bhog distribution, and cultural schedule tracking.
-3. **Volunteer & Sevak Shift Assignments**:
-   - Assign existing devotees/volunteers to puja roles without duplicating profiles.
+### Proposed Phase 4 Scope: Central Financial Ledger & Donation Collections
+1. **Double-Entry General Ledger Core**:
+   - Chart of accounts (Assets, Liabilities, Equity, Income, Expenses).
+   - Strict immutable journal entries with balanced debits and credits (`debits == credits`).
+   - Reversal workflow for ledger adjustments (records are never edited or deleted).
+2. **General & Event-Specific Donation Collections**:
+   - General temple donations vs. specific puja/festival fund allocations.
+   - Separate monthly committee dues from general temple donations.
+   - Sequential receipt number generation and voucher printing support.
+3. **Pledges & Manat Tracking**:
+   - Pledges linked to events with fulfillment tracking without premature revenue recognition.

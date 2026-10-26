@@ -91,6 +91,46 @@ class RoleAndPermissionSeeder extends Seeder
                 'description_en' => 'Create and configure puja editions, schedules, budgets, and volunteer assignments',
                 'description_bn' => 'পূজার আসর, সময়সূচি, বাজেট ও সেবক দায়িত্ব বণ্টন পরিচালনা',
             ],
+            [
+                'slug' => 'manage_event_categories',
+                'module' => 'events',
+                'name_en' => 'Manage Event Categories',
+                'name_bn' => 'পূজা ও উৎসবের ধরন পরিচালনা',
+                'description_en' => 'Create and configure religious puja types and community event categories',
+                'description_bn' => 'পূজার প্রকারভেদ ও অনুষ্ঠানের ক্যাটাগরি তৈরি ও পরিচালনা করা',
+            ],
+            [
+                'slug' => 'close_events',
+                'module' => 'events',
+                'name_en' => 'Close Events',
+                'name_bn' => 'অনুষ্ঠান সমাপ্তকরণ',
+                'description_en' => 'Perform event closing workflow with Close & Lock or Authorized Adjustments mode',
+                'description_bn' => 'নির্দিষ্ট মোড নির্ধারণপূর্বক অনুষ্ঠান সমাপ্ত ও লক করা',
+            ],
+            [
+                'slug' => 'reopen_events',
+                'module' => 'events',
+                'name_en' => 'Reopen Closed Events',
+                'name_bn' => 'সমাপ্ত অনুষ্ঠান পুনরায় উন্মুক্তকরণ',
+                'description_en' => 'Privileged reopening of closed events with mandatory reason and audit record',
+                'description_bn' => 'কারণ লিপিবদ্ধকরণসহ সমাপ্ত অনুষ্ঠান পুনরায় চালু করা',
+            ],
+            [
+                'slug' => 'adjust_closed_events',
+                'module' => 'events',
+                'name_en' => 'Adjust Closed Events Metadata',
+                'name_bn' => 'সমাপ্ত অনুষ্ঠানের তথ্য সংশোধন',
+                'description_en' => 'Perform authorized post-closing metadata adjustments in Mode B with reason logging',
+                'description_bn' => 'অনুমোদন সাপেক্ষে সমাপ্ত অনুষ্ঠানের তথ্য সংশোধন ও অডিট ট্রেইল রাখা',
+            ],
+            [
+                'slug' => 'view_event_audit',
+                'module' => 'events',
+                'name_en' => 'View Event Lifecycle History',
+                'name_bn' => 'অনুষ্ঠানের ইতিহাস ও অডিট ট্রেইল দর্শন',
+                'description_en' => 'Inspect complete event lifecycle, closing and reopening audit history',
+                'description_bn' => 'অনুষ্ঠানের স্থিতি পরিবর্তন, সমাপ্তি ও খোলার বিস্তারিত বিবরণ দর্শন',
+            ],
 
             // Finance & Ledger
             [
@@ -190,7 +230,7 @@ class RoleAndPermissionSeeder extends Seeder
                 'is_system' => true,
                 'permissions' => [
                     'view_people', 'manage_people', 'manage_committee',
-                    'view_events', 'manage_events',
+                    'view_events', 'manage_events', 'manage_event_categories', 'close_events', 'reopen_events', 'adjust_closed_events', 'view_event_audit',
                     'record_donations', 'view_financial_reports',
                     'view_venues', 'manage_venue_bookings',
                     'view_daily_tasks', 'manage_daily_ops',
@@ -205,7 +245,7 @@ class RoleAndPermissionSeeder extends Seeder
                 'is_system' => true,
                 'permissions' => [
                     'view_people',
-                    'view_events',
+                    'view_events', 'view_event_audit',
                     'view_financial_reports', 'record_donations', 'verify_transactions', 'manage_expenses',
                     'view_venues', 'manage_venue_bookings',
                     'view_audit_logs',
@@ -220,7 +260,7 @@ class RoleAndPermissionSeeder extends Seeder
                 'is_system' => true,
                 'permissions' => [
                     'view_people',
-                    'view_events',
+                    'view_events', 'view_event_audit',
                     'view_financial_reports',
                     'view_venues',
                     'view_daily_tasks',
