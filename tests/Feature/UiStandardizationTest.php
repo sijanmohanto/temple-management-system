@@ -293,8 +293,18 @@ class UiStandardizationTest extends TestCase
         $this->assertIsArray($bnDatatables);
         $this->assertArrayHasKey('search', $enDatatables);
         $this->assertArrayHasKey('search', $bnDatatables);
+        $this->assertArrayHasKey('emptyTable', $enDatatables);
+        $this->assertArrayHasKey('emptyTable', $bnDatatables);
+        $this->assertArrayHasKey('info', $enDatatables);
+        $this->assertArrayHasKey('info', $bnDatatables);
         $this->assertArrayHasKey('zeroRecords', $enDatatables);
         $this->assertArrayHasKey('zeroRecords', $bnDatatables);
+        $this->assertArrayHasKey('paginate', $enDatatables);
+        $this->assertArrayHasKey('paginate', $bnDatatables);
+        $this->assertArrayHasKey('previous', $enDatatables['paginate']);
+        $this->assertArrayHasKey('previous', $bnDatatables['paginate']);
+        $this->assertArrayHasKey('next', $enDatatables['paginate']);
+        $this->assertArrayHasKey('next', $bnDatatables['paginate']);
 
         // Select2
         $enSelect2 = trans('select2', [], 'en');
@@ -326,5 +336,9 @@ class UiStandardizationTest extends TestCase
         $this->assertFileExists(public_path('assets/vendor/datatables/dataTables.responsive.min.js'));
         $this->assertFileExists(public_path('assets/vendor/datatables/responsive.bootstrap5.min.js'));
         $this->assertFileExists(public_path('assets/js/temple-ui.js'));
+
+        $templeUiJs = file_get_contents(public_path('assets/js/temple-ui.js'));
+        $this->assertStringContainsString('initSidebarScroll', $templeUiJs);
+        $this->assertStringContainsString('dataTable.defaults', $templeUiJs);
     }
 }

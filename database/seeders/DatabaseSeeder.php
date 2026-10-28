@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             ClassificationSeeder::class,
             Phase2DemoSeeder::class,
             EventCategorySeeder::class,
+            ChartOfAccountsSeeder::class,
         ]);
     }
 }

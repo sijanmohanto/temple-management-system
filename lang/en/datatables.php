@@ -22,5 +22,7 @@ return [
     'aria' => [
         'orderable' => 'Activate to sort column',
         'orderableReverse' => 'Activate to invert sorting',
+        'sortAscending' => ': activate to sort column ascending',
+        'sortDescending' => ': activate to sort column descending',
     ],
 ];

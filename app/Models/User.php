@@ -109,6 +109,24 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user has any of the given permissions.
+     */
+    public function hasAnyPermission(array $permissions): bool
+    {
+        if ($this->hasRole('super_admin')) {
+            return true;
+        }
+
+        foreach ($permissions as $permission) {
+            if ($this->hasPermission($permission)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Assign a role to user.
      */
     public function assignRole(Role|string $role): void

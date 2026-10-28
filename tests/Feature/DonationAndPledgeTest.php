@@ -974,8 +974,15 @@ class DonationAndPledgeTest extends TestCase
         $payment->refresh();
 
         $this->assertTrue($payment->isVerified());
-        // Must remain null for Phase 5 integration
-        $this->assertNull($payment->finance_posted_at);
-        $this->assertNull($payment->finance_post_reference);
+        // Phase 5 integration: verified payment is posted to finance ledger
+        $this->assertNotNull($payment->finance_posted_at);
+        $this->assertNotNull($payment->finance_post_reference);
+        $this->assertDatabaseHas('journal_entries', [
+            'journal_number' => $payment->finance_post_reference,
+            'source_type' => CollectionPayment::class,
+            'source_id' => $payment->id,
+            'total_debit' => 500.00,
+            'total_credit' => 500.00,
+        ]);
     }
 }

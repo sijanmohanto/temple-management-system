@@ -141,6 +141,16 @@ class Event extends Model
         return $this->name_en;
     }
 
+    public function getTitleEnAttribute(): string
+    {
+        return $this->name_en;
+    }
+
+    public function getTitleBnAttribute(): ?string
+    {
+        return $this->name_bn;
+    }
+
     /**
      * Localized description attribute.
      */

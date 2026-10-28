@@ -15,7 +15,8 @@ use Illuminate\Validation\ValidationException;
 class CollectionPaymentService
 {
     public function __construct(
-        protected ReceiptService $receiptService
+        protected ReceiptService $receiptService,
+        protected FinancePostingService $financePostingService
     ) {}
 
     /**
@@ -187,13 +188,19 @@ class CollectionPaymentService
 
             $code = CollectionPayment::generatePaymentCode($year);
 
+            $collectionType = match ($paymentData['collection_type'] ?? '') {
+                'pledge' => CollectionPayment::TYPE_EVENT_PLEDGE,
+                'voluntary' => ! empty($paymentData['event_id']) ? CollectionPayment::TYPE_EVENT_DONATION : CollectionPayment::TYPE_GENERAL_DONATION,
+                default => $paymentData['collection_type'] ?? CollectionPayment::TYPE_GENERAL_DONATION,
+            };
+
             $payment = CollectionPayment::create([
                 'payment_code' => $code,
                 'payer_person_id' => $paymentData['payer_person_id'] ?? null,
                 'payer_family_id' => $paymentData['payer_family_id'] ?? null,
                 'payer_name_override' => $paymentData['payer_name_override'] ?? null,
                 'payer_phone_override' => $paymentData['payer_phone_override'] ?? null,
-                'collection_type' => $paymentData['collection_type'],
+                'collection_type' => $collectionType,
                 'event_id' => $paymentData['event_id'] ?? null,
                 'payment_date' => $paymentDate->toDateString(),
                 'payment_year' => $year,
@@ -366,6 +373,9 @@ class CollectionPaymentService
                 }
             }
 
+            // Atomically post to finance ledger
+            $this->financePostingService->postCollectionPayment($lockedPayment, $verifierId);
+
             AuditLogger::log(
                 'collection_payment_verified',
                 "Verified payment {$lockedPayment->payment_code} for amount {$lockedPayment->amount}",
@@ -476,6 +486,11 @@ class CollectionPaymentService
                 if ($allocation->monthlyContribution) {
                     $allocation->monthlyContribution->recalculateStatus();
                 }
+            }
+
+            // Reverse finance journal if posted
+            if ($lockedPayment->isFinancePosted()) {
+                $this->financePostingService->reverseCollectionPayment($lockedPayment, $reverserId, $reason);
             }
 
             AuditLogger::log(
