@@ -106,8 +106,47 @@ A modular, secure enterprise web application designed for a Bengali Hindu temple
   - Outstanding pledges ledger report (`/collections-reports/outstanding-pledges`).
   - 12-month committee contributions ledger report (`/collections-reports/committee-contributions`).
   - 100% parity across `lang/en/donations.php` and `lang/bn/donations.php`.
-- **Phase 5 Finance Integration Boundary**:
-  - Fields `finance_posted_at` and `finance_post_reference` on `collection_payments` remain null by default, establishing a clean contract for Phase 5 double-entry general ledger posting.
+
+### 6. Phase 5: Finance & Accounting Management (Completed & Verified)
+- **Centralized Double-Entry Ledger (`financial_accounts`, `journal_entries`, `journal_lines`)**:
+  - Structured 5-type Chart of Accounts (`asset`, `liability`, `equity`, `income`, `expense`).
+  - Strict mathematical invariant: $\sum \text{Debit} = \sum \text{Credit}$ enforced on every entry. Unbalanced vouchers are rejected by the engine.
+  - Posted journal vouchers are immutable. Concurrency-safe numbering format: `JRN-YYYY-0001`.
+  - Idempotent posting boundary via unique index on `['source_type', 'source_id']`.
+- **Automated Collection Posting via `FinancePostingService`**:
+  - Atomically executed upon payment verification by an independent verifier.
+  - Credits corresponding revenue accounts (`4010` General Income, `4020` Event Income, `4030` Committee Income) and debits asset accounts (`1010` Cash in Hand, `1020` Bank Account, `1030` Mobile Financial Services).
+  - Excess donation allocations posted cleanly without fictitious pledges or balances.
+  - Payment reversal generates an inverse balanced journal voucher (`JRN-YYYY-0002`), preserving historical trail without record deletion.
+- **Expense Voucher Management (`expenses`)**:
+  - Complete requisition workflow: `pending_approval` -> `approved` / `rejected` / `reversed`.
+  - Requisition submission cannot be self-approved (separation of duties).
+  - Approved expenses automatically post double-entry vouchers: debits designated expense category account (`5010`-`5080`) and credits source asset account (`1010`-`1030`).
+  - Expense reversal creates an inverse balanced journal voucher.
+- **Fund Transfers Between Asset Accounts (`fund_transfers`)**:
+  - Direct balance transfers between Cash, Bank, and MFS accounts without touching income or expense accounts.
+  - Supports optional transfer fees/bank charges posted directly to Bank Charges expense account (`5070`).
+  - Strict validation preventing transfers between identical accounts or non-asset accounts.
+- **Miscellaneous Manual Income (`manual_incomes`)**:
+  - Direct recording of miscellaneous temple income (premises rental, scrap sales, interest) debiting deposit asset accounts and crediting miscellaneous income (`4040`).
+- **Controlled Opening Balance Setup**:
+  - Controlled entry of initial asset, liability, and equity account balances balancing strictly against `Opening Balance Equity` (`3020`).
+  - Duplicate opening balance prevention per account.
+  - Excluded from periodic income & expense calculations to prevent distortion.
+- **Executive Financial Dashboard**:
+  - Real-time balances of liquid assets (Cash, Bank, MFS).
+  - Monthly income vs. expense comparison, net cash flow, pending approvals, and unposted collections tracker.
+- **7 Core Financial Reports & Statements**:
+  1. **Trial Balance**: Debit and credit reconciliation with balanced status indicator.
+  2. **General Ledger**: Account-wise chronological transactions with running balance.
+  3. **Income & Expense Statement**: Operational revenue vs. operational expenditure and net surplus/deficit.
+  4. **Cash Book**: Daily cash transactions register.
+  5. **Bank & MFS Account Statement**: Filtered account register.
+  6. **Account Balances Summary**: High-level balance overview across all accounts.
+  7. **Event-wise Financial Summary**: Puja/event-specific revenue, direct expense, and net surplus calculation.
+- **Granular RBAC & 100% Bilingual Localization**:
+  - 16 granular permissions guarding every financial action.
+  - 100% parity across `lang/en/finance.php` and `lang/bn/finance.php`.
 
 ---
 
@@ -131,7 +170,7 @@ php artisan db:seed
 
 ### 2. Running Automated Tests
 
-Run the full automated test suite (96 tests, 462 assertions, executed with in-memory SQLite):
+Run the full automated test suite (119 tests, 658 assertions, executed with in-memory SQLite):
 ```bash
 php artisan test
 ```

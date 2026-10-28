@@ -91,11 +91,65 @@
             </a>
         @endif
 
-        @if(Auth::user()->hasAnyRole(['super_admin', 'treasurer']))
-            <a href="{{ route('finance.overview') }}" class="sidebar-link {{ request()->routeIs('finance.*') ? 'active' : '' }}">
-                <i class="bi bi-cash-stack"></i>
-                <span>{{ __('nav.ledger') }} (P5)</span>
-            </a>
+        <!-- Module 6: Finance & Accounting (Phase 5) -->
+        @if(Auth::user()->hasAnyPermission(['view_finance_dashboard', 'view_accounts', 'view_journals', 'view_expenses', 'view_income', 'view_transfers', 'view_financial_reports']))
+            <div class="sidebar-heading">{{ __('finance.finance_and_accounting') }}</div>
+            
+            @if(Auth::user()->hasPermission('view_finance_dashboard'))
+                <a href="{{ route('finance.dashboard') }}" class="sidebar-link {{ request()->routeIs('finance.dashboard') ? 'active' : '' }}">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>{{ __('finance.finance_dashboard') }}</span>
+                </a>
+            @endif
+
+            @if(Auth::user()->hasPermission('view_accounts'))
+                <a href="{{ route('finance.accounts.index') }}" class="sidebar-link {{ request()->routeIs('finance.accounts.*') ? 'active' : '' }}">
+                    <i class="bi bi-diagram-3"></i>
+                    <span>{{ __('finance.chart_of_accounts') }}</span>
+                </a>
+            @endif
+
+            @if(Auth::user()->hasPermission('view_journals'))
+                <a href="{{ route('finance.journals.index') }}" class="sidebar-link {{ request()->routeIs('finance.journals.*') ? 'active' : '' }}">
+                    <i class="bi bi-journal-text"></i>
+                    <span>{{ __('finance.journal_entries') }}</span>
+                </a>
+            @endif
+
+            @if(Auth::user()->hasPermission('view_expenses'))
+                <a href="{{ route('finance.expenses.index') }}" class="sidebar-link {{ request()->routeIs('finance.expenses.*') ? 'active' : '' }}">
+                    <i class="bi bi-receipt-cutoff"></i>
+                    <span>{{ __('finance.expenses') }}</span>
+                </a>
+            @endif
+
+            @if(Auth::user()->hasPermission('view_transfers'))
+                <a href="{{ route('finance.transfers.index') }}" class="sidebar-link {{ request()->routeIs('finance.transfers.*') ? 'active' : '' }}">
+                    <i class="bi bi-arrow-left-right"></i>
+                    <span>{{ __('finance.fund_transfers') }}</span>
+                </a>
+            @endif
+
+            @if(Auth::user()->hasPermission('view_income'))
+                <a href="{{ route('finance.income.index') }}" class="sidebar-link {{ request()->routeIs('finance.income.*') ? 'active' : '' }}">
+                    <i class="bi bi-cash-coin"></i>
+                    <span>{{ __('finance.misc_income') }}</span>
+                </a>
+            @endif
+
+            @if(Auth::user()->hasPermission('manage_opening_balances'))
+                <a href="{{ route('finance.opening-balances.index') }}" class="sidebar-link {{ request()->routeIs('finance.opening-balances.*') ? 'active' : '' }}">
+                    <i class="bi bi-safe"></i>
+                    <span>{{ __('finance.opening_balances') }}</span>
+                </a>
+            @endif
+
+            @if(Auth::user()->hasPermission('view_financial_reports'))
+                <a href="{{ route('finance.reports.trial-balance') }}" class="sidebar-link {{ request()->routeIs('finance.reports.*') ? 'active' : '' }}">
+                    <i class="bi bi-file-earmark-spreadsheet"></i>
+                    <span>{{ __('finance.financial_reports') }}</span>
+                </a>
+            @endif
         @endif
 
         <!-- Module 7: Venues & Hall Bookings -->
@@ -136,7 +190,7 @@
             <span class="badge bg-success">{{ __('common.status_active') }}</span>
         </div>
         <div class="mt-1" style="font-size: 0.75rem;">
-            v1.1 (Phase 2 People & Committees)
+            v1.5 (Phase 5 Finance & Accounts)
         </div>
     </div>
 </aside>

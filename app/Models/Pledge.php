@@ -22,6 +22,8 @@ class Pledge extends Model
 
     public const STATUS_CANCELLED = 'cancelled';
 
+    public const STATUS_ACTIVE = self::STATUS_UNPAID;
+
     protected $fillable = [
         'pledge_code',
         'event_id',
@@ -29,7 +31,9 @@ class Pledge extends Model
         'family_id',
         'pledge_year',
         'pledged_amount',
+        'total_amount',
         'pledged_on',
+        'pledge_date',
         'purpose',
         'notes',
         'status',
@@ -39,6 +43,26 @@ class Pledge extends Model
         'cancelled_at',
         'cancellation_reason',
     ];
+
+    public function getTotalAmountAttribute(): float
+    {
+        return (float) ($this->attributes['pledged_amount'] ?? 0.0);
+    }
+
+    public function setTotalAmountAttribute($value): void
+    {
+        $this->attributes['pledged_amount'] = $value;
+    }
+
+    public function getPledgeDateAttribute(): ?string
+    {
+        return $this->attributes['pledged_on'] ?? null;
+    }
+
+    public function setPledgeDateAttribute($value): void
+    {
+        $this->attributes['pledged_on'] = $value;
+    }
 
     protected function casts(): array
     {

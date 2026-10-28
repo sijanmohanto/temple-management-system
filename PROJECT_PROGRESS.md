@@ -1,15 +1,36 @@
 # Temple Management System — Project Progress & Phase Tracker
 
-## Current Status: Phase 4 (Donation, Pledge & Collection Management) — COMPLETE, CORRECTED & VERIFIED
+## Current Status: Phase 5 (Finance & Accounting Management) — COMPLETE & VERIFIED
 
-**Current Local Date**: 2026-10-26  
-**Active Phase**: Phase 4 — Donation, Pledge & Collection Management  
+**Current Local Date**: 2026-10-28  
+**Active Phase**: Phase 5 — Finance & Accounting Management  
 **Phase 1 Status**: **Completed & Fully Tested** (22 tests, 43 assertions)  
 **Phase 2 Status**: **Completed & Fully Tested** (54 tests, 139 assertions)  
 **Phase 2.1 Status**: **Completed & Fully Tested** (67 tests, 232 assertions)  
 **Phase 3 Status**: **Completed & Fully Tested** (80 tests, 321 assertions)  
-**Phase 4 Status**: **Completed, Corrected & Fully Tested** (101 tests, 513 assertions total)  
-**Next Phase**: Phase 5 — Centralized Double-Entry Financial Ledger (Pending Explicit User Approval)
+**Phase 4 Status**: **Completed, Corrected & Fully Tested** (101 tests, 513 assertions)  
+**Phase 5 Status**: **Completed & Fully Tested** (129 tests, 765 assertions total)  
+**Next Phase**: Phase 6 — Asset, Inventory & Facility Management (Pending Explicit User Approval)
+
+---
+
+## Phase 5 Finance & Accounting Management Deliverables & Verification Checklist
+
+| # | Task / Requirement | Status | Verification Detail |
+|---|---|---|---|
+| 1 | **Centralized Double-Entry General Ledger** | Completed | Standard Chart of Accounts (`1010` Cash, `1020` Bank, `1030` MFS, `2010` AP, `3010` General Fund, `3020` Opening Balance Equity, `4010`-`4040` Income, `5010`-`5080` Expenses). Enforces mathematical invariant $\sum \text{Debit} = \sum \text{Credit}$ on every journal voucher. Posted vouchers are immutable. Sequential concurrency-safe numbering `JRN-YYYY-0001`. |
+| 2 | **Automated Phase 4 Integration & Idempotency** | Completed | `FinancePostingService` hooks atomically into `CollectionPaymentService::verifyPayment`. Automatically credits appropriate income accounts and debits payment asset account (Cash, Bank, MFS). Excess donations posted as additional voluntary income without duplicate counting. Idempotent via unique constraint on `['source_type', 'source_id']`. Unverified or rejected payments never hit the ledger. |
+| 3 | **Payment Reversal Inverse Ledger Entries** | Completed | Reversing a verified payment creates an inverse balanced reversal voucher (`JRN-YYYY-0002`) preserving complete historical audit trail. Receipts voided, allocations deactivated. |
+| 4 | **Expense Approval & Management Workflow** | Completed | Full expense lifecycle (`pending_approval` -> `approved` / `rejected` / `reversed`). Super Admin & authorized roles can View, Edit, Approve, and Reject pending expenses. Approval requires confirmation, posts balanced double-entry ledger entry atomically, and prevents duplicate posting. Rejection requires mandatory reason and never hits ledger. Pending expenses support secure server-validated edits via `UpdateExpenseRequest`. Completed `EXP-YYYY-0001` sequencing. |
+| 5 | **Fund Transfer Between Liquid Asset Accounts** | Completed | Direct transfer between cash, bank, and MFS accounts without touching income or expense accounts. Handles optional transfer/bank charge fees to account `5070`. Validates source and destination accounts are distinct asset accounts. Sequential numbering `TRF-YYYY-0001`. |
+| 6 | **Manual & Miscellaneous Temple Income** | Completed | Record manual non-devotee miscellaneous income (hall booking, interest, scrap sales) debiting asset deposit account and crediting income account. Sequential numbering `INC-YYYY-0001`. |
+| 7 | **Controlled Opening Balance Setup** | Completed | Controlled setup of opening balances for balance-sheet accounts debiting/crediting against `Opening Balance Equity` (`3020`). Prevents duplicate opening balances per account. Never distorts period income/expense statements. |
+| 8 | **Executive Financial Dashboard** | Completed | Real-time liquid asset cards (Cash in Hand, Bank Accounts, Mobile Financial Services), monthly income vs. expense comparison, net cash flow, pending expense approvals, unposted payments alert, and recent journal feed. |
+| 9 | **7 Core Financial Statements & Reports** | Completed | 1. **Trial Balance**: Debit/Credit reconciliation with balanced status indicator.<br>2. **General Ledger**: Account-wise transaction history with running balances.<br>3. **Income & Expense Statement**: Net surplus/deficit computation.<br>4. **Cash Book**: Daily cash inflow/outflow register.<br>5. **Bank & MFS Account Statement**: Account-specific register.<br>6. **Account Balances Summary**: High-level balance overview.<br>7. **Event-wise Financial Summary**: Puja-specific revenue, direct expense, and net surplus. |
+| 10 | **Granular RBAC & Separation of Duties** | Completed | 16 dedicated finance permissions (`view_finance_dashboard`, `view_accounts`, `manage_accounts`, `view_journals`, `record_expenses`, `approve_expenses`, etc.). Requisition submitters cannot approve their own expenses. Protected mutating endpoints with FormRequests, Gate policies, and audit logging. |
+| 11 | **Bilingual Localization (EN & BN)** | Completed | 100% key parity across all language files (`lang/en/` and `lang/bn/`), including `finance.php`, `common.php`, and `datatables.php`. DataTables core strings (Search, emptyTable, zeroRecords, info, pagination buttons) automatically localized across all views. |
+| 12 | **Automated Test Suite & Code Hygiene** | Completed | Created `tests/Feature/FinanceAndAccountingTest.php` (18 tests) and `tests/Feature/FinanceExpenseApprovalTest.php` (9 tests) covering all specifications (including journal voucher show, reversal tracking, expense approval/editing/rejection, and double-entry balance). All 129 tests passing cleanly (760 assertions total) with 100% PSR-12 compliance via Laravel Pint. |
+| 13 | **UI Layout, Sticky 100vh Sidebar & Auto-Scroll** | Completed | Configured `100vh` sticky layout with independently scrollable `.sidebar-menu`. Fixed page reload issue by automatically scrolling `.sidebar-menu` to keep the active menu item in view. Persisted user scroll position via `sessionStorage`. Global DataTables defaults ensure consistent localization everywhere. |
 
 ---
 

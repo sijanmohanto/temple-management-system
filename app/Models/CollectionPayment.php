@@ -141,6 +141,14 @@ class CollectionPayment extends Model
     }
 
     /**
+     * Associated posted journal entry.
+     */
+    public function journalEntry(): BelongsTo
+    {
+        return $this->belongsTo(JournalEntry::class, 'finance_post_reference', 'journal_number');
+    }
+
+    /**
      * User who reversed the payment.
      */
     public function reverser(): BelongsTo

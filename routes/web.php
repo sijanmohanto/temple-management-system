@@ -11,6 +11,14 @@ use App\Http\Controllers\EventCategoryController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventDashboardController;
 use App\Http\Controllers\FamilyController;
+use App\Http\Controllers\Finance\ExpenseController;
+use App\Http\Controllers\Finance\FinancialAccountController;
+use App\Http\Controllers\Finance\FinancialDashboardController;
+use App\Http\Controllers\Finance\FinancialReportController;
+use App\Http\Controllers\Finance\FundTransferController;
+use App\Http\Controllers\Finance\JournalEntryController;
+use App\Http\Controllers\Finance\ManualIncomeController;
+use App\Http\Controllers\Finance\OpeningBalanceController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\MonthlyContributionController;
 use App\Http\Controllers\PersonController;
@@ -156,6 +164,60 @@ Route::middleware('auth')->group(function () {
     Route::get('/collections-reports/event-summary', [CollectionReportController::class, 'eventSummary'])->name('collections.reports.event-summary');
     Route::get('/collections-reports/outstanding-pledges', [CollectionReportController::class, 'outstandingPledges'])->name('collections.reports.outstanding-pledges');
     Route::get('/collections-reports/committee-contributions', [CollectionReportController::class, 'committeeContributions'])->name('collections.reports.committee-contributions');
+
+    // Phase 5: Finance & Accounting Management
+    Route::prefix('finance')->name('finance.')->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [FinancialDashboardController::class, 'index'])->name('dashboard');
+
+        // Chart of Accounts
+        Route::get('/accounts', [FinancialAccountController::class, 'index'])->name('accounts.index');
+        Route::post('/accounts', [FinancialAccountController::class, 'store'])->name('accounts.store');
+        Route::get('/accounts/{account}', [FinancialAccountController::class, 'show'])->name('accounts.show');
+        Route::put('/accounts/{account}', [FinancialAccountController::class, 'update'])->name('accounts.update');
+
+        // Double-entry Journals
+        Route::get('/journals', [JournalEntryController::class, 'index'])->name('journals.index');
+        Route::get('/journals/{journal}', [JournalEntryController::class, 'show'])->name('journals.show');
+        Route::post('/journals/{journal}/reverse', [JournalEntryController::class, 'reverse'])->name('journals.reverse');
+
+        // Expenses
+        Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
+        Route::get('/expenses/create', [ExpenseController::class, 'create'])->name('expenses.create');
+        Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+        Route::get('/expenses/{expense}', [ExpenseController::class, 'show'])->name('expenses.show');
+        Route::get('/expenses/{expense}/edit', [ExpenseController::class, 'edit'])->name('expenses.edit');
+        Route::put('/expenses/{expense}', [ExpenseController::class, 'update'])->name('expenses.update');
+        Route::post('/expenses/{expense}/approve', [ExpenseController::class, 'approve'])->name('expenses.approve');
+        Route::post('/expenses/{expense}/reject', [ExpenseController::class, 'reject'])->name('expenses.reject');
+        Route::post('/expenses/{expense}/reverse', [ExpenseController::class, 'reverse'])->name('expenses.reverse');
+
+        // Fund Transfers
+        Route::get('/transfers', [FundTransferController::class, 'index'])->name('transfers.index');
+        Route::get('/transfers/create', [FundTransferController::class, 'create'])->name('transfers.create');
+        Route::post('/transfers', [FundTransferController::class, 'store'])->name('transfers.store');
+        Route::post('/transfers/{transfer}/reverse', [FundTransferController::class, 'reverse'])->name('transfers.reverse');
+
+        // Miscellaneous Income
+        Route::get('/income', [ManualIncomeController::class, 'index'])->name('income.index');
+        Route::get('/income/create', [ManualIncomeController::class, 'create'])->name('income.create');
+        Route::post('/income', [ManualIncomeController::class, 'store'])->name('income.store');
+
+        // Opening Balances
+        Route::get('/opening-balances', [OpeningBalanceController::class, 'index'])->name('opening-balances.index');
+        Route::post('/opening-balances', [OpeningBalanceController::class, 'store'])->name('opening-balances.store');
+
+        // Financial Reports
+        Route::prefix('reports')->name('reports.')->group(function () {
+            Route::get('/trial-balance', [FinancialReportController::class, 'trialBalance'])->name('trial-balance');
+            Route::get('/general-ledger', [FinancialReportController::class, 'generalLedger'])->name('general-ledger');
+            Route::get('/income-expense', [FinancialReportController::class, 'incomeExpense'])->name('income-expense');
+            Route::get('/cash-book', [FinancialReportController::class, 'cashBook'])->name('cash-book');
+            Route::get('/account-statements', [FinancialReportController::class, 'accountStatement'])->name('account-statement');
+            Route::get('/account-balances', [FinancialReportController::class, 'accountBalances'])->name('account-balances');
+            Route::get('/event-summary', [FinancialReportController::class, 'eventSummary'])->name('event-summary');
+        });
+    });
 
     /*
     |--------------------------------------------------------------------------

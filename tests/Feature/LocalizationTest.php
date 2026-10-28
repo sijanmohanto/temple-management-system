@@ -50,4 +50,42 @@ class LocalizationTest extends TestCase
             'preferred_locale' => 'bn',
         ]);
     }
+
+    public function test_all_language_files_maintain_key_parity(): void
+    {
+        $files = [
+            'common',
+            'nav',
+            'dashboard',
+            'people',
+            'families',
+            'committees',
+            'classifications',
+            'events',
+            'donations',
+            'finance',
+            'datatables',
+            'select2',
+            'roles',
+        ];
+
+        foreach ($files as $file) {
+            $enPath = resource_path("../lang/en/{$file}.php");
+            $bnPath = resource_path("../lang/bn/{$file}.php");
+
+            $this->assertFileExists($enPath);
+            $this->assertFileExists($bnPath);
+
+            $en = require $enPath;
+            $bn = require $bnPath;
+
+            $enKeys = array_keys($en);
+            $bnKeys = array_keys($bn);
+
+            sort($enKeys);
+            sort($bnKeys);
+
+            $this->assertEquals($enKeys, $bnKeys, "Language keys in {$file}.php must have 100% parity between EN and BN.");
+        }
+    }
 }

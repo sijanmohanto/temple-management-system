@@ -146,8 +146,25 @@
     };
 
     // ------------------------------------------------------------------------
-    // 4. DataTables Reusable Initialization
+    // 4. DataTables Global Defaults & Reusable Initialization
     // ------------------------------------------------------------------------
+    var getDtLanguage = function() {
+        return (window.TempleConfig && window.TempleConfig.datatablesLanguage) 
+            ? window.TempleConfig.datatablesLanguage 
+            : {};
+    };
+
+    if (typeof $.fn.dataTable !== 'undefined') {
+        var dtGlobalLang = getDtLanguage();
+        $.extend(true, $.fn.dataTable.defaults, {
+            responsive: true,
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+            language: dtGlobalLang,
+            oLanguage: dtGlobalLang
+        });
+    }
+
     TempleUI.initDataTable = function(selector, userOptions) {
         if (!$.fn.DataTable) return null;
 
@@ -165,20 +182,61 @@
             $table.find('tbody').empty();
         }
 
+        var dtLang = getDtLanguage();
         var baseOptions = {
             responsive: true,
             pageLength: 25,
             lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
             order: [], // Default preserve server order
-            language: (window.TempleConfig && window.TempleConfig.datatablesLanguage) ? window.TempleConfig.datatablesLanguage : {}
+            language: dtLang,
+            oLanguage: dtLang
         };
 
         var mergedOptions = $.extend(true, {}, baseOptions, userOptions || {});
         return $table.DataTable(mergedOptions);
     };
 
+    // ------------------------------------------------------------------------
+    // 5. Sidebar Active Item Auto-Scroll & Scroll Persistence
+    // ------------------------------------------------------------------------
+    TempleUI.initSidebarScroll = function() {
+        var $sidebar = $('.app-sidebar');
+        var $menu = $sidebar.find('.sidebar-menu');
+        if (!$menu.length) return;
+
+        var $activeLink = $menu.find('.sidebar-link.active').first();
+        if ($activeLink.length) {
+            // Calculate active link's top position relative to scrollable .sidebar-menu
+            var menuOffsetTop = $menu.offset().top;
+            var linkOffsetTop = $activeLink.offset().top;
+            var currentScroll = $menu.scrollTop();
+            var itemTopInContent = linkOffsetTop - menuOffsetTop + currentScroll;
+
+            var menuHeight = $menu.innerHeight();
+            var linkHeight = $activeLink.outerHeight();
+
+            // Center the active menu item in the sidebar viewport
+            var targetScroll = Math.max(0, itemTopInContent - (menuHeight / 2) + (linkHeight / 2));
+            $menu.scrollTop(targetScroll);
+            sessionStorage.setItem('temple_sidebar_scroll', targetScroll);
+        } else {
+            var savedPos = sessionStorage.getItem('temple_sidebar_scroll');
+            if (savedPos !== null) {
+                $menu.scrollTop(parseInt(savedPos, 10));
+            }
+        }
+
+        // Keep saved position in sync when user manually scrolls
+        $menu.off('scroll.templeSidebar').on('scroll.templeSidebar', function() {
+            sessionStorage.setItem('temple_sidebar_scroll', $(this).scrollTop());
+        });
+    };
+
     // Auto-initialize standard elements on DOM ready
     $(document).ready(function() {
+        // Auto-scroll sidebar so active menu item is prominently visible
+        TempleUI.initSidebarScroll();
+        setTimeout(TempleUI.initSidebarScroll, 80);
         // Display flash toasts passed from Laravel session
         if (window.TempleConfig && window.TempleConfig.flashes) {
             var flashes = window.TempleConfig.flashes;
