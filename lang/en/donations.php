@@ -198,4 +198,16 @@ return [
     'share_via_messenger' => 'Share via Messenger',
     'copy_receipt_link' => 'Copy Link',
     'receipt_link_copied' => 'Receipt link copied to clipboard!',
+
+    // Event Donations & Excess Destinations
+    'guest_or_visitor' => 'Guest / Visitor',
+    'guest_donor_notice' => 'Guest donations are recorded directly without forcing permanent directory registration. No pledge or debt is created.',
+    'excess_destination' => 'Excess Contribution Destination',
+    'excess_destination_help' => 'Payment exceeds outstanding pledge. Please select where the excess contribution should be credited:',
+    'excess_destination_event' => 'Current Event Fund',
+    'excess_destination_event_desc' => 'Credit the excess amount to this specific event/puja fund.',
+    'excess_destination_general' => 'General Temple Fund',
+    'excess_destination_general_desc' => 'Credit the excess amount to the unrestricted General Temple Fund.',
+    'voluntary_amount' => 'Voluntary Amount',
+    'above_pledged_target' => 'Above Pledged Target',
 ];

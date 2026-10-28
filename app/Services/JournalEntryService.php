@@ -81,7 +81,7 @@ class JournalEntryService
                 'financial_account_id' => $line['financial_account_id'] ?? $line['account_id'],
                 'entry_type' => $debit > 0 ? JournalLine::TYPE_DEBIT : JournalLine::TYPE_CREDIT,
                 'amount' => $debit > 0 ? $debit : $credit,
-                'event_id' => $line['event_id'] ?? ($data['event_id'] ?? null),
+                'event_id' => array_key_exists('event_id', $line) ? $line['event_id'] : ($data['event_id'] ?? null),
                 'description' => $line['description'] ?? $line['line_description_en'] ?? ($data['description'] ?? ($data['description_en'] ?? null)),
             ];
         }

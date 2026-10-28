@@ -198,4 +198,16 @@ return [
     'share_via_messenger' => 'মেসেঞ্জারে শেয়ার',
     'copy_receipt_link' => 'লিংক কপি করুন',
     'receipt_link_copied' => 'রসিদের লিংক ক্লিপবোর্ডে কপি করা হয়েছে!',
+
+    // Event Donations & Excess Destinations
+    'guest_or_visitor' => 'অতিথি / দর্শনার্থী',
+    'guest_donor_notice' => 'স্থায়ী সদস্যপদ তৈরি ব্যতিরেকে সরাসরি অতিথি অনুদান রেকর্ড করা হয়। কোনো বকেয়া বা অঙ্গীকার তৈরি হয় না।',
+    'excess_destination' => 'অতিরিক্ত অনুদানের গন্তব্য',
+    'excess_destination_help' => 'প্রদত্ত অর্থ অঙ্গীকারকৃত বকেয়া অপেক্ষা অধিক। অতিরিক্ত অর্থ কোন তহবিলে জমা হবে তা নির্বাচন করুন:',
+    'excess_destination_event' => 'চলতি উৎসব তহবিল',
+    'excess_destination_event_desc' => 'অতিরিক্ত অর্থ এই নির্দিষ্ট পূজা/উৎসব তহবিলে জমা রাখা হবে।',
+    'excess_destination_general' => 'সাধারণ মন্দির তহবিল',
+    'excess_destination_general_desc' => 'অতিরিক্ত অর্থ মন্দিরের সাধারণ উন্মুক্ত তহবিলে স্থানান্তর করা হবে।',
+    'voluntary_amount' => 'ঐচ্ছিক অনুদান',
+    'above_pledged_target' => 'অঙ্গীকারের চেয়ে অতিরিক্ত আদায়',
 ];

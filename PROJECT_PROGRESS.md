@@ -1,16 +1,30 @@
 # Temple Management System — Project Progress & Phase Tracker
 
-## Current Status: Phase 5 (Finance & Accounting Management) — COMPLETE & VERIFIED
+## Current Status: Phase 5 (Finance & Event Fund Management) — COMPLETE & VERIFIED
 
 **Current Local Date**: 2026-10-28  
-**Active Phase**: Phase 5 — Finance & Accounting Management  
+**Active Phase**: Phase 5 — Finance & Accounting Management (Including Event Fund Settlement & Excess Allocations)  
 **Phase 1 Status**: **Completed & Fully Tested** (22 tests, 43 assertions)  
 **Phase 2 Status**: **Completed & Fully Tested** (54 tests, 139 assertions)  
 **Phase 2.1 Status**: **Completed & Fully Tested** (67 tests, 232 assertions)  
 **Phase 3 Status**: **Completed & Fully Tested** (80 tests, 321 assertions)  
 **Phase 4 Status**: **Completed, Corrected & Fully Tested** (101 tests, 513 assertions)  
-**Phase 5 Status**: **Completed & Fully Tested** (129 tests, 765 assertions total)  
+**Phase 5 Status**: **Completed & Fully Tested** (144 tests, 876 assertions total)  
 **Next Phase**: Phase 6 — Asset, Inventory & Facility Management (Pending Explicit User Approval)
+
+---
+
+## Event Donations, Excess Contributions, Outstanding Dues & Event Fund Settlement Deliverables
+
+| # | Task / Requirement | Status | Verification Detail |
+|---|---|---|---|
+| 1 | **Guest / Visitor Donation Entry** | Completed | Clean entry flow supporting guest walk-in donors without forcing permanent person or family creation. Support for event donation (`voluntary_event`) and General Temple Fund (`voluntary_general`). Never creates fictitious pledges or dues. Full verification and receipt generation preserved. |
+| 2 | **Excess Contribution Handling & Destination Selection** | Completed | Dynamic split when payment exceeds outstanding pledge balance: pledge portion applies to pledge, remaining excess allocated to user-selected destination (**Current Event Fund** vs **General Temple Fund**). Evaluates remaining balance first on partial payments. Never silently reclassifies excess funds. Fully localized in EN and BN. |
+| 3 | **Event Collection & Financial Overview Dashboard** | Completed | Rich 10-metric dashboard cards on Event details page: Total Pledged, Verified Pledge Collections, Outstanding Pledges, Event Excess Contributions, Voluntary Event Donations, Total Verified Collections, Approved Expenses, Net Event Surplus/Deficit, Pending Verification, and Dynamic Above Target (+৳X) / Shortfall (৳X) Indicators. |
+| 4 | **Clickable Summary Cards & Detailed Modal Reports** | Completed | 1. **Above Pledged Target Report Modal**: Detailed report of donors contributing more than pledged, showing pledge, verified, excess, chosen destination, and receipt.<br>2. **Outstanding Dues Report Modal**: Computes strictly `max(0, Pledged - Verified)`, listing donors, phone, and direct collection action.<br>3. **Excess Contribution Report Modal**: Comprehensive breakdown of all excess allocations and destination funds. |
+| 5 | **Individual Donor Comparison Tab** | Completed | Interactive tab on Event details page listing every donor: Pledged Amount, Verified Paid Applied, Excess Contributed, Outstanding Balance, Status, and Actions with exact decimal arithmetic. |
+| 6 | **Event Closing & Event Fund Settlement Workflow** | Completed | Funds remain attributed to active events. When closing/closed, provides explicit **Event Fund Settlement** workflow. Reconciles verified collections and approved expenses to determine net surplus. Transfers surplus to General Temple Fund via balanced double-entry journal entry without creating new income. Strict database-enforced idempotency (`event_id` unique on `event_settlements`) prevents duplicate settlements. |
+| 7 | **Automated Test Suite & Pint Code Hygiene** | Completed | Created `tests/Feature/EventDonationAndSettlementTest.php` with 15 tests (111 assertions) covering guest donations, excess splitting, metrics calculation, reports, and fund settlement. Total test suite: 144 passed (876 assertions) with 100% PSR-12 compliance via Laravel Pint. |
 
 ---
 

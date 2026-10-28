@@ -105,13 +105,14 @@ class FinancePostingService
                     $incomeCode = FinancialAccount::CODE_INCOME_COMMITTEE;
                     $descEn = 'Monthly contribution for '.($alloc->monthlyContribution->month_name ?? 'Committee');
                     $descBn = 'মাসিক কার্যনির্বাহী চাঁদা';
-                } elseif ($alloc->target_type === PaymentAllocation::TARGET_VOLUNTARY_EVENT || $alloc->event_id) {
+                } elseif ($alloc->target_type === PaymentAllocation::TARGET_VOLUNTARY_EVENT) {
                     $incomeCode = FinancialAccount::CODE_INCOME_EVENT;
-                    $eventId = $alloc->event_id;
+                    $eventId = $alloc->event_id ?? $payment->event_id;
                     $descEn = 'Event voluntary donation'.($alloc->event ? " ({$alloc->event->title_en})" : '');
                     $descBn = 'উৎসবের ঐচ্ছিক অনুদান';
                 } else {
                     $incomeCode = FinancialAccount::CODE_INCOME_GENERAL;
+                    $eventId = null;
                     $descEn = 'General temple voluntary donation';
                     $descBn = 'সাধারণ মন্দির অনুদান';
                 }
@@ -127,7 +128,7 @@ class FinancePostingService
                     'credit_amount' => $allocAmount,
                     'line_description_en' => $descEn,
                     'line_description_bn' => $descBn,
-                    'event_id' => $eventId ?? $payment->event_id,
+                    'event_id' => $eventId,
                     'reference_type' => get_class($alloc),
                     'reference_id' => $alloc->id,
                 ];
