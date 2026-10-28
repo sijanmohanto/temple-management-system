@@ -10,6 +10,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventCategoryController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventDashboardController;
+use App\Http\Controllers\EventSettlementController;
 use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\Finance\ExpenseController;
 use App\Http\Controllers\Finance\FinancialAccountController;
@@ -117,6 +118,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/events/{event}/close', [EventController::class, 'close'])->name('events.close');
     Route::post('/events/{event}/reopen', [EventController::class, 'reopen'])->name('events.reopen');
     Route::post('/events/{event}/adjust', [EventController::class, 'adjust'])->name('events.adjust');
+    Route::post('/events/{event}/settle-funds', [EventSettlementController::class, 'settle'])->name('events.settle-funds');
 
     // Event Categories
     Route::get('/events-categories', [EventCategoryController::class, 'index'])->name('events.categories.index');

@@ -221,7 +221,7 @@
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="payer_source" id="sourceWalkIn" value="walkin" {{ old('payer_name_override') ? 'checked' : '' }}>
                                     <label class="form-check-label fw-semibold" for="sourceWalkIn">
-                                        <i class="bi bi-person-walking me-1"></i> {{ __('donations.walk_in_donor') }}
+                                        <i class="bi bi-person-walking me-1"></i> {{ __('donations.guest_or_visitor') }}
                                     </label>
                                 </div>
                             </div>
@@ -260,13 +260,18 @@
                         </div>
 
                         <div class="row g-3" id="walkInPayerRow" style="display: none;">
+                            <div class="col-12">
+                                <div class="alert alert-light border small text-muted mb-0 py-2">
+                                    <i class="bi bi-info-circle text-primary me-1"></i> {{ __('donations.guest_donor_notice') }}
+                                </div>
+                            </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">{{ __('donations.payer_name') }}</label>
+                                <label class="form-label fw-semibold required">{{ __('donations.payer_name') }}</label>
                                 <input type="text" name="payer_name_override" id="payerNameOverride" class="form-control" value="{{ old('payer_name_override') }}" placeholder="Donor full name">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">{{ __('donations.payer_phone') }}</label>
-                                <input type="text" name="payer_phone_override" class="form-control" value="{{ old('payer_phone_override') }}" placeholder="Contact phone number">
+                                <input type="text" name="payer_phone_override" class="form-control" value="{{ old('payer_phone_override') }}" placeholder="Contact phone number (optional)">
                             </div>
                         </div>
                     </div>
@@ -308,6 +313,38 @@
                                 <option value="rocket" {{ old('payment_method') === 'rocket' ? 'selected' : '' }}>{{ __('donations.method_rocket') }}</option>
                                 <option value="other" {{ old('payment_method') === 'other' ? 'selected' : '' }}>{{ __('donations.method_other') }}</option>
                             </select>
+                        </div>
+
+                        <!-- Excess Contribution Destination (Revealed when amount exceeds pledge) -->
+                        <div class="col-12" id="excessDestinationContainer" style="display: none;">
+                            <div class="card border-warning border-opacity-50 bg-warning bg-opacity-10 rounded-4 p-4">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <i class="bi bi-gift-fill text-warning-emphasis fs-4"></i>
+                                    <h6 class="fw-bold text-dark mb-0">{{ __('donations.excess_destination') }}</h6>
+                                    <span class="badge bg-warning text-dark border ms-auto px-3 py-1 font-monospace" id="excessAmountDisplayBadge">+৳0.00</span>
+                                </div>
+                                <p class="small text-muted mb-3">{{ __('donations.excess_destination_help') }}</p>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-check p-3 bg-white border rounded-3 h-100 shadow-sm">
+                                            <input class="form-check-input ms-0 me-2" type="radio" name="excess_target_type" id="excessTargetEvent" value="voluntary_event" {{ old('excess_target_type', 'voluntary_event') === 'voluntary_event' ? 'checked' : '' }}>
+                                            <label class="form-check-label w-100" for="excessTargetEvent">
+                                                <div class="fw-bold text-primary mb-1"><i class="bi bi-calendar-event me-1"></i>{{ __('donations.excess_destination_event') }}</div>
+                                                <div class="small text-muted">{{ __('donations.excess_destination_event_desc') }}</div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check p-3 bg-white border rounded-3 h-100 shadow-sm">
+                                            <input class="form-check-input ms-0 me-2" type="radio" name="excess_target_type" id="excessTargetGeneral" value="voluntary_general" {{ old('excess_target_type') === 'voluntary_general' ? 'checked' : '' }}>
+                                            <label class="form-check-label w-100" for="excessTargetGeneral">
+                                                <div class="fw-bold text-success mb-1"><i class="bi bi-bank me-1"></i>{{ __('donations.excess_destination_general') }}</div>
+                                                <div class="small text-muted">{{ __('donations.excess_destination_general_desc') }}</div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Reference Details for Non-Cash -->
@@ -378,15 +415,25 @@
                 }
             }
 
+            var currentType = isLocked ? ('{{ $selectedPledge ? "event_pledge" : ($selectedMonthlyContribution ? "monthly_contribution" : "") }}') : $('#collectionTypeSelect').val();
+
             if (outstanding > 0 && entered > outstanding) {
                 var excess = (entered - outstanding).toFixed(2);
                 $('#excessCalculationNotice').html(
                     '<div class="p-2 bg-success bg-opacity-10 border border-success border-opacity-25 rounded-3 text-success small">' +
-                    '<i class="bi bi-heart-fill me-1"></i> <strong>Exceeds target balance:</strong> ৳' + outstanding.toFixed(2) + ' covers pledge/dues, and <strong>৳' + excess + '</strong> will be automatically recorded as an additional voluntary donation.' +
+                    '<i class="bi bi-heart-fill me-1"></i> <strong>Exceeds target balance:</strong> ৳' + outstanding.toFixed(2) + ' covers pledge/dues, and <strong>৳' + excess + '</strong> is allocated as an excess contribution.' +
                     '</div>'
                 ).show();
+
+                if (currentType === 'event_pledge') {
+                    $('#excessAmountDisplayBadge').text('+৳' + excess + ' Excess');
+                    $('#excessDestinationContainer').slideDown();
+                } else {
+                    $('#excessDestinationContainer').slideUp();
+                }
             } else {
                 $('#excessCalculationNotice').hide();
+                $('#excessDestinationContainer').slideUp();
             }
         }
 

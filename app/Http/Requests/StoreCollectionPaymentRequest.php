@@ -27,11 +27,12 @@ class StoreCollectionPaymentRequest extends FormRequest
             ],
             'payer_person_id' => ['nullable', 'exists:people,id'],
             'payer_family_id' => ['nullable', 'exists:families,id'],
-            'payer_name_override' => ['nullable', 'string', 'max:150'],
+            'payer_name_override' => ['required_without_all:payer_person_id,payer_family_id', 'nullable', 'string', 'max:150'],
             'payer_phone_override' => ['nullable', 'string', 'max:30'],
             'event_id' => ['nullable', 'exists:events,id'],
             'pledge_id' => ['nullable', 'exists:pledges,id'],
             'monthly_contribution_id' => ['nullable', 'exists:monthly_committee_contributions,id'],
+            'excess_target_type' => ['nullable', 'string', 'in:voluntary_event,voluntary_general'],
             'amount' => ['required', 'numeric', 'min:1'],
             'payment_date' => ['required', 'date'],
             'payment_method' => [
@@ -55,6 +56,7 @@ class StoreCollectionPaymentRequest extends FormRequest
             'allocations' => ['nullable', 'array'],
             'allocations.*.target_type' => ['required_with:allocations', 'string'],
             'allocations.*.amount' => ['required_with:allocations', 'numeric', 'min:0.01'],
+            'allocations.*.excess_target_type' => ['nullable', 'string', 'in:voluntary_event,voluntary_general'],
         ];
     }
 }

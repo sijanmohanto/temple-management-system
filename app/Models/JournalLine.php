@@ -47,6 +47,14 @@ class JournalLine extends Model
     }
 
     /**
+     * Target financial account alias.
+     */
+    public function financialAccount(): BelongsTo
+    {
+        return $this->account();
+    }
+
+    /**
      * Optional event dimension.
      */
     public function event(): BelongsTo

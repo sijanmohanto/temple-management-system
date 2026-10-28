@@ -11,6 +11,7 @@ use App\Models\Event;
 use App\Models\EventCategory;
 use App\Models\EventLifecycleLog;
 use App\Services\AuditLogger;
+use App\Services\EventCollectionReportService;
 use App\Services\EventLifecycleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -241,7 +242,7 @@ class EventController extends Controller implements HasMiddleware
     /**
      * Display the specified event details, summary, and lifecycle logs.
      */
-    public function show(Event $event): View
+    public function show(Event $event, EventCollectionReportService $reportService): View
     {
         $event->load([
             'category',
@@ -250,9 +251,24 @@ class EventController extends Controller implements HasMiddleware
             'closedBy',
             'reopenedBy',
             'lifecycleLogs.user',
+            'settlement.settledBy',
+            'settlement.journalEntry',
         ]);
 
-        return view('events.show', compact('event'));
+        $metrics = $reportService->getMetrics($event);
+        $aboveTargetDonors = $reportService->getAboveTargetDonors($event);
+        $outstandingDues = $reportService->getOutstandingDues($event);
+        $excessReport = $reportService->getExcessContributionReport($event);
+        $donorComparison = $reportService->getDonorComparison($event);
+
+        return view('events.show', compact(
+            'event',
+            'metrics',
+            'aboveTargetDonors',
+            'outstandingDues',
+            'excessReport',
+            'donorComparison'
+        ));
     }
 
     /**

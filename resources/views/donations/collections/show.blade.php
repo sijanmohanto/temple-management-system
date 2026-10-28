@@ -207,9 +207,27 @@
                                 @foreach($payment->allocations as $alloc)
                                     <tr>
                                         <td class="ps-3">
-                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border">
-                                                {{ $alloc->target_type }}
-                                            </span>
+                                            @if($alloc->target_type === 'voluntary_event' && $alloc->pledge_id)
+                                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
+                                                    <i class="bi bi-gift me-1"></i> Excess &rarr; Event Fund
+                                                </span>
+                                            @elseif($alloc->target_type === 'voluntary_general' && $alloc->pledge_id)
+                                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
+                                                    <i class="bi bi-gift me-1"></i> Excess &rarr; General Fund
+                                                </span>
+                                            @elseif($alloc->target_type === 'voluntary_event')
+                                                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">
+                                                    Voluntary Event
+                                                </span>
+                                            @elseif($alloc->target_type === 'voluntary_general')
+                                                <span class="badge bg-secondary bg-opacity-10 text-secondary border">
+                                                    Voluntary General
+                                                </span>
+                                            @else
+                                                <span class="badge bg-secondary bg-opacity-10 text-secondary border">
+                                                    {{ $alloc->target_type }}
+                                                </span>
+                                            @endif
                                         </td>
                                         <td>
                                             @if($alloc->pledge)
@@ -224,6 +242,9 @@
                                                 <div class="fw-semibold text-dark">{{ $alloc->event->name }} (Voluntary)</div>
                                             @else
                                                 <div class="fw-semibold text-dark">General Temple Fund</div>
+                                            @endif
+                                            @if($alloc->notes)
+                                                <div class="small text-muted fst-italic">{{ $alloc->notes }}</div>
                                             @endif
                                         </td>
                                         <td>

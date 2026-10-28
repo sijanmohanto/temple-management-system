@@ -330,6 +330,7 @@ class CollectionPaymentController extends Controller implements HasMiddleware
                     'pledge_id' => $validated['pledge_id'] ?? null,
                     'event_id' => $validated['event_id'] ?? null,
                     'amount' => $amount,
+                    'excess_target_type' => $validated['excess_target_type'] ?? null,
                 ];
             } elseif ($type === CollectionPayment::TYPE_MONTHLY_CONTRIBUTION) {
                 $allocationsData[] = [
