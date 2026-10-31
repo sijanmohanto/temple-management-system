@@ -1,16 +1,17 @@
 # Temple Management System — Project Progress & Phase Tracker
 
-## Current Status: Phase 5 (Finance & Event Fund Management) — COMPLETE & VERIFIED
+## Current Status: Phase 6 (Budget & Procurement Management) — Increments 1, 2, 3 & 4 COMPLETE
 
-**Current Local Date**: 2026-10-28  
-**Active Phase**: Phase 5 — Finance & Accounting Management (Including Event Fund Settlement & Excess Allocations)  
+**Current Local Date**: 2026-10-30  
+**Active Phase**: Phase 6 — Budget, Vendor & Procurement Management  
 **Phase 1 Status**: **Completed & Fully Tested** (22 tests, 43 assertions)  
 **Phase 2 Status**: **Completed & Fully Tested** (54 tests, 139 assertions)  
 **Phase 2.1 Status**: **Completed & Fully Tested** (67 tests, 232 assertions)  
 **Phase 3 Status**: **Completed & Fully Tested** (80 tests, 321 assertions)  
 **Phase 4 Status**: **Completed, Corrected & Fully Tested** (101 tests, 513 assertions)  
 **Phase 5 Status**: **Completed & Fully Tested** (144 tests, 876 assertions total)  
-**Next Phase**: Phase 6 — Asset, Inventory & Facility Management (Pending Explicit User Approval)
+**Phase 6 Status**: **Increments 1, 2, 3 & 4 Completed & Fully Tested** (216 tests, 1,314 assertions total)  
+**Next Increment**: Increment 5 — Vendor Bills & Payment Processing (Pending Explicit User Approval)
 
 ---
 
@@ -303,3 +304,242 @@ Result:
 3. Integration with verified Phase 4 collections (`finance_posted_at`, `finance_post_reference`).
 4. Operational Expense Vouchers and approval workflows.
 5. Financial Statements: Trial Balance, Balance Sheet, Income & Expenditure Statement, Fund Balances.
+
+
+---
+
+## Clear Income & Expense Reports (Revised)
+
+### Scope Implemented:
+1. **Separate Sidebar Menus**:
+   - Added **Income Report** (`/finance/reports/income`) and **Expense Report** (`/finance/reports/expenses`) under Finance sidebar.
+   - Updated route matching so reports highlight their respective menu items cleanly.
+2. **Income Report & Dynamic Filters**:
+   - Person/Donor dynamic AJAX Select2 search.
+   - Filters: Donor Type (Registered Person, Committee Member, Guest/Visitor), Income Type (Pledge, Voluntary Event, Monthly Contribution, General Donation, Miscellaneous Income), Event, Date Range, Status (Verified, Pending, Rejected, Reversed), Payment Method, and Keyword Search.
+   - Guest donations with `payer_name_override` are fully supported without requiring permanent profiles.
+3. **Expense Report & Dynamic Filters**:
+   - Payee/Person dynamic AJAX Select2 search (searching people and vendor names).
+   - Filters: Expense Category Account, Event, Date Range, Status (Approved, Pending Approval, Rejected, Reversed), Payment Method, and Keyword Search.
+4. **Simple DataTables (STRICTLY NO ROW NUMBER / `#` COLUMN)**:
+   - Server-side DataTables processing with exactly 7 columns:
+     - Income: Donor / User Details, Purpose, Event, Amount, Date, Status, Action.
+     - Expense: Payee / User Details, Purpose, Event, Amount, Date, Status, Action.
+   - Localized status badges with full English and Bengali parity.
+5. **Bootstrap 5 Offcanvas AJAX View Details**:
+   - "View Details" opens an `offcanvas-end` drawer with loading indicator and renders comprehensive audit sections without page refresh:
+     - Section A: Transaction Info
+     - Section B: Donor / Payee Info
+     - Section C: Event & Fund Allocation / Financial Accounts
+     - Section D: Verification / Approval & Audit Trail
+     - Section E: Related Records & Actions (Money Receipt links, Journal Voucher links)
+6. **Live Summary Performance Cards**:
+   - Income: Verified Income Total, Pending Verification Amount, Number of Transactions.
+   - Expense: Paid / Posted Expense Total, Pending Approval Amount, Number of Transactions.
+   - Strict status separation ensuring unverified/pending/rejected/reversed transactions are not double counted.
+7. **Comprehensive Feature Test Suite & Frontend JavaScript Reliability**:
+   - Fixed syntax error in `expenses.blade.php` (redundant closing bracket) that prevented DataTables initialization in the browser.
+   - Verified server-side DataTables AJAX response, live metrics updating, and Offcanvas view rendering.
+   - `tests/Feature/IncomeAndExpenseReportTest.php` covers access control, column format verification, filters, guest donations, summary calculations, offcanvas rendering, and Select2 AJAX endpoints.
+   - 156 tests passed (1009 assertions). Clean Pint code styling.
+
+---
+
+## Phase 6: Budget, Vendor & Procurement Management — Status: IN PROGRESS (Increments 1 & 2 Completed)
+
+### Gap Analysis Summary
+1. **Sidebar Navigation**:
+   - **Prior state**: All sidebar navigation links were flat top-level items under module headings, leading to excessive vertical scrolling and fragmented related pages.
+   - **Current state**: Reorganized into a standardized Parent Menu → Submenu hierarchy using Bootstrap 5 collapse with animated chevrons, active-parent highlighting, and auto-expanding on child route navigation.
+2. **Budget Management**:
+   - **Prior state**: Budgets existed only as a conceptual `budget_amount` integer on `events`. No formal annual, general fund, or event-specific budget ledger, revision history, approval workflow, or Budget vs Actual analytics existed.
+   - **Current state (Increment 2 Completed)**: Comprehensive Budget model, `budgets` and `budget_items` tables, concurrency-safe code generation (`BDG-YYYY-0001`), workflow states (Draft, Submitted, Approved, Rejected, Cancelled), strict separation of duties, and live Budget vs Actual variance analytics against Finance expenses.
+3. **Vendor Management**:
+   - **Gap**: Currently vendors are recorded as unconstrained strings (`vendor_name`, `vendor_phone`) on `expenses`. No master vendor directory, contact registry, tax identifiers, or transaction histories exist.
+   - **Plan (Increment 3)**: Implement dedicated `vendors` directory with DataTables, Select2 integration, and historical transaction auditing.
+4. **Procurement Pipeline (Purchase Requests, Orders, Bills)**:
+   - **Gap**: No purchase requisition, approval, or PO issuance workflows exist.
+   - **Plan (Increments 4-6)**: Implement PR -> PO -> Bill -> Expense/Payment workflow seamlessly integrated with Phase 5 Double-Entry Ledger without duplicate postings.
+5. **Procurement Reporting**:
+   - **Gap**: No dedicated procurement reports exist.
+   - **Plan (Increment 7)**: Deliver Budget vs Actual, PR Report, PO Report, and Vendor Outstanding Bills Report.
+
+### Increment 1 Completed: Standardized Sidebar Parent/Submenu Hierarchy
+1. **Sidebar Hierarchy Implementation**:
+   - **Finance**:
+     - Chart of Accounts (direct link)
+     - Income & Expense (Collapsible Parent: Income Report, Expense Report, Misc Income)
+     - Expenses (Collapsible Parent: Expense List, Record Expense)
+     - Transfers (Collapsible Parent: Transfer List, New Transfer)
+     - Journals & Ledgers (Collapsible Parent: Journal Entries, Opening Balances)
+     - Financial Statements (Collapsible Parent: Trial Balance, General Ledger, Cash Book, Income & Expenditure)
+   - **Budget & Procurement**:
+     - Budgets (Collapsible Parent: Budget List, Create Budget, Budget vs Actual)
+     - Vendors (Collapsible Parent: Vendor List, Add Vendor)
+     - Purchase Requests (Collapsible Parent: Request List, Create Request)
+     - Purchase Orders (Collapsible Parent: Purchase Order List)
+     - Vendor Bills & Payments (Collapsible Parent: Bill List)
+     - Procurement Reports (Collapsible Parent: Budget vs Actual, PR Report, PO Report, Vendor Outstanding Bills)
+   - **Donations & Collections**:
+     - Collections & Payments (Collapsible Parent: Payment Register, Record Payment)
+     - Pledges & Manat (Collapsible Parent: Pledge Register, Create Pledge)
+     - Monthly Committee Contributions, Official Receipts, Collection Reports
+   - **Puja & Events**:
+     - Events & Festivals (Collapsible Parent: All Events, Create Event, Event Categories)
+   - **People & Devotees**:
+     - Directory & Members (Collapsible Parent: Devotee Directory, Family Units, Executive Committee)
+2. **Frontend UI & Accessibility**:
+   - Bootstrap 5 collapse with `aria-expanded`, `.sidebar-parent`, `.sidebar-chevron` (rotating 180deg when expanded), `.sidebar-submenu`, and `.sidebar-sublink`.
+   - `TempleUI.initSidebarScroll` automatically detects active sublinks, auto-expands parent collapse if not already open, highlights parent with `.active-parent`, and centers the active link in the viewport.
+   - Server-side permission enforcement: Parent menus only display if the authenticated user has permission to at least one child item.
+3. **Localization**:
+   - 100% key parity maintained across `lang/en/` and `lang/bn/` (`nav.php`, `finance.php`, `procurement.php`).
+4. **Test Verification**:
+   - Added `tests/Feature/SidebarMenuHierarchyTest.php` with 6 feature tests asserting collapse attributes, active parent expansion, role-based visibility, and Bengali localization.
+   - All 162 tests passed (1,044 assertions) cleanly. Pint passed.
+
+### Increment 2 Completed: Budget Management
+1. **Database Schema & Migrations**:
+   - `budgets` table: `budget_code` (`BDG-YYYY-0001` concurrency-safe with retries), `title_en`, `title_bn`, `budget_type` (`annual`, `event`, `general_fund`), `fiscal_year`, `event_id` (nullable foreign key), `total_amount` (`DECIMAL(12,2)`), `status` (`draft`, `submitted`, `approved`, `rejected`, `revised`, `cancelled`), `created_by`, `submitted_by`, `submitted_at`, `approved_by`, `approved_at`, `rejected_by`, `rejected_at`, `rejection_reason`.
+   - `budget_items` table: `budget_id`, `financial_account_id` (constrained to expense accounts in Chart of Accounts), `allocated_amount` (`DECIMAL(12,2)`), `notes`. Unique constraint `(budget_id, financial_account_id)`.
+2. **Business Rules & Workflows**:
+   - Draft → Submitted → Approved / Rejected lifecycle.
+   - Strict separation of duties: Budget creators cannot approve their own budgets unless `super_admin`.
+   - Mandatory rejection reason required for rejection.
+   - Scope uniqueness: duplicate active/approved/submitted budgets for the same event or annual/general fund period are prevented.
+   - Approved budgets cannot be silently edited.
+3. **Budget vs Actual Variance Analytics**:
+   - Compares approved budget line items against actual approved expenses recorded in Phase 5 Finance.
+   - Each expense is counted exactly once.
+   - Excludes unposted, rejected, and reversed expenses from actual totals.
+   - Tracks pending expenses separately without distorting actuals.
+   - Unbudgeted expenses for an event are clearly surfaced with allocated = 0.
+   - Calculates remaining balance, over-budget amount, and utilization percentages.
+4. **User Interface & Dedicated Views**:
+   - Budget Listing (`/procurement/budgets`) with server-side DataTables (strictly no row number column, exactly 7 columns).
+   - Create Budget (`/procurement/budgets/create`) with dynamic client-side line item addition/removal and live sum calculation.
+   - Edit Budget (`/procurement/budgets/{budget}/edit`) for draft/rejected budgets.
+   - Budget Show (`/procurement/budgets/{budget}`) with status badge, approval/rejection modals, and variance preview.
+   - Dedicated Budget vs Actual Report (`/procurement/reports/budget-vs-actual`) with budget selector, summary cards, and print styling.
+5. **Localization & Code Style**:
+   - Complete parity between `lang/en/procurement.php` and `lang/bn/procurement.php`.
+   - Pint passed with 0 style violations.
+6. **Automated Feature Tests**:
+   - Added `tests/Feature/BudgetManagementTest.php` with 12 comprehensive feature tests:
+     - Access control for guests and devotees.
+     - Unique budget code generation (`BDG-YYYY-0001`).
+     - Event ID requirement for event budgets.
+     - Duplicate active budget prevention.
+     - Submission, approval, rejection with reason.
+     - Strict separation of duties (preventing self-approval).
+     - Accurate Budget vs Actual calculations and single expense counting.
+     - Server-side DataTables JSON response verification (strictly 7 columns, no row number column).
+     - Clean Bengali localization rendering.
+   - Full test suite: **174 passed (1,104 assertions)** with zero failures or regressions.
+
+### Increment 3 Completed: Vendor Management
+1. **Database Schema & Migrations**:
+   - `vendors` table (`2026_10_29_000021_create_vendors_table.php`):
+     - `vendor_code`: `VND-0001` format generated with concurrency-safe row-level locking and retry loop. Unique database constraint.
+     - `name`, `contact_person`, `phone` (indexed), `email`, `address`, `vendor_type` (indexed), `tax_id` (trade license / TIN / BIN, indexed), `notes`, `is_active` (boolean, indexed).
+     - `created_by`, `updated_by` (foreign keys to `users`, nullOnDelete), timestamps, and softDeletes.
+   - `expenses` table integration: Added nullable `vendor_id` foreign key referencing `vendors(id)` with `nullOnDelete()`, while seamlessly supporting historical `vendor_name` and `vendor_phone` records.
+2. **Business Rules, Validation & Protection**:
+   - Unique phone and tax ID validation accounting for soft deletes (`Rule::unique('vendors', ...)->whereNull('deleted_at')`), while safely allowing vendors to retain their own credentials upon updating.
+   - Protected deactivation / deletion: Vendors with linked expenses or financial records cannot be hard-deleted or soft-deleted; they are deactivated by toggling `is_active`.
+   - Comprehensive audit logging via `AuditLogger::log` for vendor creation, updates, status toggles, and deletions.
+3. **Select2 AJAX Search Endpoint**:
+   - `GET /procurement/vendors/search` returning `{ results: [ { id, text, name, vendor_code, phone, vendor_type } ] }`.
+   - Default filter excludes inactive vendors, while supporting optional category filtering and search queries matching name, code, phone, or contact person.
+4. **User Interface & Dedicated Views**:
+   - **Vendor List (`/procurement/vendors`)**: Server-side DataTables with strictly NO row number / `#` column (exactly 7 business data columns + actions), summary metrics cards (Total Vendors, Active Vendors, Inactive Vendors, Total Paid Expenditure), category and status filters.
+   - **Add Vendor (`/procurement/vendors/create`)**: Clean form with vendor category dropdown, contact details, tax ID, notes, active status toggle, and button loading indicators.
+   - **Edit Vendor (`/procurement/vendors/{vendor}/edit`)**: Pre-populated update form preserving unique constraints on self.
+   - **Vendor Profile & History (`/procurement/vendors/{vendor}`)**: Profile overview card with contact information, status badge, quick toggle button, and complete transaction history table listing linked expenses, vouchers, and statuses without duplicate counting.
+5. **Localization & Code Style**:
+   - 100% key parity between `lang/en/procurement.php` and `lang/bn/procurement.php` for all vendor fields, categories, status badges, and feedback messages.
+   - 100% PSR-12 code compliance verified with `./vendor/bin/pint --test`.
+6. **Automated Feature Tests**:
+   - Added `tests/Feature/VendorManagementTest.php` with 13 comprehensive feature tests:
+     - Access control for guests and devotees.
+     - Unique vendor code generation in `VND-0001` format.
+     - Authorized creation with complete metadata and audit logging.
+     - Duplicate phone and tax ID prevention.
+     - Update allowing same phone and tax ID.
+     - Active status toggling.
+     - Protected deletion prevention when linked expenses exist.
+     - Deletion allowed for unused vendors.
+     - Select2 AJAX search format and inactive vendor exclusion.
+     - Server-side DataTables JSON response verification (strictly NO row number column).
+     - Clean Bengali localization rendering.
+   - Full test suite: **187 passed (1,174 assertions)** with zero failures or regressions.
+
+
+### Increment 4 Completed: Purchase Requests & Purchase Orders
+1. **Database Schema & Migrations**:
+   - `purchase_requests` table (`2026_10_30_000022_create_purchase_requests_and_items_tables.php`):
+     - `request_number`: `PRQ-YYYY-0001` format generated with concurrency-safe row-level locking (`lockForUpdate()`) and unique database constraint.
+     - `title`, `event_id` (nullable foreign key), `budget_id` (nullable foreign key), `request_date`, `status` (`draft`, `submitted`, `approved`, `rejected`, `cancelled`), `total_estimated_amount` (`DECIMAL(12,2)`), `justification`, `notes`, `rejection_reason`, `is_converted_to_po` (boolean lock).
+     - Audit timestamps and foreign keys: `requested_by`, `created_by`, `submitted_by`, `submitted_at`, `approved_by`, `approved_at`, `rejected_by`, `rejected_at`.
+   - `purchase_request_items` table:
+     - `purchase_request_id`, `description`, `quantity` (`DECIMAL(10,2)`), `unit`, `estimated_unit_price` (`DECIMAL(12,2)`), `estimated_total` (`DECIMAL(12,2)`), `financial_account_id` (constrained to expense accounts), `budget_item_id`, `notes`.
+   - `purchase_orders` table (`2026_10_30_000023_create_purchase_orders_and_items_tables.php`):
+     - `order_number`: `PO-YYYY-0001` format generated with concurrency-safe locking and unique database constraint.
+     - `purchase_request_id` (nullable foreign key to source request), `vendor_id` (constrained to active vendors), `event_id`, `budget_id`, `order_date`, `expected_delivery_date`, `status` (`draft`, `approved`, `sent`, `completed`, `cancelled`).
+     - Money fields: `subtotal` (`DECIMAL(12,2)`), `discount_amount` (`DECIMAL(12,2)`), `total_amount` (`DECIMAL(12,2)`).
+     - Text fields: `terms_conditions`, `delivery_address`, `notes`.
+     - Audit fields: `approved_by`, `approved_at`, `created_by`, `updated_by`, timestamps, and softDeletes.
+   - `purchase_order_items` table:
+     - `purchase_order_id`, `purchase_request_item_id` (nullable), `description`, `quantity` (`DECIMAL(10,2)`), `unit`, `unit_price` (`DECIMAL(12,2)`), `line_total` (`DECIMAL(12,2)`), `financial_account_id` (constrained to expense accounts), `budget_item_id` (nullable), `notes`.
+2. **Business Rules, Validation & Ledger Invariant**:
+   - **Safe Request-to-Order Conversion**:
+     - Only requests in `approved` status and where `is_converted_to_po = false` can be converted into purchase orders.
+     - Conversion is executed inside a database transaction with pessimistic row-locking (`PurchaseRequest::lockForUpdate()`) to eliminate race conditions and prevent concurrent double-conversion.
+     - Marks `is_converted_to_po = true`. If the resulting purchase order is later cancelled, the lock is safely released (`is_converted_to_po = false`).
+   - **Active Vendor Validation**:
+     - Purchase order creation and conversion strictly validates that the chosen vendor exists and has `is_active = true`.
+   - **Server-Side Financial Integrity**:
+     - Ignores client-side tampered totals. Subtotal, discount adjustments, line totals, and grand total are strictly calculated and rounded on the server (`DECIMAL(12,2)`).
+   - **Strict Separation of Duties**:
+     - Order creators cannot approve their own purchase orders unless they possess the `super_admin` role.
+   - **Finance Ledger Invariant**:
+     - Purchase requests and purchase orders are procurement documents. Neither action generates rows in `expenses` or `journal_entries`.
+3. **Dedicated Views & UI Implementation**:
+   - **Purchase Request Views** (`resources/views/procurement/requests/`):
+     - `index.blade.php`: Server-side DataTables strictly without row number / `#` column (exactly 7 business data columns + actions), summary metrics cards, status filter.
+     - `create.blade.php` & `edit.blade.php`: Dynamic client-side line item addition/removal with automatic recalculation and event/budget selector.
+     - `show.blade.php`: Full requisition details, budget utilization alert, status badges, and action modals for submission, approval, rejection, and cancellation.
+   - **Purchase Order Views** (`resources/views/procurement/orders/`):
+     - `index.blade.php`: Server-side DataTables strictly without row number / `#` column (7 business data columns + actions), summary metrics cards (Total Orders, Active Orders, Completed Orders, Total Order Value), vendor filter, and status filter.
+     - `create.blade.php`: Dual-mode creation interface (converts from approved requisition with pre-filled line items or accepts direct purchase orders) with vendor selection and delivery details.
+     - `edit.blade.php`: Draft PO modification form with server-validated recalculations.
+     - `show.blade.php`: Comprehensive order overview, vendor profile summary, line items table, delivery & terms card, status progression, and action modals (Approve, Mark as Sent, Mark as Completed, Cancel).
+     - `print.blade.php`: Clean printable PO voucher with temple branding, order and vendor details, itemized breakdown, terms, and signature lines (Prepared By, Authorized Signatory, Vendor Acknowledgment).
+4. **Bilingual Localization (EN & BN)**:
+   - 100% key parity maintained between `lang/en/procurement.php` and `lang/bn/procurement.php` for all purchase request and order terms, form fields, validation messages, action prompts, status badges, and voucher text.
+5. **Automated Feature Tests**:
+   - `tests/Feature/PurchaseRequestTest.php` (15 tests, 71 assertions):
+     - Access control (guests, unauthorized users).
+     - Unique code generation (`PRQ-YYYY-0001`).
+     - Validation of items, positive amounts, budget/event relationships.
+     - Submission and cancellation workflow.
+     - Strict separation of duties preventing self-approval.
+     - Approval and rejection requiring reason.
+     - Zero finance ledger entries invariant.
+     - DataTables JSON response strictly without row number column.
+     - Bengali locale rendering without errors.
+   - `tests/Feature/PurchaseOrderTest.php` (14 tests, 69 assertions):
+     - Access control (guests, unauthorized devotees).
+     - Non-approved or already converted request rejection.
+     - Concurrency-safe conversion with row locking.
+     - Duplicate conversion rejection under concurrency.
+     - Server-side calculation ignoring tampered totals.
+     - Inactive vendor validation.
+     - Strict separation of duties preventing creator from self-approving.
+     - Authorized approval workflow.
+     - Order lifecycle state machine (`draft` → `approved` → `sent` → `completed`, and cancellation releasing source PR lock).
+     - Zero finance ledger entries invariant.
+     - DataTables JSON response strictly without row number column.
+     - Bengali locale rendering without errors.
+   - Total test suite: **216 passed tests (1,314 assertions)** with zero failures or regressions.
+   - 100% PSR-12 code compliance verified with `./vendor/bin/pint --test`.

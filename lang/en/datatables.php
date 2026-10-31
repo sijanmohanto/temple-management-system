@@ -13,6 +13,10 @@ return [
     'processing' => 'Processing...',
     'search' => 'Search:',
     'zeroRecords' => 'No matching records found',
+    'previous' => 'Previous',
+    'next' => 'Next',
+    'first' => 'First',
+    'last' => 'Last',
     'paginate' => [
         'first' => 'First',
         'last' => 'Last',

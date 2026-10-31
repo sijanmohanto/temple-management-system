@@ -210,4 +210,9 @@ return [
     'excess_destination_general_desc' => 'অতিরিক্ত অর্থ মন্দিরের সাধারণ উন্মুক্ত তহবিলে স্থানান্তর করা হবে।',
     'voluntary_amount' => 'ঐচ্ছিক অনুদান',
     'above_pledged_target' => 'অঙ্গীকারের চেয়ে অতিরিক্ত আদায়',
+    'pledge' => 'উৎসবের অঙ্গীকার',
+    'event_donation' => 'উৎসবের ঐচ্ছিক দান',
+    'monthly_contribution' => 'কমিটির মাসিক চাঁদা',
+    'general_donation' => 'সাধারণ মন্দির দান',
+    'family' => 'পরিবার',
 ];

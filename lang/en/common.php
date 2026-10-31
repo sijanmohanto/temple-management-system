@@ -66,6 +66,7 @@ return [
     'confirm_password' => 'Confirm New Password',
     'preferred_language' => 'Preferred Language',
     'phone_number' => 'Phone Number',
+    'phone' => 'Phone',
     'address' => 'Address',
     'last_login' => 'Last Login',
 

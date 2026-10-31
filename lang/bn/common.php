@@ -66,6 +66,7 @@ return [
     'confirm_password' => 'নতুন পাসওয়ার্ড নিশ্চিত করুন',
     'preferred_language' => 'পছন্দের ভাষা',
     'phone_number' => 'ফোন নম্বর',
+    'phone' => 'ফোন',
     'address' => 'ঠিকানা',
     'last_login' => 'সর্বশেষ প্রবেশ',
 

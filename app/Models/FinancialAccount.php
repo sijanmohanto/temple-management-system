@@ -194,6 +194,14 @@ class FinancialAccount extends Model
     }
 
     /**
+     * Account name alias returning localized name.
+     */
+    public function getAccountNameAttribute(): string
+    {
+        return $this->name;
+    }
+
+    /**
      * Display label with code: "1010 - Cash in Hand".
      */
     public function getDisplayNameAttribute(): string
