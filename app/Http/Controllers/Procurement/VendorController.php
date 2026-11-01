@@ -123,7 +123,11 @@ class VendorController extends Controller
             'pending_amount' => '৳'.number_format((float) $totalPendingAmount, 2),
         ];
 
-        return view('procurement.vendors.show', compact('vendor', 'expenses', 'metrics'));
+        $bills = $vendor->bills()->with(['purchaseOrder', 'creator'])->latest('bill_date')->take(15)->get();
+        $billMetrics = $vendor->getBillMetrics();
+        $payments = $vendor->payments()->with(['financialAccount', 'creator'])->latest('payment_date')->take(15)->get();
+
+        return view('procurement.vendors.show', compact('vendor', 'expenses', 'metrics', 'bills', 'billMetrics', 'payments'));
     }
 
     /**

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PurchaseOrderItem extends Model
 {
@@ -39,6 +40,16 @@ class PurchaseOrderItem extends Model
         });
     }
 
+    public function getItemDescriptionAttribute(): string
+    {
+        return $this->description ?? '';
+    }
+
+    public function setItemDescriptionAttribute($value): void
+    {
+        $this->attributes['description'] = $value;
+    }
+
     public function getTotalPriceAttribute(): float
     {
         return (float) $this->line_total;
@@ -67,5 +78,38 @@ class PurchaseOrderItem extends Model
     public function budgetItem(): BelongsTo
     {
         return $this->belongsTo(BudgetItem::class, 'budget_item_id');
+    }
+
+    public function billItems(): HasMany
+    {
+        return $this->hasMany(VendorBillItem::class, 'purchase_order_item_id');
+    }
+
+    /**
+     * Quantity already billed across active/approved bills.
+     */
+    public function getBilledQuantityAttribute(): float
+    {
+        return (float) $this->billItems()
+            ->whereHas('vendorBill', function ($q) {
+                $q->whereNotIn('status', [VendorBill::STATUS_REJECTED, VendorBill::STATUS_CANCELLED]);
+            })
+            ->sum('quantity');
+    }
+
+    /**
+     * Remaining unbilled quantity on this purchase order line item.
+     */
+    public function getRemainingQuantityAttribute(): float
+    {
+        return max(0.00, round((float) $this->quantity - $this->billed_quantity, 2));
+    }
+
+    /**
+     * Check if this item is completely fulfilled/billed.
+     */
+    public function isFullyBilled(): bool
+    {
+        return $this->remaining_quantity <= 0.00;
     }
 }

@@ -9,6 +9,9 @@ use App\Models\FundTransfer;
 use App\Models\JournalEntry;
 use App\Models\ManualIncome;
 use App\Models\PaymentAllocation;
+use App\Models\VendorBill;
+use App\Models\VendorBillItem;
+use App\Models\VendorPayment;
 use Database\Seeders\ChartOfAccountsSeeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -243,6 +246,297 @@ class FinancePostingService
             ]);
 
             return $journal;
+        });
+    }
+
+    /**
+     * Post an approved vendor bill to the general ledger as Accounts Payable.
+     * In double-entry accounting:
+     * - Debit: Expense Accounts (for each line item)
+     * - Credit: Accounts Payable (2010 Liability account)
+     * Cash/Bank balance is NOT decreased.
+     */
+    public function postVendorBill(VendorBill $bill, int $userId): JournalEntry
+    {
+        $this->ensureAccountsExist();
+
+        if ($bill->status !== VendorBill::STATUS_APPROVED) {
+            throw ValidationException::withMessages([
+                'bill' => ['Only approved vendor bills can be posted to the finance ledger.'],
+            ]);
+        }
+
+        $existing = JournalEntry::where('source_type', VendorBill::class)
+            ->where('source_id', $bill->id)
+            ->first();
+
+        if ($existing) {
+            if (! $bill->journal_entry_id) {
+                $bill->updateQuietly(['journal_entry_id' => $existing->id]);
+            }
+
+            return $existing;
+        }
+
+        return DB::transaction(function () use ($bill, $userId) {
+            $apAccount = FinancialAccount::findByCode(FinancialAccount::CODE_AP);
+            if (! $apAccount) {
+                $apAccount = FinancialAccount::where('account_type', FinancialAccount::TYPE_LIABILITY)
+                    ->where('is_active', true)
+                    ->first();
+            }
+
+            if (! $apAccount) {
+                throw new \RuntimeException('Accounts Payable liability account (2010) not found in chart of accounts.');
+            }
+
+            $bill->loadMissing(['items.expenseAccount', 'vendor']);
+
+            $lines = [];
+            $totalAmount = (float) $bill->total_amount;
+            $subtotal = (float) $bill->subtotal;
+            $items = $bill->items;
+
+            $allocatedDebitTotal = 0.00;
+            $itemCount = $items->count();
+
+            foreach ($items as $index => $item) {
+                $itemBase = (float) $item->line_total;
+
+                // Scale line item amount proportionately if header-level discount or tax is present
+                if ($subtotal > 0 && abs($subtotal - $totalAmount) > 0.001) {
+                    if ($index === $itemCount - 1) {
+                        $lineDebit = max(0.00, round($totalAmount - $allocatedDebitTotal, 2));
+                    } else {
+                        $ratio = $itemBase / $subtotal;
+                        $lineDebit = round($totalAmount * $ratio, 2);
+                        $allocatedDebitTotal += $lineDebit;
+                    }
+                } else {
+                    $lineDebit = $itemBase;
+                    $allocatedDebitTotal += $lineDebit;
+                }
+
+                if ($lineDebit > 0) {
+                    $lines[] = [
+                        'account_id' => $item->financial_account_id,
+                        'debit_amount' => $lineDebit,
+                        'credit_amount' => 0.00,
+                        'line_description_en' => "Bill {$bill->bill_number} - {$item->description}".($bill->vendor ? " (Payee: {$bill->vendor->name})" : ''),
+                        'line_description_bn' => "বিল {$bill->bill_number} - {$item->description}",
+                        'event_id' => $bill->event_id,
+                        'reference_type' => VendorBillItem::class,
+                        'reference_id' => $item->id,
+                    ];
+                }
+            }
+
+            // Credit: Accounts Payable (Liability)
+            $lines[] = [
+                'account_id' => $apAccount->id,
+                'debit_amount' => 0.00,
+                'credit_amount' => $totalAmount,
+                'line_description_en' => "Accounts Payable obligation for Bill {$bill->bill_number} (Vendor: {$bill->vendor?->name}, Invoice: {$bill->vendor_invoice_number})",
+                'line_description_bn' => "বিল {$bill->bill_number} এর জন্য প্রদেয় হিসাব দায় (সরবরাহকারী: {$bill->vendor?->name}, চালান: {$bill->vendor_invoice_number})",
+                'event_id' => $bill->event_id,
+                'reference_type' => VendorBill::class,
+                'reference_id' => $bill->id,
+            ];
+
+            $journal = $this->journalService->createEntry([
+                'entry_date' => $bill->bill_date,
+                'source_type' => VendorBill::class,
+                'source_id' => $bill->id,
+                'description' => "Vendor bill {$bill->bill_number}: {$bill->vendor_invoice_number} ({$bill->vendor?->name})",
+                'event_id' => $bill->event_id,
+                'created_by' => $userId,
+                'posted_by' => $userId,
+                'lines' => $lines,
+            ]);
+
+            $bill->updateQuietly([
+                'journal_entry_id' => $journal->id,
+            ]);
+
+            return $journal;
+        });
+    }
+
+    /**
+     * Reverse a posted vendor bill in the general ledger.
+     */
+    public function reverseVendorBill(VendorBill $bill, int $reverserId, string $reason): ?JournalEntry
+    {
+        $journal = JournalEntry::where('source_type', VendorBill::class)
+            ->where('source_id', $bill->id)
+            ->first();
+
+        if (! $journal) {
+            return null;
+        }
+
+        if ($journal->status === JournalEntry::STATUS_REVERSED) {
+            return null;
+        }
+
+        return $this->journalService->createReversal($journal, $reverserId, $reason);
+    }
+
+    /**
+     * Post an authorized vendor payment to the general ledger.
+     * Settles the Accounts Payable liability (Debits AP 2010) and Credits the liquid payment asset account.
+     * Settles the allocated vendor bills atomically.
+     */
+    public function postVendorPayment(VendorPayment $payment, int $userId): JournalEntry
+    {
+        $this->ensureAccountsExist();
+
+        // Idempotency check: if already posted, return existing journal entry
+        $existing = JournalEntry::where('source_type', VendorPayment::class)
+            ->where('source_id', $payment->id)
+            ->first();
+
+        if ($existing) {
+            if (! $payment->journal_entry_id) {
+                $payment->updateQuietly(['journal_entry_id' => $existing->id]);
+            }
+
+            return $existing;
+        }
+
+        return DB::transaction(function () use ($payment, $userId) {
+            $apAccount = FinancialAccount::findByCode(FinancialAccount::CODE_AP);
+            if (! $apAccount) {
+                $apAccount = FinancialAccount::where('account_type', FinancialAccount::TYPE_LIABILITY)
+                    ->where('is_active', true)
+                    ->first();
+            }
+
+            if (! $apAccount) {
+                throw new \RuntimeException('Accounts Payable liability account (2010) not found in chart of accounts.');
+            }
+
+            $paymentAccount = $payment->financialAccount;
+            if (! $paymentAccount || $paymentAccount->account_type !== FinancialAccount::TYPE_ASSET) {
+                throw new \RuntimeException('Valid liquid asset payment account (Cash/Bank) must be configured for vendor payment.');
+            }
+
+            $payment->loadMissing(['allocations.bill', 'vendor']);
+
+            $amount = (float) $payment->amount;
+
+            $lines = [
+                // Debit: Accounts Payable (Liability reduced)
+                [
+                    'financial_account_id' => $apAccount->id,
+                    'debit_amount' => $amount,
+                    'credit_amount' => 0.00,
+                    'line_description_en' => "Settlement of Accounts Payable for Payment {$payment->payment_number} to {$payment->vendor?->name}",
+                    'line_description_bn' => "পরিশোধ {$payment->payment_number} এর বিপরীতে প্রদেয় হিসাব দায় সমন্বয় (সরবরাহকারী: {$payment->vendor?->name})",
+                    'event_id' => null,
+                    'reference_type' => VendorPayment::class,
+                    'reference_id' => $payment->id,
+                ],
+                // Credit: Payment Asset Account (Cash/Bank balance reduced)
+                [
+                    'financial_account_id' => $paymentAccount->id,
+                    'debit_amount' => 0.00,
+                    'credit_amount' => $amount,
+                    'line_description_en' => "Vendor disbursement via {$payment->payment_method} ({$payment->payment_number}) to {$payment->vendor?->name}".($payment->reference_number ? " Ref: {$payment->reference_number}" : ''),
+                    'line_description_bn' => "সরবরাহকারী পরিশোধ ({$payment->payment_number}) - {$payment->payment_method} মাধ্যমে ছাড় (সরবরাহকারী: {$payment->vendor?->name})",
+                    'event_id' => null,
+                    'reference_type' => VendorPayment::class,
+                    'reference_id' => $payment->id,
+                ],
+            ];
+
+            $journal = $this->journalService->createEntry([
+                'entry_date' => $payment->payment_date,
+                'source_type' => VendorPayment::class,
+                'source_id' => $payment->id,
+                'description' => "Vendor payment {$payment->payment_number}: {$payment->vendor?->name} (৳{$amount})",
+                'event_id' => null,
+                'created_by' => $userId,
+                'posted_by' => $userId,
+                'lines' => $lines,
+            ]);
+
+            // Update payment record
+            $payment->updateQuietly([
+                'status' => VendorPayment::STATUS_POSTED,
+                'journal_entry_id' => $journal->id,
+                'posted_by' => $userId,
+                'posted_at' => now(),
+            ]);
+
+            // Update allocated bills
+            foreach ($payment->allocations as $alloc) {
+                $bill = $alloc->bill;
+                if ($bill) {
+                    $newPaidAmount = round((float) $bill->paid_amount + (float) $alloc->allocated_amount, 2);
+                    $newStatus = ($newPaidAmount >= (float) $bill->total_amount)
+                        ? 'paid'
+                        : 'partially_paid';
+
+                    $bill->updateQuietly([
+                        'paid_amount' => $newPaidAmount,
+                        'payment_status' => $newStatus,
+                    ]);
+                }
+            }
+
+            return $journal;
+        });
+    }
+
+    /**
+     * Reverse a posted vendor payment in the general ledger.
+     * Restores Accounts Payable liability and un-settles allocated bill balances.
+     */
+    public function reverseVendorPayment(VendorPayment $payment, int $reverserId, string $reason): ?JournalEntry
+    {
+        $journal = JournalEntry::where('source_type', VendorPayment::class)
+            ->where('source_id', $payment->id)
+            ->first();
+
+        if (! $journal) {
+            return null;
+        }
+
+        if ($journal->status === JournalEntry::STATUS_REVERSED) {
+            return null;
+        }
+
+        return DB::transaction(function () use ($payment, $journal, $reverserId, $reason) {
+            $reversal = $this->journalService->createReversal($journal, $reverserId, $reason);
+
+            $payment->loadMissing('allocations.bill');
+
+            // Restore bill balances
+            foreach ($payment->allocations as $alloc) {
+                $bill = $alloc->bill;
+                if ($bill) {
+                    $newPaidAmount = max(0.00, round((float) $bill->paid_amount - (float) $alloc->allocated_amount, 2));
+                    $newStatus = ($newPaidAmount <= 0.00)
+                        ? 'unpaid'
+                        : (($newPaidAmount >= (float) $bill->total_amount) ? 'paid' : 'partially_paid');
+
+                    $bill->updateQuietly([
+                        'paid_amount' => $newPaidAmount,
+                        'payment_status' => $newStatus,
+                    ]);
+                }
+            }
+
+            $payment->updateQuietly([
+                'status' => VendorPayment::STATUS_REVERSED,
+                'reversal_journal_entry_id' => $reversal->id,
+                'reversed_by' => $reverserId,
+                'reversed_at' => now(),
+                'reversal_reason' => $reason,
+            ]);
+
+            return $reversal;
         });
     }
 

@@ -154,6 +154,22 @@ class Vendor extends Model
     }
 
     /**
+     * Linked vendor bills.
+     */
+    public function bills(): HasMany
+    {
+        return $this->hasMany(VendorBill::class, 'vendor_id');
+    }
+
+    /**
+     * Linked vendor payments.
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(VendorPayment::class, 'vendor_id');
+    }
+
+    /**
      * Query all expenses linked either directly or historically via phone.
      */
     public function allExpenses(): Builder
@@ -178,11 +194,100 @@ class Vendor extends Model
             return true;
         }
 
+        if ($this->bills()->exists()) {
+            return true;
+        }
+
         if (! empty($this->phone) && Expense::where('vendor_phone', $this->phone)->exists()) {
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Calculate comprehensive vendor bill & payment metrics.
+     *
+     * @return array<string, mixed>
+     */
+    public function getBillMetrics(): array
+    {
+        $approvedBills = $this->bills()->where('status', VendorBill::STATUS_APPROVED);
+        $totalApprovedAmount = (float) (clone $approvedBills)->sum('total_amount');
+        $approvedCount = (clone $approvedBills)->count();
+
+        $rejectedBills = $this->bills()->where('status', VendorBill::STATUS_REJECTED);
+        $totalRejectedAmount = (float) (clone $rejectedBills)->sum('total_amount');
+        $rejectedCount = (clone $rejectedBills)->count();
+
+        $cancelledBills = $this->bills()->where('status', VendorBill::STATUS_CANCELLED);
+        $totalCancelledAmount = (float) (clone $cancelledBills)->sum('total_amount');
+        $cancelledCount = (clone $cancelledBills)->count();
+
+        $draftBills = $this->bills()->where('status', VendorBill::STATUS_DRAFT);
+        $draftCount = (clone $draftBills)->count();
+
+        $submittedBills = $this->bills()->where('status', VendorBill::STATUS_SUBMITTED);
+        $submittedCount = (clone $submittedBills)->count();
+
+        $verifiedBills = $this->bills()->where('status', VendorBill::STATUS_VERIFIED);
+        $verifiedCount = (clone $verifiedBills)->count();
+
+        // Calculate actual paid disbursements from posted vendor payments
+        $totalPaidAmount = (float) $this->payments()
+            ->where('status', VendorPayment::STATUS_POSTED)
+            ->sum('amount');
+        $totalOutstandingAmount = max(0.00, round($totalApprovedAmount - $totalPaidAmount, 2));
+
+        $unpaidCount = (clone $approvedBills)
+            ->where(function ($q) {
+                $q->whereNull('paid_amount')->orWhere('paid_amount', '<=', 0);
+            })
+            ->count();
+
+        $partiallyPaidCount = (clone $approvedBills)
+            ->where('paid_amount', '>', 0)
+            ->whereColumn('paid_amount', '<', 'total_amount')
+            ->count();
+
+        $fullyPaidCount = (clone $approvedBills)
+            ->whereColumn('paid_amount', '>=', 'total_amount')
+            ->count();
+
+        $overdueCount = (clone $approvedBills)
+            ->whereNotNull('due_date')
+            ->where('due_date', '<', now()->toDateString())
+            ->where(function ($q) {
+                $q->whereNull('paid_amount')->orWhereColumn('paid_amount', '<', 'total_amount');
+            })
+            ->count();
+
+        return [
+            'total_billed' => $totalApprovedAmount,
+            'total_approved_amount' => $totalApprovedAmount,
+            'total_approved_formatted' => '৳'.number_format($totalApprovedAmount, 2),
+            'approved_count' => $approvedCount,
+            'total_rejected_amount' => $totalRejectedAmount,
+            'total_rejected_formatted' => '৳'.number_format($totalRejectedAmount, 2),
+            'rejected_count' => $rejectedCount,
+            'total_cancelled_amount' => $totalCancelledAmount,
+            'total_cancelled_formatted' => '৳'.number_format($totalCancelledAmount, 2),
+            'cancelled_count' => $cancelledCount,
+            'total_outstanding' => $totalOutstandingAmount,
+            'total_outstanding_amount' => $totalOutstandingAmount,
+            'total_outstanding_formatted' => '৳'.number_format($totalOutstandingAmount, 2),
+            'total_paid' => $totalPaidAmount,
+            'total_paid_amount' => $totalPaidAmount,
+            'total_paid_formatted' => '৳'.number_format($totalPaidAmount, 2),
+            'unpaid_count' => $unpaidCount,
+            'unpaid_bills_count' => $unpaidCount,
+            'partially_paid_bills_count' => $partiallyPaidCount,
+            'fully_paid_bills_count' => $fullyPaidCount,
+            'overdue_bills_count' => $overdueCount,
+            'draft_count' => $draftCount,
+            'submitted_count' => $submittedCount,
+            'verified_count' => $verifiedCount,
+        ];
     }
 
     /**

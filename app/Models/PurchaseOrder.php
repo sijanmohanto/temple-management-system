@@ -131,6 +131,41 @@ class PurchaseOrder extends Model
     }
 
     /**
+     * Vendor bills linked to this purchase order.
+     */
+    public function bills(): HasMany
+    {
+        return $this->hasMany(VendorBill::class, 'purchase_order_id');
+    }
+
+    /**
+     * Total amount already billed across active/approved bills.
+     */
+    public function getBilledAmountAttribute(): float
+    {
+        return (float) $this->bills()
+            ->whereNotIn('status', [VendorBill::STATUS_REJECTED, VendorBill::STATUS_CANCELLED])
+            ->sum('total_amount');
+    }
+
+    /**
+     * Remaining unbilled balance on this order.
+     */
+    public function getRemainingBillableAmountAttribute(): float
+    {
+        return max(0.00, round((float) $this->total_amount - $this->billed_amount, 2));
+    }
+
+    /**
+     * Check if this purchase order can receive new bills.
+     */
+    public function canBeBilled(): bool
+    {
+        return in_array($this->status, [self::STATUS_APPROVED, self::STATUS_SENT, self::STATUS_COMPLETED], true)
+            && $this->remaining_billable_amount > 0;
+    }
+
+    /**
      * User who created the order.
      */
     public function creator(): BelongsTo
