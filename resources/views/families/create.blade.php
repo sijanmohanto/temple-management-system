@@ -42,7 +42,7 @@
                                     <option value="">{{ __('families.select_primary_contact') }}</option>
                                     @foreach($people as $person)
                                         <option value="{{ $person->id }}" {{ old('primary_contact_person_id') == $person->id ? 'selected' : '' }}>
-                                            {{ $person->name_en }} @if($person->name_bn) ({{ $person->name_bn }}) @endif — {{ $person->person_code }}
+                                            {{ $person->name_en }} @if($person->name_bn) ({{ $person->name_bn }}) @endif
                                         </option>
                                     @endforeach
                                 </select>

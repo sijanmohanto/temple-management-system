@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', $purchaseRequest->request_number.' - '.__('procurement.request_details'))
+@section('title', $purchaseRequest->title.' - '.__('procurement.request_details'))
 
 @section('content')
 <div class="container-fluid px-4 py-3">
@@ -9,7 +9,6 @@
         <div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <h1 class="h3 mb-0 text-gray-800 fw-bold">{{ $purchaseRequest->title }}</h1>
-                <span class="badge bg-secondary font-monospace">{{ $purchaseRequest->request_number }}</span>
                 {!! $purchaseRequest->status_badge !!}
                 @if($purchaseRequest->is_converted_to_po)
                     <span class="badge bg-info-subtle text-info border border-info-subtle">
@@ -20,7 +19,7 @@
             <nav aria-label="breadcrumb" class="mt-2">
                 <ol class="breadcrumb mb-0 small">
                     <li class="breadcrumb-item"><a href="{{ route('procurement.requests.index') }}">{{ __('procurement.purchase_requests') }}</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">{{ $purchaseRequest->request_number }}</li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ $purchaseRequest->title }}</li>
                 </ol>
             </nav>
         </div>
@@ -85,7 +84,7 @@
                             {{ $budgetAnalysis['is_over_budget'] ? __('procurement.over_budget_warning') : __('procurement.within_budget') }}
                         </span>
                         <div class="fw-bold text-dark">
-                            {{ __('procurement.select_budget') }}: <span class="font-monospace text-primary">{{ $budgetAnalysis['budget_code'] }}</span>
+                            {{ __('procurement.select_budget') }}: <span class="text-primary">{{ $purchaseRequest->budget?->title ?? $budgetAnalysis['budget_code'] }}</span>
                         </div>
                     </div>
                     <div class="text-md-end">
@@ -130,7 +129,6 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <span class="font-monospace text-muted small">{{ $item->expenseAccount?->account_code }}</span>
                                             <div>{{ $item->expenseAccount?->account_name_en }}</div>
                                         </td>
                                         <td class="text-center font-monospace">
@@ -198,9 +196,6 @@
                 </div>
                 <div class="card-body">
                     <dl class="row mb-0">
-                        <dt class="col-sm-5 text-muted small">{{ __('procurement.request_number') }}</dt>
-                        <dd class="col-sm-7 fw-bold font-monospace">{{ $purchaseRequest->request_number }}</dd>
-
                         <dt class="col-sm-5 text-muted small">{{ __('procurement.request_date') }}</dt>
                         <dd class="col-sm-7">{{ $purchaseRequest->request_date?->format('d M Y') }}</dd>
 
@@ -219,8 +214,8 @@
                         @if($purchaseRequest->budget)
                             <dt class="col-sm-5 text-muted small">{{ __('procurement.select_budget') }}</dt>
                             <dd class="col-sm-7">
-                                <a href="{{ route('procurement.budgets.show', $purchaseRequest->budget) }}" class="font-monospace text-decoration-none">
-                                    {{ $purchaseRequest->budget->budget_code }}
+                                <a href="{{ route('procurement.budgets.show', $purchaseRequest->budget) }}" class="text-decoration-none">
+                                    {{ $purchaseRequest->budget->title }}
                                 </a>
                             </dd>
                         @endif
@@ -269,7 +264,7 @@
                 <div class="modal-body">
                     <p class="mb-0">{{ __('procurement.approve_request_confirm') }}</p>
                     <div class="mt-3 p-3 bg-light rounded">
-                        <div><strong>{{ __('procurement.request_number') }}:</strong> <span class="font-monospace">{{ $purchaseRequest->request_number }}</span></div>
+                        <div><strong>{{ __('common.title') }}:</strong> <span>{{ $purchaseRequest->title }}</span></div>
                         <div><strong>{{ __('procurement.total_estimated_amount') }}:</strong> ৳{{ number_format((float) $purchaseRequest->total_estimated_amount, 2) }}</div>
                     </div>
                 </div>

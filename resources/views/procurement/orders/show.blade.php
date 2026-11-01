@@ -12,7 +12,7 @@
                 {!! $purchaseOrder->status_badge !!}
                 @if($purchaseOrder->purchaseRequest)
                     <a href="{{ route('procurement.requests.show', $purchaseOrder->purchaseRequest) }}" class="badge bg-light text-primary border text-decoration-none">
-                        <i class="bi bi-link-45deg me-1"></i>{{ $purchaseOrder->purchaseRequest->request_number }}
+                        <i class="bi bi-link-45deg me-1"></i>{{ $purchaseOrder->purchaseRequest->title }}
                     </a>
                 @endif
             </div>
@@ -105,7 +105,6 @@
                         <div class="col-md-6">
                             <div class="text-muted small">{{ __('procurement.vendor_name') }}</div>
                             <div class="fw-bold fs-6 text-dark">{{ $purchaseOrder->vendor->name }}</div>
-                            <span class="badge bg-secondary font-monospace">{{ $purchaseOrder->vendor->vendor_code }}</span>
                             @if($purchaseOrder->vendor->vendor_type)
                                 <span class="badge bg-light text-dark border">{{ $purchaseOrder->vendor->vendor_type }}</span>
                             @endif
@@ -162,7 +161,6 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <span class="font-monospace text-muted small">{{ $item->expenseAccount?->account_code }}</span>
                                             <div>{{ $item->expenseAccount?->account_name_en }}</div>
                                         </td>
                                         <td class="text-center font-monospace">
@@ -279,8 +277,8 @@
                         @if($purchaseOrder->purchaseRequest)
                             <dt class="col-sm-5 text-muted small">{{ __('procurement.source_request') }}</dt>
                             <dd class="col-sm-7">
-                                <a href="{{ route('procurement.requests.show', $purchaseOrder->purchaseRequest) }}" class="font-monospace text-decoration-none">
-                                    {{ $purchaseOrder->purchaseRequest->request_number }}
+                                <a href="{{ route('procurement.requests.show', $purchaseOrder->purchaseRequest) }}" class="text-decoration-none">
+                                    {{ $purchaseOrder->purchaseRequest->title }}
                                 </a>
                             </dd>
                         @endif
@@ -288,8 +286,8 @@
                         @if($purchaseOrder->budget)
                             <dt class="col-sm-5 text-muted small">{{ __('procurement.select_budget') }}</dt>
                             <dd class="col-sm-7">
-                                <a href="{{ route('procurement.budgets.show', $purchaseOrder->budget) }}" class="font-monospace text-decoration-none">
-                                    {{ $purchaseOrder->budget->budget_code }}
+                                <a href="{{ route('procurement.budgets.show', $purchaseOrder->budget) }}" class="text-decoration-none">
+                                    {{ $purchaseOrder->budget->title_en }}
                                 </a>
                             </dd>
                         @endif

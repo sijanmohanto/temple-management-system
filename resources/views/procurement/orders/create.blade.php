@@ -29,8 +29,8 @@
         <div class="alert alert-info shadow-sm border-0 d-flex align-items-center mb-4">
             <i class="bi bi-link-45deg fs-3 me-3 text-info"></i>
             <div>
-                <div class="fw-bold">{{ __('procurement.source_request') }}: <span class="font-monospace text-primary">{{ $sourceRequest->request_number }}</span></div>
-                <div class="small text-muted">{{ $sourceRequest->title }} — {{ __('procurement.total_estimated_amount') }}: <strong>৳{{ number_format((float) $sourceRequest->total_estimated_amount, 2) }}</strong></div>
+                <div class="fw-bold">{{ __('procurement.source_request') }}: <span class="text-primary">{{ $sourceRequest->title }}</span></div>
+                <div class="small text-muted">{{ __('procurement.total_estimated_amount') }}: <strong>৳{{ number_format((float) $sourceRequest->total_estimated_amount, 2) }}</strong></div>
             </div>
         </div>
     @endif
@@ -74,7 +74,7 @@
                             <option value="">-- {{ __('procurement.vendor_required') }} --</option>
                             @foreach($vendors as $vendor)
                                 <option value="{{ $vendor->id }}" {{ old('vendor_id') == $vendor->id ? 'selected' : '' }}>
-                                    {{ $vendor->name }} ({{ $vendor->vendor_code }}) {{ $vendor->phone ? ' - '.$vendor->phone : '' }}
+                                    {{ $vendor->name }}{{ $vendor->phone ? ' - '.$vendor->phone : '' }}
                                 </option>
                             @endforeach
                         </select>
@@ -131,7 +131,7 @@
                             <option value="">-- {{ __('procurement.unbudgeted') }} / {{ __('common.none') }} --</option>
                             @foreach($approvedBudgets as $budget)
                                 <option value="{{ $budget->id }}" {{ old('budget_id', $sourceRequest?->budget_id) == $budget->id ? 'selected' : '' }}>
-                                    {{ $budget->budget_code }} — {{ $budget->title_en }} (৳{{ number_format((float) $budget->total_amount, 2) }})
+                                    {{ $budget->title_en }} (৳{{ number_format((float) $budget->total_amount, 2) }})
                                 </option>
                             @endforeach
                         </select>
@@ -255,7 +255,7 @@ $(document).ready(function() {
         var html = '<option value="">-- {{ __("procurement.select_expense_account") }} --</option>';
         $.each(expenseAccounts, function(i, acc) {
             var selected = (acc.id == selectedId) ? 'selected' : '';
-            html += '<option value="' + acc.id + '" ' + selected + '>' + acc.account_code + ' - ' + acc.account_name_en + '</option>';
+            html += '<option value="' + acc.id + '" ' + selected + '>' + acc.account_name_en + '</option>';
         });
         return html;
     }

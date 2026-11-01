@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', __('procurement.edit_vendor').' - '.$vendor->vendor_code)
+@section('title', __('procurement.edit_vendor').' - '.$vendor->name)
 
 @section('content')
 <div class="container-fluid px-4 py-3">
@@ -11,7 +11,6 @@
                 <h1 class="h3 mb-1 text-gray-800 fw-bold">
                     <i class="bi bi-pencil-square text-primary me-2"></i>{{ __('procurement.edit_vendor') }}
                 </h1>
-                <span class="badge bg-secondary font-monospace">{{ $vendor->vendor_code }}</span>
             </div>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 small">

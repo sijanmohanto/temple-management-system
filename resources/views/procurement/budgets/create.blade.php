@@ -123,7 +123,7 @@
                                             <option value="">-- {{ __('procurement.select_expense_account') }} --</option>
                                             @foreach($expenseAccounts as $acc)
                                                 <option value="{{ $acc->id }}" {{ ($item['financial_account_id'] ?? '') == $acc->id ? 'selected' : '' }}>
-                                                    {{ $acc->account_code }} - {{ $acc->account_name }}
+                                                    {{ $acc->account_name }}
                                                 </option>
                                             @endforeach
                                         </select>
@@ -207,7 +207,7 @@ $(document).ready(function() {
     $('#btnAddLineItem').on('click', function() {
         var optionsHtml = '<option value="">-- {{ __("procurement.select_expense_account") }} --</option>';
         @foreach($expenseAccounts as $acc)
-            optionsHtml += '<option value="{{ $acc->id }}">{{ $acc->account_code }} - {{ addslashes($acc->account_name) }}</option>';
+            optionsHtml += '<option value="{{ $acc->id }}">{{ addslashes($acc->account_name) }}</option>';
         @endforeach
 
         var newRow = `

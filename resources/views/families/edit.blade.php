@@ -7,7 +7,6 @@
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
             <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="badge bg-light text-dark border font-monospace">{{ $family->family_code }}</span>
                 <h1 class="h3 fw-bold mb-0 text-dark">{{ __('families.edit_family') }}</h1>
             </div>
             <p class="text-muted small mb-0">{{ $family->family_name }}</p>
@@ -51,7 +50,7 @@
                                     <option value="">{{ __('families.select_primary_contact') }}</option>
                                     @foreach($people as $person)
                                         <option value="{{ $person->id }}" {{ old('primary_contact_person_id', $family->primary_contact_person_id) == $person->id ? 'selected' : '' }}>
-                                            {{ $person->name_en }} @if($person->name_bn) ({{ $person->name_bn }}) @endif — {{ $person->person_code }}
+                                            {{ $person->name_en }} @if($person->name_bn) ({{ $person->name_bn }}) @endif
                                         </option>
                                     @endforeach
                                 </select>

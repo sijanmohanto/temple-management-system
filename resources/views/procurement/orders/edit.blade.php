@@ -67,7 +67,7 @@
                         <select name="vendor_id" id="vendor_id" class="form-select @error('vendor_id') is-invalid @enderror" required>
                             @foreach($vendors as $vendor)
                                 <option value="{{ $vendor->id }}" {{ old('vendor_id', $purchaseOrder->vendor_id) == $vendor->id ? 'selected' : '' }}>
-                                    {{ $vendor->name }} ({{ $vendor->vendor_code }}) {{ $vendor->phone ? ' - '.$vendor->phone : '' }}
+                                    {{ $vendor->name }}{{ $vendor->phone ? ' ('.$vendor->phone.')' : '' }}
                                 </option>
                             @endforeach
                         </select>
@@ -124,7 +124,7 @@
                             <option value="">-- {{ __('procurement.unbudgeted') }} / {{ __('common.none') }} --</option>
                             @foreach($approvedBudgets as $budget)
                                 <option value="{{ $budget->id }}" {{ old('budget_id', $purchaseOrder->budget_id) == $budget->id ? 'selected' : '' }}>
-                                    {{ $budget->budget_code }} — {{ $budget->title_en }} (৳{{ number_format((float) $budget->total_amount, 2) }})
+                                    {{ $budget->title_en }} (৳{{ number_format((float) $budget->total_amount, 2) }})
                                 </option>
                             @endforeach
                         </select>
@@ -248,7 +248,7 @@ $(document).ready(function() {
         var html = '<option value="">-- {{ __("procurement.select_expense_account") }} --</option>';
         $.each(expenseAccounts, function(i, acc) {
             var selected = (acc.id == selectedId) ? 'selected' : '';
-            html += '<option value="' + acc.id + '" ' + selected + '>' + acc.account_code + ' - ' + acc.account_name_en + '</option>';
+            html += '<option value="' + acc.id + '" ' + selected + '>' + acc.account_name_en + '</option>';
         });
         return html;
     }

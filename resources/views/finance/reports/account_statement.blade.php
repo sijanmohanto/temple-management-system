@@ -26,7 +26,7 @@
                     <select name="account_id" class="form-select form-select-sm select2-basic" required>
                         @foreach($accounts as $acc)
                             <option value="{{ $acc->id }}" {{ $selectedAccountId == $acc->id ? 'selected' : '' }}>
-                                {{ $acc->code }} — {{ $acc->name_en }} ({{ ucfirst($acc->account_type) }})
+                                {{ $acc->name_en }} ({{ ucfirst($acc->account_type) }})
                             </option>
                         @endforeach
                     </select>

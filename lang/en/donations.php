@@ -215,4 +215,5 @@ return [
     'monthly_contribution' => 'Committee Monthly Contribution',
     'general_donation' => 'General Temple Donation',
     'family' => 'Family',
+    'no_records_found' => 'No records found.',
 ];

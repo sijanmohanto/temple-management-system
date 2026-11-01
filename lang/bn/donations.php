@@ -215,4 +215,5 @@ return [
     'monthly_contribution' => 'কমিটির মাসিক চাঁদা',
     'general_donation' => 'সাধারণ মন্দির দান',
     'family' => 'পরিবার',
+    'no_records_found' => 'কোনো তথ্য পাওয়া যায়নি।',
 ];

@@ -264,4 +264,12 @@ return [
     'purchase_request_report' => 'ক্রয় রিকুইজিশন রিপোর্ট',
     'purchase_order_report' => 'ক্রয় আদেশ রিপোর্ট',
     'vendor_outstanding_report' => 'বকেয়া বিল রিপোর্ট',
+
+    // Shared Procurement Terms
+    'status' => 'অবস্থা',
+    'unit_price' => 'একক মূল্য',
+    'total_price' => 'মোট মূল্য',
+    'created_by' => 'তৈরি করেছেন',
+    'vendor_address' => 'সরবরাহকারীর ঠিকানা',
+    'vendor' => 'সরবরাহকারী',
 ];

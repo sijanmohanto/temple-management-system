@@ -87,6 +87,24 @@ return [
     'error_occurred' => 'অনুরোধটি সম্পন্ন করার সময় একটি ত্রুটি ঘটেছে।',
     'validation_error_occurred' => 'চিহ্নিত তথ্যগুলো অনুগ্রহ করে সংশোধন করুন।',
 
+    // Additional Actions & Terms
+    'note' => 'নোট',
+    'view_all' => 'সব দেখুন',
+    'no_data_found' => 'কোনো তথ্য পাওয়া যায়নি।',
+    'deactivate' => 'নিষ্ক্রিয় করুন',
+    'activate' => 'সক্রিয় করুন',
+    'confirm_delete' => 'মুছে ফেলার নিশ্চিতকরণ',
+    'manage' => 'ব্যবস্থাপনা',
+    'update' => 'আপডেট করুন',
+    'by' => 'দ্বারা',
+    'created_by' => 'তৈরি করেছেন',
+    'updated_by' => 'সর্বশেষ পরিবর্তন',
+    'audit_information' => 'অডিট তথ্য',
+    'approve' => 'অনুমোদন করুন',
+    'reject' => 'প্রত্যাখ্যান করুন',
+    'active' => 'সক্রিয়',
+    'inactive' => 'নিষ্ক্রিয়',
+
     // Footer
     'copyright' => 'সর্বস্বত্ব সংরক্ষিত।',
     'footer_note' => 'স্বচ্ছ মন্দির প্রশাসন ও ভক্ত সেবায় নিবেদিত।',

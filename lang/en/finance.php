@@ -254,4 +254,12 @@ return [
     'paid_expense_help' => 'Approved & posted expenditures disbursed',
     'pending_expense_help' => 'Requisitions awaiting treasurer/super-admin sign-off',
     'total_expense_help' => 'Total expense vouchers recorded in period',
+    'account' => 'Account',
+    'receipts' => 'Receipts',
+    'payments' => 'Payments',
+    'pending_approval' => 'Pending Approval',
+    'status_approved' => 'Approved',
+    'status_pending' => 'Pending',
+    'status_rejected' => 'Rejected',
+    'expense_date' => 'Expense Date',
 ];

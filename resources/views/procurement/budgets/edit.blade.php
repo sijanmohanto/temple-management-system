@@ -8,7 +8,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 mb-0 text-gray-800 fw-bold">
-                <i class="bi bi-pencil-square text-primary me-2"></i>{{ __('procurement.edit_budget') }} &bull; <span class="font-monospace text-muted">{{ $budget->budget_code }}</span>
+                <i class="bi bi-pencil-square text-primary me-2"></i>{{ __('procurement.edit_budget') }}
             </h1>
             <p class="text-muted small mb-0">{{ __('procurement.procurement_preview_desc') }}</p>
         </div>
@@ -126,7 +126,7 @@
                                             <option value="">-- {{ __('procurement.select_expense_account') }} --</option>
                                             @foreach($expenseAccounts as $acc)
                                                 <option value="{{ $acc->id }}" {{ ($item['financial_account_id'] ?? '') == $acc->id ? 'selected' : '' }}>
-                                                    {{ $acc->account_code }} - {{ $acc->account_name }}
+                                                    {{ $acc->account_name }}
                                                 </option>
                                             @endforeach
                                         </select>
@@ -208,7 +208,7 @@ $(document).ready(function() {
     $('#btnAddLineItem').on('click', function() {
         var optionsHtml = '<option value="">-- {{ __("procurement.select_expense_account") }} --</option>';
         @foreach($expenseAccounts as $acc)
-            optionsHtml += '<option value="{{ $acc->id }}">{{ $acc->account_code }} - {{ addslashes($acc->account_name) }}</option>';
+            optionsHtml += '<option value="{{ $acc->id }}">{{ addslashes($acc->account_name) }}</option>';
         @endforeach
 
         var newRow = `

@@ -7,7 +7,6 @@
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
             <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="badge bg-light text-dark border font-monospace">{{ $person->person_code }}</span>
                 <h1 class="h3 fw-bold mb-0 text-dark">{{ __('people.edit_person') }}</h1>
             </div>
             <p class="text-muted small mb-0">{{ $person->name_en }} @if($person->name_bn) ({{ $person->name_bn }}) @endif</p>
@@ -169,7 +168,7 @@
                                     <option value="">{{ __('people.no_family_assigned') }}</option>
                                     @foreach($families as $family)
                                         <option value="{{ $family->id }}" {{ old('family_id', $person->family_id) == $family->id ? 'selected' : '' }}>
-                                            {{ $family->family_name }} ({{ $family->family_code }})
+                                            {{ $family->family_name }}
                                         </option>
                                     @endforeach
                                 </select>

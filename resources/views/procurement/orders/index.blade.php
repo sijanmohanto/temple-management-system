@@ -89,7 +89,7 @@
                     <select name="vendor_id" id="filterVendor" class="form-select form-select-sm">
                         <option value="all">-- {{ __('common.all') }} --</option>
                         @foreach($vendors as $ven)
-                            <option value="{{ $ven->id }}">{{ $ven->name }} ({{ $ven->vendor_code }})</option>
+                            <option value="{{ $ven->id }}">{{ $ven->name }}</option>
                         @endforeach
                     </select>
                 </div>

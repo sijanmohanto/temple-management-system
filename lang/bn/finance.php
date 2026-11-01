@@ -254,4 +254,12 @@ return [
     'paid_expense_help' => 'অনুমোদিত ও খতিয়ানে পোস্টকৃত পরিশোধিত ব্যয়',
     'pending_expense_help' => 'কোষাধ্যক্ষ বা অ্যাডমিনের অনুমোদনের অপেক্ষমাণ',
     'total_expense_help' => 'চলতি মেয়াদে রেকর্ডকৃত মোট ব্যয় ভাউচার',
+    'account' => 'হিসাব',
+    'receipts' => 'প্রাপ্তি',
+    'payments' => 'পরিশোধ',
+    'pending_approval' => 'অনুমোদনের অপেক্ষায়',
+    'status_approved' => 'অনুমোদিত',
+    'status_pending' => 'অপেক্ষমাণ',
+    'status_rejected' => 'প্রত্যাখ্যাত',
+    'expense_date' => 'ব্যয়ের তারিখ',
 ];

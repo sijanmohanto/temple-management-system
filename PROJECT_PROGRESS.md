@@ -543,3 +543,29 @@ Result:
      - Bengali locale rendering without errors.
    - Total test suite: **216 passed tests (1,314 assertions)** with zero failures or regressions.
    - 100% PSR-12 code compliance verified with `./vendor/bin/pint --test`.
+
+
+---
+
+## UI Maintenance: Code Clutter Removal & Full Localization Parity
+1. **Internal Code Clutter Cleaned from Frontend Views**:
+   - **Form Selects & Dropdowns**:
+     - Removed internal code prefixes/suffixes (VND-0001, BDG-2026-0001, EVT-2026-0001, ACC-001, PER-0001, FAM-0001) from option labels across Finance, Procurement, Donations, Events, People, and Family views.
+     - Preserved exact option value attributes (primary database IDs) so backend FormRequests, queries, and controller inputs remain 100% identical and undisturbed.
+   - **Show Pages, Detail Cards, Headings & Breadcrumbs**:
+     - Vendor Show/Edit: Removed (VND-0001) from page titles, breadcrumbs, and header badges, highlighting the clean human-friendly Vendor Name.
+     - Budget Show/Edit: Replaced raw budget code headers with clean Budget Titles.
+     - Purchase Request Show/Edit: Replaced request code badges with descriptive Request Titles.
+     - Purchase Orders: Cleaned secondary vendor and account codes from items tables while keeping official order_number identifiers.
+     - Events: Removed EVT-2026-0001 badges from headings, breadcrumbs, and dashboard cards, presenting clean Event Titles.
+     - Committees & Devotees: Removed PER-0001 badges from member lists, history tables, and modal selects.
+     - Family Units: Removed FAM-0001 and PER-0001 badges from household headers, member lists, and dropdown selectors.
+   - **Document Invariants Preserved**:
+     - Official printable vouchers and accounting receipts (orders/print.blade.php, receipts/print.blade.php) retain their official document numbers as legally required.
+2. **Comprehensive Localization Parity**:
+   - Discovered and resolved 31 missing keys across common.php, donations.php, finance.php, and procurement.php.
+   - Verified 100% key parity between lang/en/ and lang/bn/ with zero missing keys.
+   - Localized all action buttons, modal dismiss triggers (Close -> common.close), payment methods, and filter options.
+3. **Verification & Regression Testing**:
+   - Full automated test suite: 216 tests passed (1,314 assertions) cleanly with zero regressions.
+   - Code style verified with ./vendor/bin/pint --test (100% PSR-12 compliant).

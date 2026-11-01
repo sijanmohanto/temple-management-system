@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', $budget->title . ' (' . $budget->budget_code . ')')
+@section('title', $budget->title)
 
 @section('content')
 <div class="container-fluid px-4 py-3">
@@ -14,8 +14,7 @@
                 {!! $budget->status_badge !!}
             </div>
             <div class="text-muted small">
-                <span class="font-monospace fw-bold text-dark">{{ $budget->budget_code }}</span>
-                &bull; {{ $budget->type_label }}
+                {{ $budget->type_label }}
                 @if($budget->event)
                     &bull; <i class="bi bi-calendar-event me-1 text-primary"></i>{{ $budget->event->title_en }}
                 @else
@@ -182,7 +181,6 @@
                             <tr>
                                 <td>
                                     <div class="fw-bold">{{ $item->expenseAccount?->account_name }}</div>
-                                    <small class="text-muted font-monospace">{{ $item->expenseAccount?->account_code }}</small>
                                 </td>
                                 <td class="text-end fw-bold text-primary">
                                     ৳{{ number_format((float) $item->allocated_amount, 2) }}
@@ -284,7 +282,7 @@
                     <div class="modal-body">
                         <p class="mb-2">{{ __('procurement.approve_budget_confirm') }}</p>
                         <div class="alert alert-light border small text-muted">
-                            <div><strong>{{ __('procurement.budget_code') }}:</strong> {{ $budget->budget_code }}</div>
+                            <div><strong>{{ __('common.title') }}:</strong> {{ $budget->title }}</div>
                             <div><strong>{{ __('procurement.total_allocated') }}:</strong> ৳{{ number_format((float) $budget->total_amount, 2) }}</div>
                         </div>
                     </div>

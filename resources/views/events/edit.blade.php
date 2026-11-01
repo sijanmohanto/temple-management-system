@@ -10,11 +10,11 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-1">
                     <li class="breadcrumb-item"><a href="{{ route('events.index') }}" class="text-decoration-none">{{ __('events.events') }}</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('events.show', $event) }}" class="text-decoration-none">{{ $event->event_code }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('events.show', $event) }}" class="text-decoration-none">{{ $event->name }}</a></li>
                     <li class="breadcrumb-item active">{{ __('events.edit_event') }}</li>
                 </ol>
             </nav>
-            <h1 class="h3 fw-bold mb-0 text-dark">{{ __('events.edit_event') }} — <span class="text-primary font-monospace">{{ $event->event_code }}</span></h1>
+            <h1 class="h3 fw-bold mb-0 text-dark">{{ __('events.edit_event') }} — <span class="text-primary">{{ $event->name }}</span></h1>
         </div>
 
         <div>

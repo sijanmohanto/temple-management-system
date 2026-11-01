@@ -31,7 +31,7 @@
                     <select name="budget_id" class="form-select form-select-sm select2-basic" onchange="this.form.submit()">
                         @foreach($approvedBudgets as $b)
                             <option value="{{ $b->id }}" {{ $selectedBudget && $selectedBudget->id === $b->id ? 'selected' : '' }}>
-                                {{ $b->budget_code }} &bull; {{ $b->title }} ({{ $b->type_label }} &bull; {{ $b->event?->title_en ?? $b->fiscal_year }}) &bull; ৳{{ number_format((float) $b->total_amount, 2) }}
+                                {{ $b->title }} ({{ $b->type_label }} &bull; {{ $b->event?->title_en ?? $b->fiscal_year }}) &bull; ৳{{ number_format((float) $b->total_amount, 2) }}
                             </option>
                         @endforeach
                     </select>
@@ -53,7 +53,6 @@
                     <div class="card-body">
                         <div class="text-muted small fw-bold text-uppercase">{{ __('procurement.approved_budget_total') }}</div>
                         <div class="h3 mb-0 fw-bold text-primary">{{ $reportData['summary']['total_budget_formatted'] }}</div>
-                        <small class="text-muted">{{ $selectedBudget->budget_code }}</small>
                     </div>
                 </div>
             </div>
@@ -98,7 +97,7 @@
                         <i class="bi bi-table me-2 text-primary"></i>{{ __('procurement.variance_analysis') }}
                     </h6>
                     <small class="text-muted">
-                        {{ $selectedBudget->title }} ({{ $selectedBudget->budget_code }})
+                        {{ $selectedBudget->title }}
                     </small>
                 </div>
                 <div class="d-flex align-items-center gap-2">
@@ -128,7 +127,6 @@
                                 <tr class="{{ $row['is_unbudgeted'] ? 'table-warning' : '' }}">
                                     <td>
                                         <div class="fw-bold">{{ $row['account_name'] }}</div>
-                                        <small class="text-muted font-monospace">{{ $row['account_code'] }}</small>
                                     </td>
                                     <td class="text-end fw-bold text-primary">{{ $row['allocated_formatted'] }}</td>
                                     <td class="text-end fw-bold text-danger">{{ $row['actual_formatted'] }}</td>

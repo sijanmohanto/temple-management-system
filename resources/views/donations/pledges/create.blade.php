@@ -61,7 +61,7 @@
                                         $p = $selectedPerson ?? \App\Models\Person::find(old('person_id'));
                                     @endphp
                                     @if($p)
-                                        <option value="{{ $p->id }}" selected>{{ $p->name_en }} ({{ $p->person_code }}) - {{ $p->phone }}</option>
+                                        <option value="{{ $p->id }}" selected>{{ $p->name_en }}{{ $p->phone ? ' - '.$p->phone : '' }}</option>
                                     @endif
                                 @endif
                             </select>
@@ -81,7 +81,7 @@
                                         $f = $selectedFamily ?? \App\Models\Family::find(old('family_id'));
                                     @endphp
                                     @if($f)
-                                        <option value="{{ $f->id }}" selected>{{ $f->family_name }} ({{ $f->family_code }})</option>
+                                        <option value="{{ $f->id }}" selected>{{ $f->family_name }}</option>
                                     @endif
                                 @endif
                             </select>

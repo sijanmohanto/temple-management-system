@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', $vendor->name.' ('.$vendor->vendor_code.')')
+@section('title', $vendor->name)
 
 @section('content')
 <div class="container-fluid px-4 py-3">
@@ -9,14 +9,13 @@
         <div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <h1 class="h3 mb-0 text-gray-800 fw-bold">{{ $vendor->name }}</h1>
-                <span class="badge bg-secondary font-monospace">{{ $vendor->vendor_code }}</span>
                 {!! $vendor->status_badge !!}
                 <span class="badge bg-light text-dark border">{{ $vendor->vendor_type_label }}</span>
             </div>
             <nav aria-label="breadcrumb" class="mt-2">
                 <ol class="breadcrumb mb-0 small">
                     <li class="breadcrumb-item"><a href="{{ route('procurement.vendors.index') }}">{{ __('procurement.vendors') }}</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">{{ $vendor->vendor_code }}</li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ $vendor->name }}</li>
                 </ol>
             </nav>
         </div>
@@ -82,9 +81,6 @@
                 </div>
                 <div class="card-body">
                     <dl class="row mb-0">
-                        <dt class="col-sm-5 text-muted small">{{ __('procurement.vendor_code') }}</dt>
-                        <dd class="col-sm-7 fw-bold font-monospace">{{ $vendor->vendor_code }}</dd>
-
                         <dt class="col-sm-5 text-muted small">{{ __('procurement.vendor_type') }}</dt>
                         <dd class="col-sm-7"><span class="badge bg-light text-dark border">{{ $vendor->vendor_type_label }}</span></dd>
 

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', __('procurement.edit_request').' - '.$purchaseRequest->request_number)
+@section('title', __('procurement.edit_request').' - '.$purchaseRequest->title)
 
 @section('content')
 <div class="container-fluid px-4 py-3">
@@ -11,13 +11,12 @@
                 <h1 class="h3 mb-1 text-gray-800 fw-bold">
                     <i class="bi bi-pencil-square text-primary me-2"></i>{{ __('procurement.edit_request') }}
                 </h1>
-                <span class="badge bg-secondary font-monospace">{{ $purchaseRequest->request_number }}</span>
                 {!! $purchaseRequest->status_badge !!}
             </div>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 small">
                     <li class="breadcrumb-item"><a href="{{ route('procurement.requests.index') }}">{{ __('procurement.purchase_requests') }}</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('procurement.requests.show', $purchaseRequest) }}">{{ $purchaseRequest->request_number }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('procurement.requests.show', $purchaseRequest) }}">{{ $purchaseRequest->title }}</a></li>
                     <li class="breadcrumb-item active" aria-current="page">{{ __('procurement.edit_request') }}</li>
                 </ol>
             </nav>
@@ -122,7 +121,7 @@
                             @foreach($approvedBudgets as $budget)
                                 <option value="{{ $budget->id }}" {{ old('budget_id', $purchaseRequest->budget_id) == $budget->id ? 'selected' : '' }}
                                         data-event="{{ $budget->event_id }}" data-type="{{ $budget->budget_type }}">
-                                    {{ $budget->budget_code }} — {{ $budget->title_en }} (৳{{ number_format((float) $budget->total_amount, 2) }})
+                                    {{ $budget->title_en }} (৳{{ number_format((float) $budget->total_amount, 2) }})
                                 </option>
                             @endforeach
                         </select>
@@ -232,7 +231,7 @@ $(document).ready(function() {
         var html = '<option value="">-- {{ __("procurement.select_expense_account") }} --</option>';
         $.each(expenseAccounts, function(i, acc) {
             var selected = (acc.id == selectedId) ? 'selected' : '';
-            html += '<option value="' + acc.id + '" ' + selected + '>' + acc.account_code + ' - ' + acc.account_name_en + '</option>';
+            html += '<option value="' + acc.id + '" ' + selected + '>' + acc.account_name_en + '</option>';
         });
         return html;
     }

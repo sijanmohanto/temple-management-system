@@ -264,4 +264,12 @@ return [
     'purchase_request_report' => 'Purchase Request Report',
     'purchase_order_report' => 'Purchase Order Report',
     'vendor_outstanding_report' => 'Vendor Outstanding Bills',
+
+    // Shared Procurement Terms
+    'status' => 'Status',
+    'unit_price' => 'Unit Price',
+    'total_price' => 'Total Price',
+    'created_by' => 'Created By',
+    'vendor_address' => 'Vendor Address',
+    'vendor' => 'Vendor',
 ];

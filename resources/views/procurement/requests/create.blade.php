@@ -113,7 +113,7 @@
                             @foreach($approvedBudgets as $budget)
                                 <option value="{{ $budget->id }}" {{ old('budget_id') == $budget->id ? 'selected' : '' }}
                                         data-event="{{ $budget->event_id }}" data-type="{{ $budget->budget_type }}">
-                                    {{ $budget->budget_code }} — {{ $budget->title_en }} (৳{{ number_format((float) $budget->total_amount, 2) }})
+                                    {{ $budget->title_en }} (৳{{ number_format((float) $budget->total_amount, 2) }})
                                 </option>
                             @endforeach
                         </select>
@@ -223,7 +223,7 @@ $(document).ready(function() {
         var html = '<option value="">-- {{ __("procurement.select_expense_account") }} --</option>';
         $.each(expenseAccounts, function(i, acc) {
             var selected = (acc.id == selectedId) ? 'selected' : '';
-            html += '<option value="' + acc.id + '" ' + selected + '>' + acc.account_code + ' - ' + acc.account_name_en + '</option>';
+            html += '<option value="' + acc.id + '" ' + selected + '>' + acc.account_name_en + '</option>';
         });
         return html;
     }

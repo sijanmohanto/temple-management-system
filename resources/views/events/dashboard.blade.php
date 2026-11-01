@@ -91,7 +91,6 @@
                                 <div class="p-3 border rounded-3 bg-light bg-opacity-50 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                                     <div>
                                         <div class="d-flex align-items-center gap-2 mb-1">
-                                            <span class="badge bg-light text-dark border font-monospace">{{ $evt->event_code }}</span>
                                             <span class="badge {{ $evt->status === 'active' ? 'bg-success' : 'bg-info' }} bg-opacity-10 {{ $evt->status === 'active' ? 'text-success' : 'text-info' }} border border-opacity-25" style="font-size: 0.72rem;">
                                                 {{ __('events.status_'.$evt->status) }}
                                             </span>
@@ -145,7 +144,7 @@
                                     <div class="fw-semibold small text-dark">
                                         @if($log->event)
                                             <a href="{{ route('events.show', $log->event) }}" class="text-decoration-none text-primary">
-                                                {{ $log->event->name }} ({{ $log->event->event_code }})
+                                                {{ $log->event->name }}
                                             </a>
                                         @else
                                             <span>{{ __('events.event') }}</span>

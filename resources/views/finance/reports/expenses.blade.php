@@ -80,7 +80,7 @@
                         <option value="all">-- {{ __('common.all') }} --</option>
                         @foreach($expenseCategories as $category)
                             <option value="{{ $category->id }}">
-                                {{ $category->account_code }} - {{ $category->account_name }}
+                                {{ $category->account_name }}
                             </option>
                         @endforeach
                     </select>
