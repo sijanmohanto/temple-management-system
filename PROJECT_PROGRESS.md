@@ -1,17 +1,17 @@
 # Temple Management System — Project Progress & Phase Tracker
 
-## Current Status: Phase 6 (Budget & Procurement Management) — Increments 1, 2, 3 & 4 COMPLETE
+## Current Status: Phase 6 (Budget & Procurement Management) — FINAL APPROVED
 
-**Current Local Date**: 2026-10-30  
-**Active Phase**: Phase 6 — Budget, Vendor & Procurement Management  
+**Current Local Date**: 2026-11-01  
+**Active Phase**: Phase 6 — Budget, Vendor & Procurement Management (FINAL APPROVED)  
 **Phase 1 Status**: **Completed & Fully Tested** (22 tests, 43 assertions)  
 **Phase 2 Status**: **Completed & Fully Tested** (54 tests, 139 assertions)  
 **Phase 2.1 Status**: **Completed & Fully Tested** (67 tests, 232 assertions)  
 **Phase 3 Status**: **Completed & Fully Tested** (80 tests, 321 assertions)  
 **Phase 4 Status**: **Completed, Corrected & Fully Tested** (101 tests, 513 assertions)  
 **Phase 5 Status**: **Completed & Fully Tested** (144 tests, 876 assertions total)  
-**Phase 6 Status**: **Increments 1, 2, 3 & 4 Completed & Fully Tested** (216 tests, 1,314 assertions total)  
-**Next Increment**: Increment 5 — Vendor Bills & Payment Processing (Pending Explicit User Approval)
+**Phase 6 Status**: **FINAL APPROVED — All Increments (1, 2, 3, 4 & 5) Completed, Audited & Fully Verified** (269 tests, 1,608 assertions total)  
+**Next Phase**: Phase 7 (Inventory, Goods Receiving, Asset Registry & Maintenance) — On Standby Awaiting Explicit User Approval
 
 ---
 
@@ -569,3 +569,197 @@ Result:
 3. **Verification & Regression Testing**:
    - Full automated test suite: 216 tests passed (1,314 assertions) cleanly with zero regressions.
    - Code style verified with ./vendor/bin/pint --test (100% PSR-12 compliant).
+
+---
+
+## Phase 6 — Increment 5, Stage 1: Vendor Bills Management (FINAL APPROVED)
+
+1. **Database Schema & Migrations**:
+   - `vendor_bills` table (`2026_11_01_000024_create_vendor_bills_and_items_tables.php`):
+     - `bill_number`: Unique sequential code `BIL-YYYY-0001` with concurrency-safe locking (`lockForUpdate()`) and unique database index.
+     - `vendor_id`: Constrained to active vendors.
+     - `purchase_order_id`: Optional foreign key to linked purchase orders.
+     - `event_id`: Optional dimension for event/puja scope.
+     - `budget_id`: Optional dimension for budget plan.
+     - `vendor_invoice_number`: Vendor's official invoice/memo reference, validated unique per vendor (`vendor_id` + `vendor_invoice_number`).
+     - `bill_date`: Incurred bill date.
+     - `due_date`: Payment due date (`>= bill_date`).
+     - `status`: Workflow state machine (`draft`, `submitted`, `verified`, `approved`, `rejected`, `cancelled`).
+     - `payment_status`: Stage 1 placeholder (`unpaid`, `partially_paid`, `paid`).
+     - Monetary fields: `subtotal`, `discount_amount`, `tax_amount`, `total_amount` (`DECIMAL(12,2)`).
+     - Text & files: `notes`, `document_path` (scanned invoice copy up to 5MB: PDF/JPG/PNG).
+     - Accounting linkages: `journal_entry_id` (posted Accounts Payable journal entry), `reversal_journal_entry_id` (balanced reversal entry if cancelled after approval).
+     - Audit trail: `submitted_by`, `submitted_at`, `verified_by`, `verified_at`, `verification_notes`, `approved_by`, `approved_at`, `rejected_by`, `rejected_at`, `rejection_reason`, `cancelled_by`, `cancelled_at`, `cancellation_reason`, `created_by`, `updated_by`, timestamps, soft deletes.
+   - `vendor_bill_items` table:
+     - `vendor_bill_id`, `purchase_order_item_id` (nullable), `financial_account_id` (constrained to active expense accounts), `budget_item_id` (nullable).
+     - `description`, `quantity` (`DECIMAL(10,2)`), `unit`, `unit_price` (`DECIMAL(12,2)`), `discount_amount` (`DECIMAL(12,2)`), `line_total` (`DECIMAL(12,2)`), `notes`.
+   - Granular RBAC Permissions seeded and assigned to roles:
+     - `view_vendor_bills`, `manage_vendor_bills`, `verify_vendor_bills`, `approve_vendor_bills`, `cancel_vendor_bills`.
+
+2. **Accrual Double-Entry Accounting Ledger Invariant**:
+   - **Accrual Accounting Enforcement**:
+     - Bill approval posts an accrual liability transaction to the General Ledger via `FinancePostingService::postVendorBill()`.
+     - **Debits**: Line-item expense accounts (from Chart of Accounts, e.g. 5101, 5102), scaled proportionally if header-level discount/tax exists.
+     - **Credit**: Accounts Payable liability account (`2010`).
+     - **Cash & Bank Balance Invariant**: Bank, Cash, and MFS balances are completely untouched. Approving a bill never creates an `Expense` payment record.
+     - **Idempotency**: Strict check prevents duplicate journal postings if approval is retried.
+     - **Immutable Reversal**: Cancelling an approved bill generates an inverse balanced reversal journal entry (`FinancePostingService::reverseVendorBill()`), setting the original journal entry status to `reversed` and recording `reversal_journal_entry_id` on the bill without deleting history.
+
+3. **Cumulative Purchase Order Billing Safeguard**:
+   - Dynamic PO item pre-population via `GET /procurement/bills/po-items/{po}`.
+   - Tracks cumulative billed quantity across all active (non-rejected, non-cancelled) bills.
+   - Strictly enforces that cumulative billed quantity cannot exceed the PO item's ordered quantity.
+   - Prevents over-billing and tracks unbilled remaining quantities and amounts on both `PurchaseOrder` and `PurchaseOrderItem` models.
+
+4. **Dedicated Views & UI Implementation**:
+   - **Bill Index** (`resources/views/procurement/bills/index.blade.php`):
+     - Server-side DataTables strictly without row number / `#` column (8 business data columns: Bill Number, Vendor, Invoice Ref / PO, Bill Date, Due Date, Total Amount, Status, Actions).
+     - Summary metrics cards: Total Bills, Approved Payables, Pending Verification, Overdue Bills.
+     - Multi-dimension filter card: Status, Vendor, Event.
+   - **Bill Create & Edit** (`create.blade.php` & `edit.blade.php`):
+     - Optional PO selector with instant AJAX auto-fill of vendor, items, and quantities.
+     - Dynamic line items table with add/remove rows, expense account selection, live subtotal, tax, discount, and grand total recalculation.
+     - File upload for invoice evidence with MIME and size constraints.
+   - **Bill Show** (`resources/views/procurement/bills/show.blade.php`):
+     - Complete vendor details card, line items table, financial breakdown, file download link, PO link card, General Ledger posting card (with entry link), and comprehensive audit timeline.
+     - Separation of duties enforcement: Creator cannot self-approve unless `super_admin`.
+     - Action modals for Submit, Verify (with notes), Approve, Reject (mandatory reason), Cancel (mandatory reason).
+   - **Printable Voucher** (`print.blade.php`):
+     - Official bill voucher with temple header, vendor metadata, itemized table, GL posting breakdown, status watermark if cancelled, and 4-block signatures (Prepared By, Verified By, Approved By, Vendor Acknowledgment).
+   - **Vendor Profile Integration** (`vendors/show.blade.php`):
+     - Direct "+ Create Bill" action shortcut.
+     - Dedicated Vendor Bills Summary card displaying Total Billed, Total Outstanding, and a table of bills for the vendor.
+
+5. **Bilingual Localization (EN & BN)**:
+   - 100% key parity across `lang/en/procurement.php` and `lang/bn/procurement.php` with 38 new vendor bills keys and zero missing translations.
+
+6. **Automated Feature Tests**:
+   - Created `tests/Feature/VendorBillTest.php` with **23 comprehensive tests (119 assertions)**:
+     - Access control (guests, unauthorized users).
+     - Unique sequential code generation (`BIL-YYYY-0001`).
+     - Inactive vendor rejection.
+     - Unique vendor invoice number per vendor enforcement.
+     - PO vendor mismatch and PO status eligibility checks.
+     - Partial billing from PO and cumulative over-billing prevention.
+     - Server-side financial calculation ignoring tampered client totals.
+     - Non-expense account rejection.
+     - Workflow state machine: Draft → Submitted → Verified → Approved.
+     - Strict separation of duties preventing creator from self-approving (with Super Admin override).
+     - Mandatory rejection and cancellation reasons.
+     - Accrual double-entry posting to General Ledger (Debits: Expense Accounts, Credit: AP 2010; Cash/Bank untouched).
+     - Idempotency preventing duplicate journal entries.
+     - Approved bill cancellation creating balanced reversal journal entry.
+     - Vendor outstanding calculation accuracy.
+     - Server-side DataTables JSON response strictly omitting row number columns.
+     - Clean Bengali localization rendering without missing keys.
+     - PO items remaining quantity API endpoint verification.
+   - Total test suite: **239 passed tests (1,433 assertions)** with zero failures or regressions.
+   - 100% PSR-12 code compliance verified with `./vendor/bin/pint --test`.
+
+
+---
+
+## Phase 6 — Increment 5, Stage 2: Vendor Payments & Payment Processing (FINAL APPROVED)
+
+1. **Database Schema & Migrations**:
+   - `database/migrations/2026_11_01_000025_create_vendor_payments_and_allocations_tables.php`:
+     - Added `paid_amount` (`DECIMAL(12,2) DEFAULT 0.00`) and `payment_status` (`VARCHAR(20) DEFAULT 'unpaid'`) to `vendor_bills`.
+     - Created `vendor_payments` table:
+       - `payment_number`: Unique sequential code in `VPY-YYYY-0001` format.
+       - `vendor_id`: Constrained to `vendors` table.
+       - `financial_account_id`: Constrained to liquid asset accounts in `financial_accounts` (`account_type = 'asset'`).
+       - `payment_date`: Date payment disbursement occurred.
+       - `payment_method`: Supported payment methods (`cash`, `bank_transfer`, `cheque`, `bkash`, `nagad`, `rocket`, `other`).
+       - `amount`: Total payment amount (`DECIMAL(12,2)`).
+       - `reference_number`: Cheque number, bank transfer ID, or MFS reference.
+       - `status`: State machine (`draft`, `submitted`, `verified`, `approved`, `posted`, `rejected`, `cancelled`, `reversed`).
+       - `notes`: Optional description/remarks.
+       - `document_path`: Uploaded disbursement voucher, receipt or cheque copy.
+       - `journal_entry_id`: Link to General Ledger settlement entry.
+       - `reversal_journal_entry_id`: Link to General Ledger reversal entry if reversed after posting.
+       - Audit columns: `submitted_by`, `submitted_at`, `verified_by`, `verified_at`, `verification_notes`, `approved_by`, `approved_at`, `posted_by`, `posted_at`, `rejected_by`, `rejected_at`, `rejection_reason`, `cancelled_by`, `cancelled_at`, `cancellation_reason`, `reversed_by`, `reversed_at`, `reversal_reason`, `created_by`, `updated_by`, timestamps, soft deletes.
+     - Created `vendor_payment_allocations` table:
+       - `vendor_payment_id`: Foreign key to `vendor_payments`.
+       - `vendor_bill_id`: Foreign key to `vendor_bills`.
+       - `allocated_amount`: Amount applied to this bill (`DECIMAL(12,2)`).
+       - `notes`: Optional allocation note.
+   - Granular RBAC Permissions seeded and assigned to roles (`temple_admin`, `treasurer`, `committee_member`):
+     - `view_vendor_payments`, `manage_vendor_payments`, `submit_vendor_payments`, `verify_vendor_payments`, `approve_vendor_payments`, `post_vendor_payments`, `cancel_vendor_payments`, `reverse_vendor_payments`.
+
+2. **Accrual Settlement & General Ledger Invariant**:
+   - **Double-Entry Settlement**:
+     - Bill settlement is executed via `FinancePostingService::postVendorPayment()`.
+     - **Debit**: Accounts Payable liability account (`2010`). Reduces the temple's payable liability.
+     - **Credit**: Selected Liquid Asset Account (e.g. `1010` Cash in Hand, `1020` Main Bank Account, `1030` MFS). Reduces cash/bank balance.
+     - **Mathematical Balance**: Debit = Credit = Payment Amount.
+     - **Bill Balance Settlement**: Atomically increments bill `paid_amount` by the allocated amount and updates `payment_status` (`paid` if fully paid, or `partially_paid`).
+     - **Idempotency**: Strict check prevents duplicate journal creation if post is called again.
+     - **No Expense Duplication**: Payments never create a second expense record; they settle the recognized AP liability.
+   - **Immutable Reversal**:
+     - Reversing a posted payment via `FinancePostingService::reverseVendorPayment()` creates an inverse journal entry (`createReversal()`), sets payment status to `reversed`, restores affected bills' `paid_amount` and `payment_status`, and preserves complete audit history with mandatory reversal reason.
+
+3. **Bill Payment Allocation Rules & Concurrency**:
+   - Payments must allocate funds only against approved bills belonging to the selected active vendor.
+   - Validates that total allocations exactly match total payment amount.
+   - Prevents allocating more than the bill's current outstanding balance (`total_amount - paid_amount`).
+   - Re-validates outstanding balances with database locking during final posting.
+
+4. **UI & Blade Implementation**:
+   - **Payments Index** (`resources/views/procurement/payments/index.blade.php`):
+     - Server-side DataTables strictly without row number / `#` column (8 business columns: Payment Number, Vendor, Date, Method & Ref, Account, Amount, Status, Actions).
+     - Summary metrics: Total Payments, Total Paid (Posted), Pending Verification, Drafts.
+     - Filters: Status, Vendor, Payment Method.
+   - **Payment Create & Edit** (`create.blade.php` & `edit.blade.php`):
+     - Dynamic AJAX bill loading when vendor dropdown changes (`GET /procurement/payments/payable-bills/{vendor}`).
+     - Interactive allocations table with "Auto-fill Balance" helper button and live unallocated difference balance indicator.
+     - Supporting document upload (PDF/JPG/PNG up to 5MB).
+   - **Payment Show** (`resources/views/procurement/payments/show.blade.php`):
+     - Disbursement metadata, settled bills breakdown, General Ledger journal entry card (with clickable journal voucher link), and complete audit timeline.
+     - Separation of duties enforcement: Creator cannot self-approve unless `super_admin`.
+     - Modals for Submit, Verify (notes), Authorize, Post to Ledger, Approve & Post, Reject (mandatory reason), Cancel (mandatory reason), Reverse (mandatory reason).
+   - **Printable Voucher** (`print.blade.php`):
+     - Sri Sri Radha Krishna Temple header, payment metadata, bill settlement breakdown, Bengali/English wording, status watermark if reversed/cancelled, and 4-signature block (Prepared By, Verified By, Treasurer, Payee/Vendor Acknowledgment).
+   - **Navigation & Integrations**:
+     - Added "Vendor Payments" submenu under "Budget & Procurement" parent menu in `resources/views/partials/sidebar.blade.php`.
+     - Integrated recent payments list and "+ Record Payment" action in Vendor Profile (`procurement/vendors/show.blade.php`).
+     - Integrated payment allocations list and "Pay Bill" action in Vendor Bill Show (`procurement/bills/show.blade.php`).
+
+5. **Bilingual Localization (EN & BN)**:
+   - 100% key parity across `lang/en/procurement.php` and `lang/bn/procurement.php` (440 keys each) with zero missing keys or hardcoded English strings.
+
+6. **Automated Feature Tests & Targeted Read-Only Audit**:
+   - Created `tests/Feature/VendorPaymentTest.php` with **25 comprehensive tests (122 assertions)**:
+     - Access control (guest, unauthorized devotee).
+     - Unique sequential code generation (`VPY-YYYY-0001`).
+     - Inactive vendor rejection.
+     - Non-asset payment account rejection.
+     - Positive amount and allocation presence validation.
+     - Sum of allocations matching payment amount.
+     - Allocation exceeding bill outstanding balance rejection.
+     - Unapproved bill and cross-vendor bill allocation rejection.
+     - Workflow progression: Draft → Submitted → Verified → Approved → Posted.
+     - Strict separation of duties preventing self-approval.
+     - Super Admin approval override.
+     - Mandatory reasons for rejection and cancellation.
+     - General Ledger double-entry posting (Debits AP 2010, Credits Asset Account).
+     - Atomic bill `paid_amount` and `payment_status` updates (partial and full).
+     - Idempotency preventing duplicate journal entries.
+     - Payment reversal with inverse journal and restored bill balances.
+     - Vendor outstanding calculation accuracy.
+     - DataTables JSON strictly omitting row number / `#` column.
+     - Clean Bengali localization rendering.
+     - Payable bills AJAX endpoint verification.
+   - Created `tests/Feature/VendorPaymentAuditTest.php` with **5 targeted audit tests (53 assertions)**:
+     - Area 1: Reversal and Ledger Integrity — **PASS** (original journal marked `reversed`, reversal entry linked via `reversed_journal_id`, balanced debit/credit mirror, voucher links preserved).
+     - Area 2: Concurrent Payment Posting — **PASS** (database row locking with `lockForUpdate()` prevents concurrent over-settlement; bill outstanding never negative; unposted voucher remains `approved` without journal entries).
+     - Area 3: Multiple Payment Reversal — **PASS** (selective reversal of one partial payment restores paid and outstanding balances and transitions bill status accurately, e.g. `paid` $\rightarrow$ `partially_paid` $\rightarrow$ `unpaid`).
+     - Area 4: Financial Account Validation — **PASS** (multi-tier rejection of inactive or non-asset accounts at Form Request, Service, and Posting layers).
+     - Area 5: Approval and Posting Authorization — **PASS** (separation of duties enforced; direct approval of draft/submitted rejected; unauthorized HTTP requests rejected with 403; posting idempotency guaranteed).
+   - **Combined Payment Test Suite**: **30 passed tests (175 assertions)** in 31.98s.
+   - **Full Application Test Suite**: **269 passed tests (1,608 assertions)** across all modules with zero failures and zero regressions.
+   - **Code Style (Laravel Pint)**: 100% PSR-12 code compliance verified with `./vendor/bin/pint --test`.
+
+7. **Known System Limitations (Documented & Acknowledged)**:
+   - **No Unallocated Vendor Advances**: Vendor payments strictly require allocation against existing, verified, and approved vendor bills. Standalone advance payments without an approved bill cannot be recorded; advance deposits must follow the approved billing workflow or formal deposit account structure.
+   - **No External Automated Payment Gateway Webhooks**: Payment recording represents an internal accounting voucher workflow managed by authorized temple financial officers (Cash, Bank Transfer, Cheque, MFS vouchers). Real-time external payment gateway IPN/webhooks (e.g. bKash/Nagad checkout callbacks) are not implemented.
+   - **Concurrency Scope**: Database row locking (`lockForUpdate()`) provides strict ACID isolation on single-instance and primary-replica MySQL installations. Active-active multi-master distributed clustering would require distributed lock managers (e.g. Redis mutex).

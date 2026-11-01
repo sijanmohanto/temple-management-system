@@ -181,6 +181,14 @@ class FinancialAccount extends Model
     }
 
     /**
+     * Vendor payments disbursed from this payment account.
+     */
+    public function vendorPayments(): HasMany
+    {
+        return $this->hasMany(VendorPayment::class, 'financial_account_id');
+    }
+
+    /**
      * Localized name accessor.
      */
     public function getNameAttribute(): string

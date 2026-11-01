@@ -20,6 +20,16 @@
             </nav>
         </div>
         <div class="d-flex gap-2">
+            @if(Auth::user()->hasPermission('manage_vendor_bills') && $vendor->is_active)
+                <a href="{{ route('procurement.bills.create') }}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-file-earmark-plus me-1"></i> {{ __('procurement.create_bill') }}
+                </a>
+            @endif
+            @if(Auth::user()->hasPermission('manage_vendor_payments') && $vendor->is_active)
+                <a href="{{ route('procurement.payments.create', ['vendor_id' => $vendor->id]) }}" class="btn btn-success btn-sm">
+                    <i class="bi bi-cash-stack me-1"></i> {{ __('procurement.record_payment') }}
+                </a>
+            @endif
             @if(Auth::user()->hasPermission('manage_vendors'))
                 <a href="{{ route('procurement.vendors.edit', $vendor) }}" class="btn btn-outline-primary btn-sm">
                     <i class="bi bi-pencil me-1"></i> {{ __('common.edit') }}
@@ -132,8 +142,146 @@
             </div>
         </div>
 
-        <!-- Historical Expenses & Vouchers -->
+        <!-- Vendor Bills & Historical Expenses -->
         <div class="col-lg-8">
+            <!-- Vendor Bills Summary & List -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0 fw-bold text-dark">
+                            <i class="bi bi-file-earmark-ruled me-1 text-primary"></i> {{ __('procurement.vendor_bills_summary') }}
+                        </h6>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                            {{ __('procurement.total_outstanding') }}: ৳{{ number_format((float) ($billMetrics['total_outstanding'] ?? 0), 2) }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>{{ __('procurement.bill_number') }}</th>
+                                    <th>{{ __('procurement.invoice_reference') }}</th>
+                                    <th>{{ __('procurement.bill_date') }}</th>
+                                    <th>{{ __('procurement.due_date') }}</th>
+                                    <th class="text-end">{{ __('procurement.total_price') }}</th>
+                                    <th class="text-center">{{ __('common.status') }}</th>
+                                    <th class="text-end pe-3">{{ __('common.actions') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($bills ?? [] as $bill)
+                                    <tr>
+                                        <td>
+                                            <a href="{{ route('procurement.bills.show', $bill) }}" class="fw-bold font-monospace text-primary text-decoration-none">
+                                                {{ $bill->bill_number }}
+                                            </a>
+                                        </td>
+                                        <td class="font-monospace">{{ $bill->vendor_invoice_number }}</td>
+                                        <td>{{ $bill->bill_date?->format('d M Y') ?? '-' }}</td>
+                                        <td>
+                                            @if($bill->due_date)
+                                                <span class="{{ ($bill->due_date < now()->toDateString() && $bill->status === 'approved') ? 'text-danger fw-bold' : '' }}">
+                                                    {{ $bill->due_date->format('d M Y') }}
+                                                </span>
+                                            @else
+                                                <span class="text-muted small">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-end fw-bold font-monospace">৳{{ number_format((float) $bill->total_amount, 2) }}</td>
+                                        <td class="text-center">{!! $bill->status_badge !!}</td>
+                                        <td class="text-end pe-3">
+                                            <a href="{{ route('procurement.bills.show', $bill) }}" class="btn btn-outline-info btn-sm" title="{{ __('common.view') }}">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="7" class="text-center py-3 text-muted">
+                                            <i class="bi bi-receipt-cutoff fs-3 d-block mb-1 opacity-50"></i>
+                                            {{ __('procurement.no_bills_recorded') }}
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vendor Payments Table -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-cash-stack me-1 text-success"></i> {{ __('procurement.vendor_payments') }}
+                    </h6>
+                    <div class="d-flex gap-2 align-items-center">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                            {{ __('procurement.total_paid') }}: ৳{{ number_format((float) ($billMetrics['total_paid'] ?? 0), 2) }}
+                        </span>
+                        @if(Auth::user()->hasPermission('manage_vendor_payments') && $vendor->is_active)
+                            <a href="{{ route('procurement.payments.create', ['vendor_id' => $vendor->id]) }}" class="btn btn-outline-success btn-sm">
+                                <i class="bi bi-plus-circle me-1"></i> {{ __('procurement.record_payment') }}
+                            </a>
+                        @endif
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>{{ __('procurement.payment_number') }}</th>
+                                    <th>{{ __('procurement.payment_date') }}</th>
+                                    <th>{{ __('procurement.payment_method') }}</th>
+                                    <th>{{ __('procurement.payment_account') }}</th>
+                                    <th class="text-end">{{ __('procurement.payment_amount') }}</th>
+                                    <th class="text-center">{{ __('common.status') }}</th>
+                                    <th class="text-end pe-3">{{ __('common.actions') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($payments ?? [] as $pay)
+                                    <tr>
+                                        <td>
+                                            <a href="{{ route('procurement.payments.show', $pay) }}" class="fw-bold font-monospace text-primary text-decoration-none">
+                                                {{ $pay->payment_number }}
+                                            </a>
+                                        </td>
+                                        <td>{{ $pay->payment_date?->format('d M Y') ?? '-' }}</td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border">
+                                                {{ \App\Models\VendorPayment::supportedPaymentMethods()[$pay->payment_method] ?? ucfirst($pay->payment_method) }}
+                                            </span>
+                                        </td>
+                                        <td class="small">{{ $pay->financialAccount?->account_code }} - {{ app()->getLocale() === 'bn' ? ($pay->financialAccount?->account_name_bn ?: $pay->financialAccount?->account_name_en) : $pay->financialAccount?->account_name_en }}</td>
+                                        <td class="text-end font-monospace fw-bold text-success">৳{{ number_format((float) $pay->amount, 2) }}</td>
+                                        <td class="text-center">{!! $pay->status_badge !!}</td>
+                                        <td class="text-end pe-3">
+                                            <a href="{{ route('procurement.payments.show', $pay) }}" class="btn btn-outline-info btn-sm" title="{{ __('common.view') }}">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4 text-muted">
+                                            <i class="bi bi-inbox fs-3 d-block mb-1 text-secondary opacity-50"></i>
+                                            {{ __('procurement.payment_list') }} (0)
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historical Expenses & Vouchers -->
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 fw-bold text-dark">

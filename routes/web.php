@@ -28,7 +28,9 @@ use App\Http\Controllers\Procurement\BudgetController;
 use App\Http\Controllers\Procurement\BudgetReportController;
 use App\Http\Controllers\Procurement\PurchaseOrderController;
 use App\Http\Controllers\Procurement\PurchaseRequestController;
+use App\Http\Controllers\Procurement\VendorBillController;
 use App\Http\Controllers\Procurement\VendorController;
+use App\Http\Controllers\Procurement\VendorPaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReceiptController;
 use Illuminate\Support\Facades\Route;
@@ -289,6 +291,43 @@ Route::middleware('auth')->group(function () {
             Route::post('/{purchaseOrder}/complete', [PurchaseOrderController::class, 'complete'])->name('complete');
             Route::post('/{purchaseOrder}/cancel', [PurchaseOrderController::class, 'cancel'])->name('cancel');
             Route::get('/{purchaseOrder}/print', [PurchaseOrderController::class, 'printOrder'])->name('print');
+        });
+
+        // Vendor Bills
+        Route::prefix('bills')->name('bills.')->group(function () {
+            Route::get('/po-items/{purchaseOrder}', [VendorBillController::class, 'getBillablePoItems'])->name('po-items');
+            Route::get('/', [VendorBillController::class, 'index'])->name('index');
+            Route::get('/create', [VendorBillController::class, 'create'])->name('create');
+            Route::post('/', [VendorBillController::class, 'store'])->name('store');
+            Route::get('/{vendorBill}', [VendorBillController::class, 'show'])->name('show');
+            Route::get('/{vendorBill}/edit', [VendorBillController::class, 'edit'])->name('edit');
+            Route::put('/{vendorBill}', [VendorBillController::class, 'update'])->name('update');
+            Route::post('/{vendorBill}/submit', [VendorBillController::class, 'submit'])->name('submit');
+            Route::post('/{vendorBill}/verify', [VendorBillController::class, 'verify'])->name('verify');
+            Route::post('/{vendorBill}/approve', [VendorBillController::class, 'approve'])->name('approve');
+            Route::post('/{vendorBill}/reject', [VendorBillController::class, 'reject'])->name('reject');
+            Route::post('/{vendorBill}/cancel', [VendorBillController::class, 'cancel'])->name('cancel');
+            Route::get('/{vendorBill}/print', [VendorBillController::class, 'printBill'])->name('print');
+        });
+
+        // Vendor Payments
+        Route::prefix('payments')->name('payments.')->group(function () {
+            Route::get('/payable-bills/{vendor}', [VendorPaymentController::class, 'getPayableBills'])->name('payable-bills');
+            Route::get('/', [VendorPaymentController::class, 'index'])->name('index');
+            Route::get('/create', [VendorPaymentController::class, 'create'])->name('create');
+            Route::post('/', [VendorPaymentController::class, 'store'])->name('store');
+            Route::get('/{vendorPayment}', [VendorPaymentController::class, 'show'])->name('show');
+            Route::get('/{vendorPayment}/edit', [VendorPaymentController::class, 'edit'])->name('edit');
+            Route::put('/{vendorPayment}', [VendorPaymentController::class, 'update'])->name('update');
+            Route::post('/{vendorPayment}/submit', [VendorPaymentController::class, 'submit'])->name('submit');
+            Route::post('/{vendorPayment}/verify', [VendorPaymentController::class, 'verify'])->name('verify');
+            Route::post('/{vendorPayment}/approve', [VendorPaymentController::class, 'approve'])->name('approve');
+            Route::post('/{vendorPayment}/post', [VendorPaymentController::class, 'post'])->name('post');
+            Route::post('/{vendorPayment}/approve-and-post', [VendorPaymentController::class, 'approveAndPost'])->name('approve-and-post');
+            Route::post('/{vendorPayment}/reject', [VendorPaymentController::class, 'reject'])->name('reject');
+            Route::post('/{vendorPayment}/cancel', [VendorPaymentController::class, 'cancel'])->name('cancel');
+            Route::post('/{vendorPayment}/reverse', [VendorPaymentController::class, 'reverse'])->name('reverse');
+            Route::get('/{vendorPayment}/print', [VendorPaymentController::class, 'printPayment'])->name('print');
         });
 
         // Reports

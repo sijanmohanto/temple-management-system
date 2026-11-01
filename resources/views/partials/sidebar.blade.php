@@ -373,7 +373,7 @@
         @endif
 
         <!-- Module 5: Budget & Procurement (Phase 6) -->
-        @if(Auth::user()->hasRole('super_admin') || Auth::user()->hasAnyPermission(['view_budgets', 'manage_budgets', 'view_vendors', 'manage_vendors', 'view_purchase_requests', 'manage_purchase_requests', 'view_purchase_orders', 'manage_purchase_orders', 'view_vendor_bills', 'manage_vendor_bills', 'view_procurement_reports']))
+        @if(Auth::user()->hasRole('super_admin') || Auth::user()->hasAnyPermission(['view_budgets', 'manage_budgets', 'view_vendors', 'manage_vendors', 'view_purchase_requests', 'manage_purchase_requests', 'view_purchase_orders', 'manage_purchase_orders', 'view_vendor_bills', 'manage_vendor_bills', 'view_vendor_payments', 'manage_vendor_payments', 'view_procurement_reports']))
             <div class="sidebar-heading">{{ __('procurement.budget_and_procurement') }}</div>
 
             {{-- Budgets --}}
@@ -494,7 +494,8 @@
             </div>
             @endif
 
-            {{-- Vendor Bills & Payments --}}
+            {{-- Vendor Bills --}}
+            @if(Auth::user()->hasRole('super_admin') || Auth::user()->hasAnyPermission(['view_vendor_bills', 'manage_vendor_bills']))
             @php
                 $isBillsActive = request()->routeIs('procurement.bills.*');
             @endphp
@@ -510,12 +511,50 @@
             </a>
             <div class="collapse {{ $isBillsActive ? 'show' : '' }}" id="menuProcurementBills">
                 <div class="sidebar-submenu">
-                    <a href="{{ Route::has('procurement.bills.index') ? route('procurement.bills.index') : '#billsList' }}" class="sidebar-sublink {{ request()->routeIs('procurement.bills.index') ? 'active' : '' }}">
+                    <a href="{{ route('procurement.bills.index') }}" class="sidebar-sublink {{ request()->routeIs('procurement.bills.index') ? 'active' : '' }}">
                         <i class="bi bi-file-earmark-ruled"></i>
                         <span>{{ __('procurement.bill_list') }}</span>
                     </a>
+                    @if(Auth::user()->hasRole('super_admin') || Auth::user()->hasPermission('manage_vendor_bills'))
+                    <a href="{{ route('procurement.bills.create') }}" class="sidebar-sublink {{ request()->routeIs('procurement.bills.create') ? 'active' : '' }}">
+                        <i class="bi bi-plus-circle"></i>
+                        <span>{{ __('procurement.create_bill') }}</span>
+                    </a>
+                    @endif
                 </div>
             </div>
+            @endif
+
+            {{-- Vendor Payments --}}
+            @if(Auth::user()->hasRole('super_admin') || Auth::user()->hasAnyPermission(['view_vendor_payments', 'manage_vendor_payments']))
+            @php
+                $isPaymentsActive = request()->routeIs('procurement.payments.*');
+            @endphp
+            <a class="sidebar-link sidebar-parent {{ $isPaymentsActive ? 'active-parent' : '' }}"
+               data-bs-toggle="collapse"
+               href="#menuProcurementPayments"
+               role="button"
+               aria-expanded="{{ $isPaymentsActive ? 'true' : 'false' }}"
+               aria-controls="menuProcurementPayments">
+                <i class="bi bi-cash-stack"></i>
+                <span>{{ __('procurement.vendor_payments') }}</span>
+                <i class="bi bi-chevron-down ms-auto sidebar-chevron"></i>
+            </a>
+            <div class="collapse {{ $isPaymentsActive ? 'show' : '' }}" id="menuProcurementPayments">
+                <div class="sidebar-submenu">
+                    <a href="{{ route('procurement.payments.index') }}" class="sidebar-sublink {{ request()->routeIs('procurement.payments.index') ? 'active' : '' }}">
+                        <i class="bi bi-list-check"></i>
+                        <span>{{ __('procurement.payment_list') }}</span>
+                    </a>
+                    @if(Auth::user()->hasRole('super_admin') || Auth::user()->hasPermission('manage_vendor_payments'))
+                    <a href="{{ route('procurement.payments.create') }}" class="sidebar-sublink {{ request()->routeIs('procurement.payments.create') ? 'active' : '' }}">
+                        <i class="bi bi-plus-circle"></i>
+                        <span>{{ __('procurement.record_payment') }}</span>
+                    </a>
+                    @endif
+                </div>
+            </div>
+            @endif
 
             {{-- Procurement Reports --}}
             @php

@@ -77,4 +77,14 @@ class JournalLine extends Model
     {
         return $this->entry_type === self::TYPE_CREDIT;
     }
+
+    public function getDebitAmountAttribute(): float
+    {
+        return $this->entry_type === self::TYPE_DEBIT ? (float) $this->amount : 0.0;
+    }
+
+    public function getCreditAmountAttribute(): float
+    {
+        return $this->entry_type === self::TYPE_CREDIT ? (float) $this->amount : 0.0;
+    }
 }
