@@ -204,8 +204,20 @@
         var $menu = $sidebar.find('.sidebar-menu');
         if (!$menu.length) return;
 
-        var $activeLink = $menu.find('.sidebar-link.active').first();
+        // Auto-expand any parent collapse containing an active link
+        var $activeLink = $menu.find('.sidebar-link.active, .sidebar-sublink.active').first();
         if ($activeLink.length) {
+            var $parentCollapse = $activeLink.closest('.collapse');
+            if ($parentCollapse.length && !$parentCollapse.hasClass('show')) {
+                $parentCollapse.addClass('show');
+                var collapseId = $parentCollapse.attr('id');
+                if (collapseId) {
+                    $('[data-bs-target="#' + collapseId + '"], [href="#' + collapseId + '"]')
+                        .attr('aria-expanded', 'true')
+                        .addClass('active-parent');
+                }
+            }
+
             // Calculate active link's top position relative to scrollable .sidebar-menu
             var menuOffsetTop = $menu.offset().top;
             var linkOffsetTop = $activeLink.offset().top;

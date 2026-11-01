@@ -6,13 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\FinancialAccount;
 use App\Services\FinancialReportService;
+use App\Services\IncomeExpenseReportService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class FinancialReportController extends Controller
 {
     public function __construct(
-        protected FinancialReportService $reportService
+        protected FinancialReportService $reportService,
+        protected IncomeExpenseReportService $incomeExpenseReportService
     ) {}
 
     public function trialBalance(Request $request): View
@@ -107,5 +110,92 @@ class FinancialReportController extends Controller
         $events = Event::orderBy('start_date', 'desc')->get();
 
         return view('finance.reports.event_summary', compact('summaries', 'eventId', 'events'));
+    }
+
+    /**
+     * Clear Income Report view & server-side DataTables handler.
+     */
+    public function incomeReport(Request $request): View|JsonResponse
+    {
+        $this->authorize('view_financial_reports');
+
+        if ($request->ajax() || $request->wantsJson()) {
+            if ($request->boolean('summary_only')) {
+                return response()->json($this->incomeExpenseReportService->getIncomeSummaryCards($request));
+            }
+
+            return response()->json($this->incomeExpenseReportService->getIncomeDataTable($request));
+        }
+
+        $events = Event::orderBy('start_date', 'desc')->get();
+        $summary = $this->incomeExpenseReportService->getIncomeSummaryCards($request);
+
+        return view('finance.reports.income', compact('events', 'summary'));
+    }
+
+    /**
+     * AJAX endpoint to render Income Offcanvas Details view.
+     */
+    public function incomeDetails(Request $request, string $type, int $id): View|JsonResponse
+    {
+        $this->authorize('view_financial_reports');
+
+        $details = $this->incomeExpenseReportService->getIncomeDetails($type, $id);
+
+        if ($request->wantsJson() && ! $request->ajax()) {
+            return response()->json($details);
+        }
+
+        return view('finance.reports.partials.income_details', $details);
+    }
+
+    /**
+     * Clear Expense Report view & server-side DataTables handler.
+     */
+    public function expenseReport(Request $request): View|JsonResponse
+    {
+        $this->authorize('view_financial_reports');
+
+        if ($request->ajax() || $request->wantsJson()) {
+            if ($request->boolean('summary_only')) {
+                return response()->json($this->incomeExpenseReportService->getExpenseSummaryCards($request));
+            }
+
+            return response()->json($this->incomeExpenseReportService->getExpenseDataTable($request));
+        }
+
+        $events = Event::orderBy('start_date', 'desc')->get();
+        $expenseCategories = FinancialAccount::where('account_type', FinancialAccount::TYPE_EXPENSE)
+            ->orderBy('account_code')
+            ->get();
+        $summary = $this->incomeExpenseReportService->getExpenseSummaryCards($request);
+
+        return view('finance.reports.expenses', compact('events', 'expenseCategories', 'summary'));
+    }
+
+    /**
+     * AJAX endpoint to render Expense Offcanvas Details view.
+     */
+    public function expenseDetails(Request $request, int $id): View|JsonResponse
+    {
+        $this->authorize('view_financial_reports');
+
+        $expense = $this->incomeExpenseReportService->getExpenseDetails($id);
+
+        if ($request->wantsJson() && ! $request->ajax()) {
+            return response()->json($expense);
+        }
+
+        return view('finance.reports.partials.expense_details', compact('expense'));
+    }
+
+    /**
+     * AJAX Select2 endpoint for person & vendor search.
+     */
+    public function searchPeople(Request $request): JsonResponse
+    {
+        $this->authorize('view_financial_reports');
+
+        return response()->json($this->incomeExpenseReportService->searchPeople($request));
     }
 }

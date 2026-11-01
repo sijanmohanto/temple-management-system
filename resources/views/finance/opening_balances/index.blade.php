@@ -45,7 +45,7 @@
                                 <option value="">-- {{ __('common.select') }} --</option>
                                 @foreach($accounts as $acc)
                                     <option value="{{ $acc->id }}" {{ old('account_id') == $acc->id ? 'selected' : '' }}>
-                                        {{ $acc->code }} - {{ $acc->name_en }} ({{ ucfirst($acc->account_type) }})
+                                        {{ $acc->name_en }} ({{ ucfirst($acc->account_type) }})
                                     </option>
                                 @endforeach
                             </select>

@@ -104,7 +104,6 @@
                                         @if($membership->person->name_bn)
                                             <small class="text-muted d-block">{{ $membership->person->name_bn }}</small>
                                         @endif
-                                        <span class="badge bg-light text-dark border font-monospace mt-1">{{ $membership->person->person_code }}</span>
                                     </td>
                                     <td>
                                         <span class="fw-bold text-primary">{{ $membership->designation_en }}</span>
@@ -258,7 +257,6 @@
                                         <a href="{{ route('people.show', $past->person) }}" class="fw-semibold text-dark text-decoration-none">
                                             {{ $past->person->name_en }}
                                         </a>
-                                        <span class="badge bg-light text-dark border font-monospace ms-2">{{ $past->person->person_code }}</span>
                                     </td>
                                     <td>{{ $past->designation_en }}</td>
                                     <td>{{ $past->start_date ? $past->start_date->format('d M Y') : '—' }}</td>
@@ -342,10 +340,10 @@
                         <div class="mb-3">
                             <label class="form-label fw-semibold small">{{ __('families.select_person') }} <span class="text-danger">*</span></label>
                             <select name="person_id" class="form-select select2" required>
-                                <option value="">-- Choose Existing Devotee --</option>
+                                <option value="">-- {{ __('families.select_person') }} --</option>
                                 @foreach($availablePeople as $person)
                                     <option value="{{ $person->id }}">
-                                        {{ $person->name_en }} @if($person->name_bn) ({{ $person->name_bn }}) @endif &mdash; {{ $person->person_code }}
+                                        {{ $person->name_en }} @if($person->name_bn) ({{ $person->name_bn }}) @endif
                                     </option>
                                 @endforeach
                             </select>

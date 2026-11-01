@@ -139,7 +139,7 @@
                 <i class="bi bi-file-earmark-pdf me-1"></i> {{ __('donations.download_receipt_pdf') }}
             </button>
             <button onclick="window.close()" class="btn btn-outline-secondary px-3 py-2">
-                <i class="bi bi-x-circle me-1"></i> Close
+                <i class="bi bi-x-circle me-1"></i> {{ __('common.close') }}
             </button>
         </div>
     </div>

@@ -59,14 +59,12 @@
                                 <h4 class="fw-bold text-dark mb-1">{{ $selectedPledge->owner_name }}</h4>
                                 @if($selectedPledge->person)
                                     <div class="small text-muted">
-                                        <span class="font-monospace text-dark fw-bold">{{ $selectedPledge->person->person_code }}</span>
-                                        @if($selectedPledge->person->phone) &bull; <i class="bi bi-telephone me-1"></i>{{ $selectedPledge->person->phone }} @endif
+                                        @if($selectedPledge->person->phone) <i class="bi bi-telephone me-1"></i>{{ $selectedPledge->person->phone }} @endif
                                         @if($selectedPledge->person->address) &bull; <i class="bi bi-geo-alt me-1"></i>{{ $selectedPledge->person->address }} @endif
                                     </div>
                                 @elseif($selectedPledge->family)
                                     <div class="small text-muted">
-                                        <span class="font-monospace text-dark fw-bold">{{ $selectedPledge->family->family_code }}</span>
-                                        @if($selectedPledge->family->primaryContact) &bull; Primary Contact: {{ $selectedPledge->family->primaryContact->name_en }} ({{ $selectedPledge->family->primaryContact->phone }}) @endif
+                                        @if($selectedPledge->family->primaryContact) Primary Contact: {{ $selectedPledge->family->primaryContact->name_en }} ({{ $selectedPledge->family->primaryContact->phone }}) @endif
                                     </div>
                                 @endif
                             </div>
@@ -236,7 +234,7 @@
                                             $per = $selectedPerson ?? \App\Models\Person::find(old('payer_person_id'));
                                         @endphp
                                         @if($per)
-                                            <option value="{{ $per->id }}" selected>{{ $per->name_en }} ({{ $per->person_code }}) - {{ $per->phone }}</option>
+                                            <option value="{{ $per->id }}" selected>{{ $per->name_en }}{{ $per->phone ? ' - '.$per->phone : '' }}</option>
                                         @endif
                                     @endif
                                 </select>
@@ -252,7 +250,7 @@
                                             $fam = $selectedFamily ?? \App\Models\Family::find(old('payer_family_id'));
                                         @endphp
                                         @if($fam)
-                                            <option value="{{ $fam->id }}" selected>{{ $fam->family_name }} ({{ $fam->family_code }})</option>
+                                            <option value="{{ $fam->id }}" selected>{{ $fam->family_name }}</option>
                                         @endif
                                     @endif
                                 </select>

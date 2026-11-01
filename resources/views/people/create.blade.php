@@ -211,7 +211,7 @@
                                     <option value="">{{ __('people.no_family_assigned') }}</option>
                                     @foreach($families as $family)
                                         <option value="{{ $family->id }}" {{ old('family_id') == $family->id ? 'selected' : '' }}>
-                                            {{ $family->family_name }} ({{ $family->family_code }})
+                                            {{ $family->family_name }}
                                         </option>
                                     @endforeach
                                 </select>

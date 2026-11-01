@@ -66,6 +66,7 @@ return [
     'confirm_password' => 'Confirm New Password',
     'preferred_language' => 'Preferred Language',
     'phone_number' => 'Phone Number',
+    'phone' => 'Phone',
     'address' => 'Address',
     'last_login' => 'Last Login',
 
@@ -85,6 +86,24 @@ return [
     'please_wait' => 'Please wait...',
     'error_occurred' => 'An error occurred while processing your request.',
     'validation_error_occurred' => 'Please correct the highlighted validation errors.',
+
+    // Additional Actions & Terms
+    'note' => 'Note',
+    'view_all' => 'View All',
+    'no_data_found' => 'No data found.',
+    'deactivate' => 'Deactivate',
+    'activate' => 'Activate',
+    'confirm_delete' => 'Confirm Deletion',
+    'manage' => 'Manage',
+    'update' => 'Update',
+    'by' => 'by',
+    'created_by' => 'Created By',
+    'updated_by' => 'Updated By',
+    'audit_information' => 'Audit Information',
+    'approve' => 'Approve',
+    'reject' => 'Reject',
+    'active' => 'Active',
+    'inactive' => 'Inactive',
 
     // Footer
     'copyright' => 'All rights reserved.',

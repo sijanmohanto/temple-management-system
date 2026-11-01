@@ -16,7 +16,6 @@
                     </div>
                     <div>
                         <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <span class="badge bg-light text-dark font-monospace">{{ $family->family_code }}</span>
                             @if($family->isActive())
                                 <span class="badge bg-success bg-opacity-75">{{ __('common.status_active') }}</span>
                             @else
@@ -77,8 +76,7 @@
                     <table class="table table-hover align-middle mb-0 w-100" id="familyMembersTable">
                         <thead class="table-light">
                             <tr>
-                                <th class="ps-4">{{ __('people.person_code') }}</th>
-                                <th>{{ __('people.name_en') }}</th>
+                                <th class="ps-4">{{ __('people.name_en') }}</th>
                                 <th>{{ __('families.relationship_in_family') }}</th>
                                 <th>{{ __('people.classifications') }}</th>
                                 <th class="text-end pe-4">{{ __('common.actions') }}</th>
@@ -88,9 +86,6 @@
                             @forelse($family->members as $member)
                                 <tr>
                                     <td class="ps-4">
-                                        <span class="badge bg-light text-dark border font-monospace">{{ $member->person_code }}</span>
-                                    </td>
-                                    <td>
                                         <a href="{{ route('people.show', $member) }}" class="fw-bold text-dark text-decoration-none">
                                             {{ $member->name_en }}
                                         </a>
@@ -138,7 +133,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center py-5 text-muted">
+                                    <td colspan="4" class="text-center py-5 text-muted">
                                         <i class="bi bi-people fs-2 d-block mb-2 text-secondary opacity-50"></i>
                                         {{ __('families.no_members') }}
                                     </td>
@@ -164,11 +159,11 @@
 
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold small">{{ __('families.select_person') }}</label>
-                                    <select name="person_id" class="form-select select2" data-placeholder="-- Choose Devotee --" required>
-                                        <option value="">-- Choose Devotee --</option>
+                                    <select name="person_id" class="form-select select2" data-placeholder="-- {{ __('families.select_person') }} --" required>
+                                        <option value="">-- {{ __('families.select_person') }} --</option>
                                         @foreach($unassignedPeople as $person)
                                             <option value="{{ $person->id }}">
-                                                {{ $person->name_en }} ({{ $person->person_code }})
+                                                {{ $person->name_en }}
                                             </option>
                                         @endforeach
                                     </select>

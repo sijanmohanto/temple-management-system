@@ -16,7 +16,6 @@
                     </div>
                     <div>
                         <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <span class="badge bg-light text-dark font-monospace">{{ $person->person_code }}</span>
                             @if($person->isActive())
                                 <span class="badge bg-success bg-opacity-75"><i class="bi bi-check-circle me-1"></i> {{ __('common.status_active') }}</span>
                             @else
@@ -285,7 +284,6 @@
                 <div class="card-body p-4">
                     @if($person->family)
                         <div class="d-flex align-items-center justify-content-between mb-2">
-                            <span class="badge bg-light text-dark font-monospace">{{ $person->family->family_code }}</span>
                             @if($person->family->primary_contact_person_id === $person->id)
                                 <span class="badge bg-primary"><i class="bi bi-star-fill me-1"></i> {{ __('families.primary_contact') }}</span>
                             @endif

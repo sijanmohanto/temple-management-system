@@ -30,7 +30,7 @@
                             <option value="">-- {{ __('common.select') }} --</option>
                             @foreach($assetAccounts as $acc)
                                 <option value="{{ $acc->id }}" {{ old('from_account_id') == $acc->id ? 'selected' : '' }}>
-                                    {{ $acc->code }} - {{ $acc->name_en }} (৳{{ number_format($acc->calculateBalance(), 2) }})
+                                    {{ $acc->name_en }} (৳{{ number_format($acc->calculateBalance(), 2) }})
                                 </option>
                             @endforeach
                         </select>
@@ -44,7 +44,7 @@
                             <option value="">-- {{ __('common.select') }} --</option>
                             @foreach($assetAccounts as $acc)
                                 <option value="{{ $acc->id }}" {{ old('to_account_id') == $acc->id ? 'selected' : '' }}>
-                                    {{ $acc->code }} - {{ $acc->name_en }} (৳{{ number_format($acc->calculateBalance(), 2) }})
+                                    {{ $acc->name_en }} (৳{{ number_format($acc->calculateBalance(), 2) }})
                                 </option>
                             @endforeach
                         </select>

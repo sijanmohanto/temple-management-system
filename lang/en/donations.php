@@ -210,4 +210,10 @@ return [
     'excess_destination_general_desc' => 'Credit the excess amount to the unrestricted General Temple Fund.',
     'voluntary_amount' => 'Voluntary Amount',
     'above_pledged_target' => 'Above Pledged Target',
+    'pledge' => 'Event Pledge',
+    'event_donation' => 'Voluntary Event Donation',
+    'monthly_contribution' => 'Committee Monthly Contribution',
+    'general_donation' => 'General Temple Donation',
+    'family' => 'Family',
+    'no_records_found' => 'No records found.',
 ];

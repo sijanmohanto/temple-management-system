@@ -13,6 +13,10 @@ return [
     'processing' => 'প্রক্রিয়াধীন...',
     'search' => 'অনুসন্ধান:',
     'zeroRecords' => 'কোনো মিল পাওয়া যায়নি',
+    'previous' => 'পূর্ববর্তী',
+    'next' => 'পরবর্তী',
+    'first' => 'প্রথম',
+    'last' => 'শেষ',
     'paginate' => [
         'first' => 'প্রথম',
         'last' => 'শেষ',

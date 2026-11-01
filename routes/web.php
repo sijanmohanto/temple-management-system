@@ -24,6 +24,11 @@ use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\MonthlyContributionController;
 use App\Http\Controllers\PersonController;
 use App\Http\Controllers\PledgeController;
+use App\Http\Controllers\Procurement\BudgetController;
+use App\Http\Controllers\Procurement\BudgetReportController;
+use App\Http\Controllers\Procurement\PurchaseOrderController;
+use App\Http\Controllers\Procurement\PurchaseRequestController;
+use App\Http\Controllers\Procurement\VendorController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReceiptController;
 use Illuminate\Support\Facades\Route;
@@ -211,6 +216,13 @@ Route::middleware('auth')->group(function () {
 
         // Financial Reports
         Route::prefix('reports')->name('reports.')->group(function () {
+            // Clear Income & Expense Reports (Revised)
+            Route::get('/income', [FinancialReportController::class, 'incomeReport'])->name('income');
+            Route::get('/income/details/{type}/{id}', [FinancialReportController::class, 'incomeDetails'])->name('income.details');
+            Route::get('/expenses', [FinancialReportController::class, 'expenseReport'])->name('expenses');
+            Route::get('/expenses/details/{id}', [FinancialReportController::class, 'expenseDetails'])->name('expenses.details');
+            Route::get('/people-search', [FinancialReportController::class, 'searchPeople'])->name('people-search');
+
             Route::get('/trial-balance', [FinancialReportController::class, 'trialBalance'])->name('trial-balance');
             Route::get('/general-ledger', [FinancialReportController::class, 'generalLedger'])->name('general-ledger');
             Route::get('/income-expense', [FinancialReportController::class, 'incomeExpense'])->name('income-expense');
@@ -218,6 +230,70 @@ Route::middleware('auth')->group(function () {
             Route::get('/account-statements', [FinancialReportController::class, 'accountStatement'])->name('account-statement');
             Route::get('/account-balances', [FinancialReportController::class, 'accountBalances'])->name('account-balances');
             Route::get('/event-summary', [FinancialReportController::class, 'eventSummary'])->name('event-summary');
+        });
+    });
+
+    // Phase 6: Budget & Procurement Management
+    Route::prefix('procurement')->name('procurement.')->group(function () {
+        // Budgets
+        Route::prefix('budgets')->name('budgets.')->group(function () {
+            Route::get('/', [BudgetController::class, 'index'])->name('index');
+            Route::get('/create', [BudgetController::class, 'create'])->name('create');
+            Route::post('/', [BudgetController::class, 'store'])->name('store');
+            Route::get('/{budget}', [BudgetController::class, 'show'])->name('show');
+            Route::get('/{budget}/edit', [BudgetController::class, 'edit'])->name('edit');
+            Route::put('/{budget}', [BudgetController::class, 'update'])->name('update');
+            Route::post('/{budget}/submit', [BudgetController::class, 'submit'])->name('submit');
+            Route::post('/{budget}/approve', [BudgetController::class, 'approve'])->name('approve');
+            Route::post('/{budget}/reject', [BudgetController::class, 'reject'])->name('reject');
+            Route::post('/{budget}/cancel', [BudgetController::class, 'cancel'])->name('cancel');
+        });
+
+        // Vendors
+        Route::prefix('vendors')->name('vendors.')->group(function () {
+            Route::get('/search', [VendorController::class, 'search'])->name('search');
+            Route::get('/', [VendorController::class, 'index'])->name('index');
+            Route::get('/create', [VendorController::class, 'create'])->name('create');
+            Route::post('/', [VendorController::class, 'store'])->name('store');
+            Route::get('/{vendor}', [VendorController::class, 'show'])->name('show');
+            Route::get('/{vendor}/edit', [VendorController::class, 'edit'])->name('edit');
+            Route::put('/{vendor}', [VendorController::class, 'update'])->name('update');
+            Route::post('/{vendor}/toggle-status', [VendorController::class, 'toggleStatus'])->name('toggle-status');
+            Route::delete('/{vendor}', [VendorController::class, 'destroy'])->name('destroy');
+        });
+
+        // Purchase Requests
+        Route::prefix('requests')->name('requests.')->group(function () {
+            Route::get('/', [PurchaseRequestController::class, 'index'])->name('index');
+            Route::get('/create', [PurchaseRequestController::class, 'create'])->name('create');
+            Route::post('/', [PurchaseRequestController::class, 'store'])->name('store');
+            Route::get('/{purchaseRequest}', [PurchaseRequestController::class, 'show'])->name('show');
+            Route::get('/{purchaseRequest}/edit', [PurchaseRequestController::class, 'edit'])->name('edit');
+            Route::put('/{purchaseRequest}', [PurchaseRequestController::class, 'update'])->name('update');
+            Route::post('/{purchaseRequest}/submit', [PurchaseRequestController::class, 'submit'])->name('submit');
+            Route::post('/{purchaseRequest}/approve', [PurchaseRequestController::class, 'approve'])->name('approve');
+            Route::post('/{purchaseRequest}/reject', [PurchaseRequestController::class, 'reject'])->name('reject');
+            Route::post('/{purchaseRequest}/cancel', [PurchaseRequestController::class, 'cancel'])->name('cancel');
+        });
+
+        // Purchase Orders
+        Route::prefix('orders')->name('orders.')->group(function () {
+            Route::get('/', [PurchaseOrderController::class, 'index'])->name('index');
+            Route::get('/create', [PurchaseOrderController::class, 'create'])->name('create');
+            Route::post('/', [PurchaseOrderController::class, 'store'])->name('store');
+            Route::get('/{purchaseOrder}', [PurchaseOrderController::class, 'show'])->name('show');
+            Route::get('/{purchaseOrder}/edit', [PurchaseOrderController::class, 'edit'])->name('edit');
+            Route::put('/{purchaseOrder}', [PurchaseOrderController::class, 'update'])->name('update');
+            Route::post('/{purchaseOrder}/approve', [PurchaseOrderController::class, 'approve'])->name('approve');
+            Route::post('/{purchaseOrder}/send', [PurchaseOrderController::class, 'sendOrder'])->name('send');
+            Route::post('/{purchaseOrder}/complete', [PurchaseOrderController::class, 'complete'])->name('complete');
+            Route::post('/{purchaseOrder}/cancel', [PurchaseOrderController::class, 'cancel'])->name('cancel');
+            Route::get('/{purchaseOrder}/print', [PurchaseOrderController::class, 'printOrder'])->name('print');
+        });
+
+        // Reports
+        Route::prefix('reports')->name('reports.')->group(function () {
+            Route::get('/budget-vs-actual', [BudgetReportController::class, 'budgetVsActual'])->name('budget-vs-actual');
         });
     });
 

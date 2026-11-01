@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', $event->name . ' (' . $event->event_code . ')')
+@section('title', $event->name)
 
 @section('content')
 <div class="container-fluid px-0">
@@ -10,11 +10,10 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-1">
                     <li class="breadcrumb-item"><a href="{{ route('events.index') }}" class="text-decoration-none">{{ __('events.events') }}</a></li>
-                    <li class="breadcrumb-item active">{{ $event->event_code }}</li>
+                    <li class="breadcrumb-item active">{{ $event->name }}</li>
                 </ol>
             </nav>
             <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                <span class="badge bg-light text-dark border font-monospace fs-6 px-3 py-2">{{ $event->event_code }}</span>
                 @php
                     $badgeClass = match ($event->status) {
                         'draft' => 'bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25',

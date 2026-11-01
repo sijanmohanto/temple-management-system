@@ -48,7 +48,7 @@
                             <option value="">-- {{ __('common.select') }} --</option>
                             @foreach($expenseAccounts as $acc)
                                 <option value="{{ $acc->id }}" {{ (string) old('expense_account_id', $expense->financial_account_id) === (string) $acc->id ? 'selected' : '' }}>
-                                    {{ $acc->code }} - {{ $acc->name_en }} ({{ $acc->name_bn ?: $acc->name_en }})
+                                    {{ $acc->name_en }} ({{ $acc->name_bn ?: $acc->name_en }})
                                 </option>
                             @endforeach
                         </select>
@@ -62,7 +62,7 @@
                             <option value="">-- {{ __('common.select') }} --</option>
                             @foreach($assetAccounts as $acc)
                                 <option value="{{ $acc->id }}" {{ (string) old('payment_account_id', $expense->payment_account_id) === (string) $acc->id ? 'selected' : '' }}>
-                                    {{ $acc->code }} - {{ $acc->name_en }} ({{ $acc->name_bn ?: $acc->name_en }})
+                                    {{ $acc->name_en }} ({{ $acc->name_bn ?: $acc->name_en }})
                                 </option>
                             @endforeach
                         </select>
@@ -93,12 +93,12 @@
                     <div class="col-md-4">
                         <label class="form-label required">{{ __('donations.payment_method') }}</label>
                         <select name="payment_method" class="form-select @error('payment_method') is-invalid @enderror" required>
-                            <option value="cash" {{ old('payment_method', $expense->payment_method) === 'cash' ? 'selected' : '' }}>Cash</option>
-                            <option value="bank_transfer" {{ old('payment_method', $expense->payment_method) === 'bank_transfer' ? 'selected' : '' }}>Bank Transfer</option>
-                            <option value="cheque" {{ old('payment_method', $expense->payment_method) === 'cheque' ? 'selected' : '' }}>Cheque</option>
-                            <option value="bkash" {{ old('payment_method', $expense->payment_method) === 'bkash' ? 'selected' : '' }}>bKash</option>
-                            <option value="nagad" {{ old('payment_method', $expense->payment_method) === 'nagad' ? 'selected' : '' }}>Nagad</option>
-                            <option value="rocket" {{ old('payment_method', $expense->payment_method) === 'rocket' ? 'selected' : '' }}>Rocket</option>
+                            <option value="cash" {{ old('payment_method', $expense->payment_method) === 'cash' ? 'selected' : '' }}>{{ __('donations.method_cash') }}</option>
+                            <option value="bank_transfer" {{ old('payment_method', $expense->payment_method) === 'bank_transfer' ? 'selected' : '' }}>{{ __('donations.method_bank_transfer') }}</option>
+                            <option value="cheque" {{ old('payment_method', $expense->payment_method) === 'cheque' ? 'selected' : '' }}>{{ __('donations.method_cheque') }}</option>
+                            <option value="bkash" {{ old('payment_method', $expense->payment_method) === 'bkash' ? 'selected' : '' }}>{{ __('donations.method_bkash') }}</option>
+                            <option value="nagad" {{ old('payment_method', $expense->payment_method) === 'nagad' ? 'selected' : '' }}>{{ __('donations.method_nagad') }}</option>
+                            <option value="rocket" {{ old('payment_method', $expense->payment_method) === 'rocket' ? 'selected' : '' }}>{{ __('donations.method_rocket') }}</option>
                         </select>
                         @error('payment_method')
                             <div class="invalid-feedback">{{ $message }}</div>

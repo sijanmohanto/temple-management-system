@@ -39,6 +39,7 @@ class Expense extends Model
     protected $fillable = [
         'expense_number',
         'expense_date',
+        'vendor_id',
         'financial_account_id',
         'expense_account_id',
         'payment_account_id',
@@ -137,6 +138,14 @@ class Expense extends Model
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
+    }
+
+    /**
+     * Optional vendor association.
+     */
+    public function vendor(): BelongsTo
+    {
+        return $this->belongsTo(Vendor::class, 'vendor_id');
     }
 
     /**
