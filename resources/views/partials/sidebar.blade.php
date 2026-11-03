@@ -592,6 +592,58 @@
             </div>
         @endif
 
+        <!-- Public Transparency & Payment Portal (Admin Modules) -->
+        @if(Auth::user()->hasRole('super_admin') || Auth::user()->hasAnyPermission(['view_public_events', 'view_event_documents', 'view_receiver_accounts', 'view_public_payments', 'view_complaints']))
+            <div class="sidebar-heading">{{ __('nav.public_portal') }}</div>
+            @php
+                $isPortalActive = request()->routeIs('portal.*');
+            @endphp
+            <a class="sidebar-link sidebar-parent {{ $isPortalActive ? 'active-parent' : '' }}"
+               data-bs-toggle="collapse"
+               href="#menuPublicPortal"
+               role="button"
+               aria-expanded="{{ $isPortalActive ? 'true' : 'false' }}"
+               aria-controls="menuPublicPortal">
+                <i class="bi bi-globe"></i>
+                <span>{{ __('nav.public_portal') }}</span>
+                <i class="bi bi-chevron-down ms-auto sidebar-chevron"></i>
+            </a>
+            <div class="collapse {{ $isPortalActive ? 'show' : '' }}" id="menuPublicPortal">
+                <div class="sidebar-submenu">
+                    @if(Auth::user()->hasRole('super_admin') || Auth::user()->hasPermission('view_public_events'))
+                        <a href="{{ route('portal.events.index') }}" class="sidebar-sublink {{ request()->routeIs('portal.events.*') ? 'active' : '' }}">
+                            <i class="bi bi-calendar-check"></i>
+                            <span>{{ __('nav.portal_events') }}</span>
+                        </a>
+                    @endif
+                    @if(Auth::user()->hasRole('super_admin') || Auth::user()->hasPermission('view_event_documents'))
+                        <a href="{{ route('portal.documents.index') }}" class="sidebar-sublink {{ request()->routeIs('portal.documents.*') ? 'active' : '' }}">
+                            <i class="bi bi-file-earmark-text"></i>
+                            <span>{{ __('nav.portal_documents') }}</span>
+                        </a>
+                    @endif
+                    @if(Auth::user()->hasRole('super_admin') || Auth::user()->hasPermission('view_receiver_accounts'))
+                        <a href="{{ route('portal.receivers.index') }}" class="sidebar-sublink {{ request()->routeIs('portal.receivers.*') ? 'active' : '' }}">
+                            <i class="bi bi-wallet2"></i>
+                            <span>{{ __('nav.portal_receivers') }}</span>
+                        </a>
+                    @endif
+                    @if(Auth::user()->hasRole('super_admin') || Auth::user()->hasPermission('view_public_payments'))
+                        <a href="{{ route('portal.payments.index') }}" class="sidebar-sublink {{ request()->routeIs('portal.payments.*') ? 'active' : '' }}">
+                            <i class="bi bi-credit-card-2-front"></i>
+                            <span>{{ __('nav.portal_payments') }}</span>
+                        </a>
+                    @endif
+                    @if(Auth::user()->hasRole('super_admin') || Auth::user()->hasPermission('view_complaints'))
+                        <a href="{{ route('portal.complaints.index') }}" class="sidebar-sublink {{ request()->routeIs('portal.complaints.*') ? 'active' : '' }}">
+                            <i class="bi bi-chat-left-dots"></i>
+                            <span>{{ __('nav.portal_complaints') }}</span>
+                        </a>
+                    @endif
+                </div>
+            </div>
+        @endif
+
         <!-- Module 6: Venues & Hall Bookings (P2) -->
         <div class="sidebar-heading">{{ __('nav.venues') }}</div>
         <a href="#venueModule" class="sidebar-link disabled-future" title="{{ __('common.under_construction') }}">

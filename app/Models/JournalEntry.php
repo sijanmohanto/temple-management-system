@@ -111,6 +111,14 @@ class JournalEntry extends Model
     }
 
     /**
+     * Check if debits equal credits within rounding tolerance.
+     */
+    public function isBalanced(): bool
+    {
+        return abs((float) $this->total_debit - (float) $this->total_credit) < 0.001;
+    }
+
+    /**
      * Concurrency-safe unique journal number generator (JRN-YYYY-0001).
      */
     public static function generateJournalNumber(Carbon|string|null $date = null): string

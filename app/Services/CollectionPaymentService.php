@@ -306,6 +306,7 @@ class CollectionPaymentService
                         } else {
                             $allocation->update([
                                 'target_type' => $pledge->event_id ? PaymentAllocation::TARGET_VOLUNTARY_EVENT : PaymentAllocation::TARGET_VOLUNTARY_GENERAL,
+                                'event_id' => $pledge->event_id,
                                 'notes' => __('donations.excess_pledge_voluntary_note', [
                                     'code' => $pledge->pledge_code,
                                     'amount' => number_format($allocation->amount, 2),

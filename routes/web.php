@@ -32,6 +32,11 @@ use App\Http\Controllers\Procurement\VendorBillController;
 use App\Http\Controllers\Procurement\VendorController;
 use App\Http\Controllers\Procurement\VendorPaymentController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicPortal\ComplaintController;
+use App\Http\Controllers\PublicPortal\EventDocumentController;
+use App\Http\Controllers\PublicPortal\PublicEventController;
+use App\Http\Controllers\PublicPortal\PublicPaymentController;
+use App\Http\Controllers\PublicPortal\ReceiverAccountController;
 use App\Http\Controllers\ReceiptController;
 use Illuminate\Support\Facades\Route;
 
@@ -333,6 +338,75 @@ Route::middleware('auth')->group(function () {
         // Reports
         Route::prefix('reports')->name('reports.')->group(function () {
             Route::get('/budget-vs-actual', [BudgetReportController::class, 'budgetVsActual'])->name('budget-vs-actual');
+        });
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Public Transparency & Payment Portal (Admin Modules)
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('admin/portal')->as('portal.')->group(function () {
+        // Public Events Management
+        Route::prefix('events')->name('events.')->group(function () {
+            Route::get('/', [PublicEventController::class, 'index'])->name('index');
+            Route::get('/{event}', [PublicEventController::class, 'show'])->name('show');
+            Route::get('/{event}/edit', [PublicEventController::class, 'edit'])->name('edit');
+            Route::put('/{event}', [PublicEventController::class, 'update'])->name('update');
+            Route::post('/{event}/publish', [PublicEventController::class, 'publish'])->name('publish');
+            Route::post('/{event}/unpublish', [PublicEventController::class, 'unpublish'])->name('unpublish');
+        });
+
+        // Event Reports & Documents Management
+        Route::prefix('documents')->name('documents.')->group(function () {
+            Route::get('/', [EventDocumentController::class, 'index'])->name('index');
+            Route::get('/create', [EventDocumentController::class, 'create'])->name('create');
+            Route::post('/', [EventDocumentController::class, 'store'])->name('store');
+            Route::get('/{document}', [EventDocumentController::class, 'show'])->name('show');
+            Route::get('/{document}/edit', [EventDocumentController::class, 'edit'])->name('edit');
+            Route::put('/{document}', [EventDocumentController::class, 'update'])->name('update');
+            Route::delete('/{document}', [EventDocumentController::class, 'destroy'])->name('destroy');
+            Route::get('/{document}/download', [EventDocumentController::class, 'download'])->name('download');
+            Route::post('/{document}/publish', [EventDocumentController::class, 'publish'])->name('publish');
+            Route::post('/{document}/unpublish', [EventDocumentController::class, 'unpublish'])->name('unpublish');
+        });
+
+        // Receiver Accounts Management
+        Route::prefix('receivers')->name('receivers.')->group(function () {
+            Route::get('/', [ReceiverAccountController::class, 'index'])->name('index');
+            Route::get('/create', [ReceiverAccountController::class, 'create'])->name('create');
+            Route::post('/', [ReceiverAccountController::class, 'store'])->name('store');
+            Route::get('/{receiver}', [ReceiverAccountController::class, 'show'])->name('show');
+            Route::get('/{receiver}/edit', [ReceiverAccountController::class, 'edit'])->name('edit');
+            Route::put('/{receiver}', [ReceiverAccountController::class, 'update'])->name('update');
+            Route::delete('/{receiver}', [ReceiverAccountController::class, 'destroy'])->name('destroy');
+            Route::post('/{receiver}/toggle-active', [ReceiverAccountController::class, 'toggleActive'])->name('toggle-active');
+            Route::post('/{receiver}/verify', [ReceiverAccountController::class, 'verify'])->name('verify');
+            Route::post('/{receiver}/unverify', [ReceiverAccountController::class, 'unverify'])->name('unverify');
+        });
+
+        // Public Payment Submissions Management
+        Route::prefix('payments')->name('payments.')->group(function () {
+            Route::get('/', [PublicPaymentController::class, 'index'])->name('index');
+            Route::get('/search-persons', [PublicPaymentController::class, 'searchPersons'])->name('search-persons');
+            Route::get('/{payment}', [PublicPaymentController::class, 'show'])->name('show');
+            Route::post('/{payment}/verify', [PublicPaymentController::class, 'verify'])->name('verify');
+            Route::post('/{payment}/reject', [PublicPaymentController::class, 'reject'])->name('reject');
+            Route::post('/{payment}/link-devotee', [PublicPaymentController::class, 'linkDevotee'])->name('link-devotee');
+        });
+
+        // Complaints & Inquiries Management
+        Route::prefix('complaints')->name('complaints.')->group(function () {
+            Route::get('/', [ComplaintController::class, 'index'])->name('index');
+            Route::get('/{complaint}', [ComplaintController::class, 'show'])->name('show');
+            Route::post('/{complaint}/assign', [ComplaintController::class, 'assign'])->name('assign');
+            Route::post('/{complaint}/respond', [ComplaintController::class, 'respond'])->name('respond');
+            Route::post('/{complaint}/resolve', [ComplaintController::class, 'resolve'])->name('resolve');
+            Route::post('/{complaint}/reject', [ComplaintController::class, 'rejectComplaint'])->name('reject');
+            Route::post('/{complaint}/close', [ComplaintController::class, 'close'])->name('close');
+            Route::post('/{complaint}/update-priority', [ComplaintController::class, 'updatePriority'])->name('update-priority');
+            Route::post('/{complaint}/add-note', [ComplaintController::class, 'addInternalNote'])->name('add-note');
+            Route::post('/{complaint}/link-person', [ComplaintController::class, 'linkPerson'])->name('link-person');
         });
     });
 

@@ -31,20 +31,36 @@ class Event extends Model
 
     public const MODE_CLOSE_WITH_ADJUSTMENTS = 'close_with_authorized_adjustments';
 
+    // Public portal publication statuses
+    public const PUB_STATUS_DRAFT = 'draft';
+
+    public const PUB_STATUS_PUBLISHED = 'published';
+
+    public const PUB_STATUS_UNPUBLISHED = 'unpublished';
+
     protected $fillable = [
         'event_code',
+        'slug',
         'name_en',
         'name_bn',
         'event_category_id',
         'event_year',
+        'short_description_en',
+        'short_description_bn',
         'description_en',
         'description_bn',
         'venue',
+        'banner_image_path',
         'start_date',
         'end_date',
         'collection_start_date',
         'collection_end_date',
         'status',
+        'publication_status',
+        'published_at',
+        'published_by',
+        'unpublished_at',
+        'unpublished_by',
         'closing_mode',
         'closing_reason',
         'closed_by',
@@ -63,6 +79,8 @@ class Event extends Model
         'collection_end_date' => 'date',
         'closed_at' => 'datetime',
         'reopened_at' => 'datetime',
+        'published_at' => 'datetime',
+        'unpublished_at' => 'datetime',
         'event_year' => 'integer',
     ];
 
@@ -104,6 +122,30 @@ class Event extends Model
     public function reopenedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reopened_by');
+    }
+
+    /**
+     * User who published the event for public view.
+     */
+    public function publisher(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'published_by');
+    }
+
+    /**
+     * User who unpublished the event from public view.
+     */
+    public function unpublisher(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'unpublished_by');
+    }
+
+    /**
+     * Public transparency documents attached to this event.
+     */
+    public function documents(): HasMany
+    {
+        return $this->hasMany(EventDocument::class)->orderByDesc('created_at');
     }
 
     /**
@@ -208,6 +250,22 @@ class Event extends Model
         return $this->isClosed() && $this->closing_mode === self::MODE_CLOSE_WITH_ADJUSTMENTS;
     }
 
+    // Publication status helpers
+    public function isPublished(): bool
+    {
+        return $this->publication_status === self::PUB_STATUS_PUBLISHED;
+    }
+
+    public function isUnpublished(): bool
+    {
+        return $this->publication_status === self::PUB_STATUS_UNPUBLISHED;
+    }
+
+    public function isPublicationDraft(): bool
+    {
+        return $this->publication_status === self::PUB_STATUS_DRAFT;
+    }
+
     /**
      * Check if event has a collection period configured.
      */
@@ -217,11 +275,40 @@ class Event extends Model
     }
 
     /**
+     * Localized short description attribute.
+     */
+    public function getShortDescriptionAttribute(): ?string
+    {
+        if (app()->getLocale() === 'bn' && ! empty($this->short_description_bn)) {
+            return $this->short_description_bn;
+        }
+
+        return $this->short_description_en;
+    }
+
+    /**
+     * URL for banner image.
+     */
+    public function getBannerUrlAttribute(): ?string
+    {
+        if ($this->banner_image_path) {
+            return asset('storage/'.$this->banner_image_path);
+        }
+
+        return null;
+    }
+
+    /**
      * Scopes.
      */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', self::STATUS_ACTIVE);
+    }
+
+    public function scopePublished(Builder $query): Builder
+    {
+        return $query->where('publication_status', self::PUB_STATUS_PUBLISHED);
     }
 
     public function scopeUpcoming(Builder $query): Builder
