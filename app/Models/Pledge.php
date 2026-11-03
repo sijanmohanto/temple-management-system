@@ -245,6 +245,26 @@ class Pledge extends Model
         return $newStatus;
     }
 
+    public function isPaid(): bool
+    {
+        return $this->status === self::STATUS_PAID;
+    }
+
+    public function isPartial(): bool
+    {
+        return $this->status === self::STATUS_PARTIAL;
+    }
+
+    public function isUnpaid(): bool
+    {
+        return $this->status === self::STATUS_UNPAID;
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->status === self::STATUS_CANCELLED;
+    }
+
     /**
      * Filter scope.
      */

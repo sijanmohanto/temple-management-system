@@ -83,6 +83,9 @@ class FinancialAccount extends Model
                     if ($column === 'code' || str_ends_with($column, '.code')) {
                         $column = str_replace('.code', '.account_code', $column === 'code' ? 'account_code' : $column);
                     }
+                    if ($column === 'account_name' || str_ends_with($column, '.account_name')) {
+                        $column = str_replace('.account_name', '.account_name_en', $column === 'account_name' ? 'account_name_en' : $column);
+                    }
                 }
 
                 return parent::where($column, $operator, $value, $boolean);
@@ -93,6 +96,9 @@ class FinancialAccount extends Model
                 if (is_string($column)) {
                     if ($column === 'code' || str_ends_with($column, '.code')) {
                         $column = str_replace('.code', '.account_code', $column === 'code' ? 'account_code' : $column);
+                    }
+                    if ($column === 'account_name' || str_ends_with($column, '.account_name')) {
+                        $column = str_replace('.account_name', '.account_name_en', $column === 'account_name' ? 'account_name_en' : $column);
                     }
                 }
 

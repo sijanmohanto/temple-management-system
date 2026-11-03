@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class CollectionPayment extends Model
 {
@@ -35,6 +36,8 @@ class CollectionPayment extends Model
 
     public const METHOD_BANK = 'bank_transfer';
 
+    public const METHOD_BANK_TRANSFER = self::METHOD_BANK;
+
     public const METHOD_BKASH = 'bkash';
 
     public const METHOD_NAGAD = 'nagad';
@@ -53,6 +56,7 @@ class CollectionPayment extends Model
         'payer_phone_override',
         'collection_type',
         'event_id',
+        'pledge_id',
         'payment_date',
         'payment_year',
         'amount',
@@ -75,6 +79,13 @@ class CollectionPayment extends Model
         'is_direct_cash_entry',
         'finance_posted_at',
         'finance_post_reference',
+        'receiver_account_id',
+        'sender_mobile',
+        'payment_proof_path',
+        'is_public_submission',
+        'public_donor_name',
+        'public_donor_phone',
+        'public_donor_email',
         'created_by',
         'updated_by',
     ];
@@ -89,6 +100,7 @@ class CollectionPayment extends Model
             'reversed_at' => 'datetime',
             'finance_posted_at' => 'datetime',
             'is_direct_cash_entry' => 'boolean',
+            'is_public_submission' => 'boolean',
         ];
     }
 
@@ -114,6 +126,20 @@ class CollectionPayment extends Model
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
+    }
+
+    public function pledge(): BelongsTo
+    {
+        return $this->belongsTo(Pledge::class, 'pledge_id');
+    }
+
+    public function getLinkedPledgeAttribute(): ?Pledge
+    {
+        if ($this->pledge) {
+            return $this->pledge;
+        }
+
+        return $this->allocations->firstWhere('pledge_id', '!=', null)?->pledge;
     }
 
     /**
@@ -173,6 +199,26 @@ class CollectionPayment extends Model
     }
 
     /**
+     * Associated receiver account (for online/MFS payments).
+     */
+    public function receiverAccount(): BelongsTo
+    {
+        return $this->belongsTo(ReceiverAccount::class, 'receiver_account_id');
+    }
+
+    /**
+     * Public payment proof URL.
+     */
+    public function getPaymentProofUrlAttribute(): ?string
+    {
+        if (! $this->payment_proof_path) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($this->payment_proof_path);
+    }
+
+    /**
      * Concurrency-safe unique payment code generator (PAY-YYYY-0001).
      */
     public static function generatePaymentCode(int $year): string
@@ -213,11 +259,17 @@ class CollectionPayment extends Model
     public function getPayerDisplayNameAttribute(): string
     {
         if ($this->payerPerson) {
-            return $this->payerPerson->name_en;
+            return app()->getLocale() === 'bn' && ! empty($this->payerPerson->name_bn)
+                ? $this->payerPerson->name_bn
+                : $this->payerPerson->name_en;
         }
 
         if ($this->payerFamily) {
             return $this->payerFamily->family_name.' (Family)';
+        }
+
+        if ($this->public_donor_name) {
+            return $this->public_donor_name;
         }
 
         if ($this->payer_name_override) {

@@ -763,3 +763,210 @@ Result:
    - **No Unallocated Vendor Advances**: Vendor payments strictly require allocation against existing, verified, and approved vendor bills. Standalone advance payments without an approved bill cannot be recorded; advance deposits must follow the approved billing workflow or formal deposit account structure.
    - **No External Automated Payment Gateway Webhooks**: Payment recording represents an internal accounting voucher workflow managed by authorized temple financial officers (Cash, Bank Transfer, Cheque, MFS vouchers). Real-time external payment gateway IPN/webhooks (e.g. bKash/Nagad checkout callbacks) are not implemented.
    - **Concurrency Scope**: Database row locking (`lockForUpdate()`) provides strict ACID isolation on single-instance and primary-replica MySQL installations. Active-active multi-master distributed clustering would require distributed lock managers (e.g. Redis mutex).
+
+---
+
+## Phase: Public Transparency & Payment Portal — Admin Panel Implementation (COMPLETED)
+
+### Architectural Foundation & Scope Boundaries
+- **Strict Scope Separation**: Only admin-side management, verification, and preparation modules were implemented. Zero public-facing pages, public routes, guest forms, or CAPTCHA were introduced.
+- **Liturgical & Accounting Independence**: Liturgical/closing event status (`draft`, `upcoming`, `active`, `closing`, `closed`) is completely independent from public portal publication status (`draft`, `published`, `unpublished`). Publishing/unpublishing events or documents has zero impact on temple financial records or ledger balances.
+- **Double-Entry Financial Invariant**: Complaints and inquiries NEVER alter financial records directly. Any refund or adjustment must proceed through authorized voucher reversal procedures. Public payment verification strictly integrates with `CollectionPaymentService::verifyPayment()`, issuing official receipts and posting balanced double-entry ledger entries.
+
+---
+
+### Increments Implemented
+
+#### Increment 1: Public Event Management (Admin)
+- **Database Schema**:
+  - Migration `2026_11_02_000026_add_public_portal_fields_to_events_table.php` added: `slug` (unique, indexed), `banner_image_path`, `short_description_en`, `short_description_bn`, `publication_status` (`draft`, `published`, `unpublished`), `published_at`, `published_by`, `unpublished_at`, `unpublished_by`.
+- **Model Extensions** (`app/Models/Event.php`):
+  - Constants: `PUB_STATUS_DRAFT`, `PUB_STATUS_PUBLISHED`, `PUB_STATUS_UNPUBLISHED`.
+  - Relations: `publisher()`, `unpublisher()`.
+  - Helpers: `isPublished()`, `isUnpublished()`, `scopePublished()`.
+  - Accessors: `short_description`, `banner_url`.
+- **Form Request & Controller** (`UpdatePublicEventRequest.php`, `PublicEventController.php`):
+  - Gated by permissions: `view_public_events`, `manage_public_events`, `publish_public_events`.
+  - Slug validation with lowercase hyphenated format regex and cross-event uniqueness.
+  - Banner image validation (JPEG, PNG, WebP up to 3MB) and safe removal.
+  - AJAX publish/unpublish toggling with audit logging.
+- **Views**:
+  - `portal/events/index.blade.php`: Server-side DataTables (strictly 7 data columns, NO `#` column), publication status filter, year filter, AJAX status toggle.
+  - `portal/events/edit.blade.php`: Slug editor, banner file upload with live preview, bilingual short description textareas with live character counters.
+  - `portal/events/show.blade.php`: Public preview hero card, metadata audit timeline.
+- **Feature Tests** (`tests/Feature/PublicPortal/PublicEventTest.php`): 11 passed (64 assertions).
+
+#### Increment 2: Public Event Report & Document Management (Admin)
+- **Database Schema**:
+  - Migration `2026_11_02_000027_create_event_documents_table.php`:
+    - `id`, `event_id`, `title_en`, `title_bn`, `document_type` (`financial_report`, `audit_report`, `supporting_document`, `other`), `file_path`, `file_name`, `file_size`, `mime_type`, `description_en`, `description_bn`, `publication_status` (`draft`, `published`, `unpublished`), `published_at`, `published_by`, `unpublished_at`, `unpublished_by`, `uploaded_by`, timestamps, soft deletes.
+- **Model** (`app/Models/EventDocument.php`):
+  - Fillables, casts, scopes (`scopePublished`, `scopeForEvent`, `scopeOfType`), helper accessors (`formatted_file_size`, localized `title`, `document_type_name`).
+- **Secure File Storage & Streaming Controller** (`EventDocumentController.php`):
+  - Gated by `view_event_documents`, `manage_event_documents`, `publish_event_documents`, `delete_event_documents`.
+  - Non-guessable randomized storage on private local disk (`private/event_documents/`).
+  - Secure permission-checked streaming/download endpoint supporting both attachment download and inline preview with correct MIME headers.
+  - Optional replacement file upload with automatic safe deletion of deprecated physical files.
+- **Views**:
+  - `portal/documents/index.blade.php`: Server-side DataTables (7 data columns, NO `#` column), event and document type filters.
+  - `portal/documents/create.blade.php`: Event picker, document type, file upload (max 10MB; PDF/JPG/PNG), publish immediately switch.
+  - `portal/documents/edit.blade.php`: Metadata editing with optional file replacement.
+  - `portal/documents/show.blade.php`: Details view, preview widget, publication and audit history.
+- **Feature Tests** (`tests/Feature/PublicPortal/EventDocumentTest.php`): 14 passed (71 assertions).
+
+#### Increment 3: Receiver Account Management (Admin)
+- **Database Schema**:
+  - Migration `2026_11_02_000028_create_receiver_accounts_table.php`:
+    - `id`, `payment_method` (`bkash`, `nagad`, `rocket`, `bank_transfer`, `other`), `account_name`, `account_number`, `account_type` (`merchant`, `personal`, `current`, `savings`, `agent`), `bank_name`, `branch_name`, `routing_number`, `swift_code`, `qr_code_image_path`, `instructions_en`, `instructions_bn`, `is_active`, `is_verified`, `verified_at`, `verified_by`, `display_order`, `financial_account_id` (foreign key to chart of accounts), audit fields, timestamps, soft deletes.
+- **Model** (`app/Models/ReceiverAccount.php`):
+  - Scopes (`scopeActive`, `scopeVerified`, `scopePublicReady`, `scopeMethod`), accessors (`qr_code_url`, `method_name`, `type_name`, `instructions`).
+- **Controller** (`ReceiverAccountController.php`):
+  - Gated by `view_receiver_accounts`, `manage_receiver_accounts`, `verify_receiver_accounts`.
+  - Server-side DataTables (7 columns, NO `#` column), dynamic active status toggling, verification toggling.
+  - QR code image uploads (max 2MB) with safe replacement and deletion.
+  - Optional mapping directly to an active liquid asset account (Cash/Bank) in the double-entry chart of accounts.
+- **Views**:
+  - `portal/receivers/index.blade.php`: DataTable with method, active, and verification status filters.
+  - `portal/receivers/create.blade.php`: Method picker with conditional bank transfer fields, QR code upload, financial account selector.
+  - `portal/receivers/edit.blade.php`: Edit form with QR code preview/removal option.
+  - `portal/receivers/show.blade.php`: Account overview, QR code display, ledger account card, verification actions.
+- **Feature Tests** (`tests/Feature/PublicPortal/ReceiverAccountTest.php`): 13 passed (72 assertions).
+
+#### Increment 4: Public Payment Submission Management (Admin Verification Workflow)
+- **Database Schema Extensions**:
+  - Migration `2026_11_02_000029_add_public_portal_fields_to_collection_payments_table.php`:
+    - `receiver_account_id`, `sender_mobile`, `payment_proof_path`, `is_public_submission` (indexed), `public_donor_name`, `public_donor_phone`, `public_donor_email`.
+- **Model Extensions** (`app/Models/CollectionPayment.php`):
+  - Added new fillables, casts, `receiverAccount()` relation, `getPaymentProofUrlAttribute()`, enhanced `payer_display_name` to resolve public donor names gracefully.
+- **Controller** (`PublicPaymentController.php`):
+  - Gated by `view_public_payments`, `verify_public_payments`, `reject_public_payments`.
+  - Server-side DataTables (8 columns, NO `#` column) with status, event, receiver, and method filters.
+  - **Verification & Posting**:
+    - Optional automatic guest `Person` profile creation or linking to an existing registered devotee.
+    - Atomically calls `CollectionPaymentService::verifyPayment()`.
+    - Generates official money receipt (`Receipt`).
+    - Posts double-entry journal entry to the general ledger (Debits liquid asset, Credits event donation income).
+  - **Rejection**:
+    - Atomically calls `CollectionPaymentService::rejectPayment()` with mandatory rejection reason.
+    - Zero financial ledger entries created.
+  - **Devotee Linking & Autocomplete**:
+    - Autocomplete search endpoint (`search-persons`) and suggestion matching by phone number.
+- **Views**:
+  - `portal/payments/index.blade.php`: Server-side DataTable, verify modal, reject modal with AJAX handling.
+  - `portal/payments/show.blade.php`: Full submission review, donor profile card, receiver details, payment proof preview, posted accounting journal entries.
+- **Feature Tests** (`tests/Feature/PublicPortal/PublicPaymentTest.php`): 12 passed (64 assertions).
+
+#### Increment 5: Complaint Management (Admin-Side)
+- **Database Schema**:
+  - Migration `2026_11_02_000030_create_complaints_table.php`:
+    - `id`, `tracking_number` (unique, `CMP-YYYY-0001`), `complainant_name`, `complainant_phone`, `complainant_email`, `person_id`, `event_id`, `collection_payment_id`, `category` (`payment_issue`, `event_management`, `prasadam_service`, `general_inquiry`, `suggestion`, `other`), `subject`, `description`, `attachment_path`, `status` (`submitted`, `under_review`, `resolved`, `rejected`, `closed`), `priority` (`low`, `medium`, `high`, `urgent`), `assigned_to`, `admin_response`, `internal_notes`, `resolved_at`, `resolved_by`, `closed_at`, `closed_by`, timestamps, soft deletes.
+- **Model** (`app/Models/Complaint.php`):
+  - Concurrency-safe unique tracking number generator (`generateTrackingNumber()`).
+  - Relations to `person`, `event`, `payment`, `assignee`, `resolver`, `closer`.
+- **Controller** (`ComplaintController.php`):
+  - Gated by `view_complaints`, `manage_complaints`, `respond_complaints`, `assign_complaints`, `resolve_complaints`.
+  - DataTables list (8 columns, NO `#` column) with status, category, priority, assignee, and event filters.
+  - Actions: Assign staff, submit official response, resolve with mandatory note, reject with mandatory reason, close, update priority, append timestamped internal notes, link to registered devotee.
+- **Views**:
+  - `portal/complaints/index.blade.php`: Server-side DataTable, quick respond modal, quick resolve modal.
+  - `portal/complaints/show.blade.php`: Complete inquiry overview, complainant card, related event/payment context, response editor, internal notes log, assignment sidebar.
+- **Feature Tests** (`tests/Feature/PublicPortal/ComplaintTest.php`): 14 passed (64 assertions).
+
+---
+
+### Increment 6: Permissions, Navigation & Localization
+- **RBAC Permissions**:
+  - Seeded into `RoleAndPermissionSeeder.php` with bilingual names and descriptions:
+    - `view_public_events`, `manage_public_events`, `publish_public_events`
+    - `view_event_documents`, `manage_event_documents`, `publish_event_documents`, `delete_event_documents`
+    - `view_receiver_accounts`, `manage_receiver_accounts`, `verify_receiver_accounts`
+    - `view_public_payments`, `verify_public_payments`, `reject_public_payments`
+    - `view_complaints`, `manage_complaints`, `respond_complaints`, `assign_complaints`, `resolve_complaints`
+- **Sidebar Menu**:
+  - Added "Public Portal" collapsible section in `resources/views/partials/sidebar.blade.php` with 5 permission-controlled submenus.
+- **Bilingual Localization**:
+  - Created `lang/en/portal.php` and `lang/bn/portal.php` with **100% key parity (239 keys each)**, verified by automated script.
+  - Updated `lang/en/nav.php` and `lang/bn/nav.php`. Zero hardcoded English strings in Blade views or responses.
+
+---
+
+### Increment 7: UI & UX Standards
+- **Strict DataTables `#` Column Prohibition**: All 5 portal DataTables (`portal.events.index`, `portal.documents.index`, `portal.receivers.index`, `portal.payments.index`, `portal.complaints.index`) strictly omit `#` or row index columns, placing primary business data in column 0.
+- **Select2 & Toastr**: Standardized select inputs with `.select2-enable` and dynamic AJAX Toastr feedback.
+- **Button Loaders**: Modals and action buttons disable on submit to prevent duplicate submissions.
+
+---
+
+### Increment 8: Security & Data Integrity
+- **Multi-Tenant / Role Protection**: Controller middleware and Form Requests strictly enforce granular permissions server-side. Devotees and guests are blocked with 401/403.
+- **Financial Ledger Invariant**: Complaints and inquiries NEVER alter financial records directly. Collection payment verification strictly executes inside database transactions with accrual double-entry posting.
+- **Private Document Streaming**: Event documents are stored in private local storage with randomized filenames, accessible only via authenticated streaming responses with strict MIME type validation.
+
+---
+
+### Increment 9: Testing & QA Verification
+- **Testing & QA Verification Summary**:
+  - `tests/Feature/PublicPortal/PublicEventTest.php`: 12 passed (70 assertions)
+  - `tests/Feature/PublicPortal/EventDocumentTest.php`: 16 passed (79 assertions)
+  - `tests/Feature/PublicPortal/ReceiverAccountTest.php`: 16 passed (85 assertions)
+  - `tests/Feature/PublicPortal/PublicPaymentTest.php`: 17 passed (87 assertions)
+  - `tests/Feature/PublicPortal/ComplaintTest.php`: 14 passed (86 assertions)
+  - **Subtotal Public Portal Tests**: **75 passed (407 assertions)** (100% PASS).
+- **Full Application Test Suite**:
+  - **344 passed tests (2,015 assertions)** across the entire application with ZERO failures and ZERO regressions.
+- **Code Style (Laravel Pint)**:
+  - 100% PSR-12 code compliance verified with `./vendor/bin/pint --test` (0 issues).
+
+---
+
+### Increment 10: Form Corrections & Public Payment Accounting Rules Verification
+
+#### 1. Public Event Management (`/admin/portal/events`)
+- **Localization & Language Sanitization**:
+  - Fixed raw translation keys (`events.event_name`, `events.date`, `events.dates`, `events.event_duration`, `events.view_details`).
+  - Added bilingual keys with 100% parity to both `lang/en/events.php` and `lang/bn/events.php`.
+  - Ensured all table headers, filters, modal forms, and badges render clean human-readable text in both English and Bengali.
+
+#### 2. Event Documents / Financial Report Upload (`/admin/portal/documents`)
+- **Financial Statement Report Context**:
+  - Configured document upload form specifically for Puja/event financial statements (Total Income / আয়, Total Expenses / ব্যয়, Remaining Balance or Due / স্থিতি বা বকেয়া, and Expense breakdown by category / কোন খাতে কত ব্যয়).
+  - Multi-report support: allows multiple financial statements/annexures per event.
+  - Clear Event Dropdown: displays Event Name, Category, and Year formatted as `{{ $event->name }} ({{ $event->category?->name ?: __('common.general') }}) – {{ $event->event_year }}`.
+  - Document type defaults to financial report with accepted PDF, Excel, and scan formats.
+  - Publication status control (`published` vs `unpublished`) to withhold draft statements until committee approval.
+
+#### 3. Receiver Account Management (`/admin/portal/receivers/create`)
+- **Conventions & Accounting Boundaries**:
+  - Reused existing financial account architecture and followed `/collections/create` conventions.
+  - Added `event_id` (nullable foreign key) to `receiver_accounts` table (`2026_11_03_000031_add_event_id_to_receiver_accounts_table.php`). Accounts can be dedicated to a specific Puja/event or marked as general.
+  - Clear Account Holder Name, Receiver Account Number, display instructions (English & Bengali), verification status, and active toggle.
+  - Prominent UI notice: Receiver accounts are payment collection endpoints only; they do NOT generate ledger or collection records themselves.
+  - Soft deactivation preserves all historical payment submissions.
+
+#### 4. Public Payment Submission & Accounting Verification Rules (`/admin/portal/payments`)
+- **Strict Registration Rule**: Public payment verification is strictly restricted to registered devotees submitting against active pledges for running events.
+- **Pending Payment Ledger Invariant**: Pending submissions NEVER modify verified collection totals or reduce pledge balances.
+- **Accounting Verification Calculations (Scenarios A, B, C)**:
+  - **Formula Enforced**:
+    $$\text{Remaining Due} = \max(\text{Pledged Amount} - \text{Total Verified Paid}, 0)$$
+    $$\text{Extra Contribution} = \max(\text{Total Verified Paid} - \text{Pledged Amount}, 0)$$
+  - **Scenario A (Partial Payment)**:
+    - Pledge: ৳5,000 | Verified Paid: ৳1,000 | Remaining Due: ৳4,000
+    - New Payment: ৳2,000
+    - Result: Total Verified Paid = ৳3,000, Remaining Due = ৳2,000, Extra Contribution = ৳0.
+  - **Scenario B (Full Pledge Settlement)**:
+    - Remaining Due: ৳4,000
+    - New Payment: ৳4,000
+    - Result: Total Verified Paid = ৳5,000, Remaining Due = ৳0, Extra Contribution = ৳0. Pledge marked `paid`.
+  - **Scenario C (Payment Exceeding Remaining Pledge)**:
+    - Remaining Due: ৳4,000
+    - New Payment: ৳5,000
+    - Result: Total Verified Paid = ৳6,000 (Pledge ৳5,000 + Extra ৳1,000), Remaining Due = ৳0, Extra Contribution = ৳1,000.
+    - Allocation split: ৳4,000 assigned to `target_type = pledge` (settling the pledge to ৳0), ৳1,000 assigned to `target_type = voluntary_event` retaining the `event_id`.
+    - Double-Entry Posting: Exactly 1 balanced journal entry generated:
+      - Debit: Liquid Asset / MFS / Bank (৳5,000)
+      - Credit: Event Pledge Income (৳4,000)
+      - Credit: Event Voluntary Contribution Income (৳1,000)
+  - **Immutability of Original Pledge**: The original `pledged_amount` (৳5,000) is NEVER modified.
+  - **Idempotency & Fraud Prevention**: Method-aware uniqueness check prevents duplicate transaction IDs across bKash, Nagad, Rocket, and Bank Transfer. Already verified or rejected payments cannot be re-verified.
+  - **Separation of Duties & Audit Trail**: Requires `verify_public_payments` permission. Verified payments record `verified_by`, `verified_at`, and mandatory `verification_note`. All actions are logged via `AuditLogger`.

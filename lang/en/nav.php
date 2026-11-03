@@ -88,4 +88,11 @@ return [
     'purchase_request_report' => 'Purchase Request Report',
     'purchase_order_report' => 'Purchase Order Report',
     'vendor_outstanding_report' => 'Vendor Outstanding Bills',
+
+    'public_portal' => 'Public Portal',
+    'portal_events' => 'Public Events',
+    'portal_documents' => 'Event Documents',
+    'portal_receivers' => 'Receiver Accounts',
+    'portal_payments' => 'Payment Verification',
+    'portal_complaints' => 'Complaints',
 ];

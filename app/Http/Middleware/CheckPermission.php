@@ -12,7 +12,7 @@ class CheckPermission
     /**
      * Handle an incoming request.
      */
-    public function handle(Request $request, Closure $next, string $permission): Response
+    public function handle(Request $request, Closure $next, string ...$permissions): Response
     {
         if (! Auth::check()) {
             return redirect()->route('login');
@@ -30,8 +30,16 @@ class CheckPermission
             ]);
         }
 
-        if ($user->hasRole('super_admin') || $user->hasPermission($permission)) {
+        if ($user->hasRole('super_admin')) {
             return $next($request);
+        }
+
+        foreach ($permissions as $permGroup) {
+            foreach (explode('|', $permGroup) as $perm) {
+                if ($user->hasPermission(trim($perm))) {
+                    return $next($request);
+                }
+            }
         }
 
         abort(403, __('auth.unauthorized_permission'));

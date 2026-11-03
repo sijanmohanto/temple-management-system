@@ -88,4 +88,11 @@ return [
     'purchase_request_report' => 'ক্রয় রিকুইজিশন রিপোর্ট',
     'purchase_order_report' => 'ক্রয় আদেশ রিপোর্ট',
     'vendor_outstanding_report' => 'বকেয়া বিল রিপোর্ট',
+
+    'public_portal' => 'পাবলিক পোর্টাল',
+    'portal_events' => 'পাবলিক অনুষ্ঠানসমূহ',
+    'portal_documents' => 'অনুষ্ঠানের নথি ও রিপোর্ট',
+    'portal_receivers' => 'গ্রহীতা হিসাব নম্বর',
+    'portal_payments' => 'পেমেন্ট যাচাইকরণ',
+    'portal_complaints' => 'অভিযোগ ব্যবস্থাপনা',
 ];
