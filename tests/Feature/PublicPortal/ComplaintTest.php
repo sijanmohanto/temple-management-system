@@ -51,7 +51,7 @@ class ComplaintTest extends TestCase
 
         $category = EventCategory::firstOrCreate(
             ['slug' => 'puja'],
-            ['name_en' => 'Puja', 'name_bn' => 'পূজা', 'is_active' => true]
+            ['name_en' => 'Puja', 'name_bn' => 'পূজা', 'status' => 'active']
         );
 
         $this->event = Event::create([

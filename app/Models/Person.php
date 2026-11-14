@@ -14,6 +14,12 @@ class Person extends Model
 {
     use HasFactory;
 
+    public const VISIBILITY_PUBLIC = 'public';
+
+    public const VISIBILITY_ANONYMOUS = 'anonymous';
+
+    public const VISIBILITY_PRIVATE = 'private';
+
     protected $table = 'people';
 
     protected $fillable = [
@@ -37,6 +43,7 @@ class Person extends Model
         'family_id',
         'family_relationship',
         'status',
+        'visibility',
         'private_notes',
         'public_notes',
         'created_by',
@@ -126,6 +133,22 @@ class Person extends Model
         }
 
         return $this->name_en;
+    }
+
+    /**
+     * Sanitized public display name honoring visibility preference.
+     */
+    public function getPublicDisplayNameAttribute(): string
+    {
+        if ($this->visibility === self::VISIBILITY_ANONYMOUS) {
+            return __('portal.public.anonymous_donor');
+        }
+
+        if ($this->visibility === self::VISIBILITY_PRIVATE) {
+            return __('portal.public.private_donor');
+        }
+
+        return $this->name;
     }
 
     /**

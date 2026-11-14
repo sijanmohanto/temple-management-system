@@ -24,6 +24,12 @@ class Pledge extends Model
 
     public const STATUS_ACTIVE = self::STATUS_UNPAID;
 
+    public const VISIBILITY_PUBLIC = 'public';
+
+    public const VISIBILITY_ANONYMOUS = 'anonymous';
+
+    public const VISIBILITY_PRIVATE = 'private';
+
     protected $fillable = [
         'pledge_code',
         'event_id',
@@ -37,6 +43,7 @@ class Pledge extends Model
         'purpose',
         'notes',
         'status',
+        'visibility',
         'created_by',
         'updated_by',
         'cancelled_by',
@@ -218,6 +225,53 @@ class Pledge extends Model
         }
 
         return '—';
+    }
+
+    /**
+     * Determine if donor preference is anonymous.
+     */
+    public function isAnonymous(): bool
+    {
+        return $this->visibility === self::VISIBILITY_ANONYMOUS
+            || ($this->person && $this->person->visibility === self::VISIBILITY_ANONYMOUS);
+    }
+
+    /**
+     * Determine if donor preference is private.
+     */
+    public function isPrivate(): bool
+    {
+        return $this->visibility === self::VISIBILITY_PRIVATE
+            || ($this->person && $this->person->visibility === self::VISIBILITY_PRIVATE);
+    }
+
+    /**
+     * Sanitized public display name honoring visibility preferences and omitting sensitive identity data.
+     */
+    public function getPublicDisplayNameAttribute(): string
+    {
+        if ($this->isAnonymous()) {
+            return __('portal.public.anonymous_donor');
+        }
+
+        if ($this->isPrivate()) {
+            return __('portal.public.private_donor');
+        }
+
+        if ($this->person) {
+            $locale = app()->getLocale();
+            if ($locale === 'bn' && ! empty($this->person->name_bn)) {
+                return $this->person->name_bn;
+            }
+
+            return $this->person->name_en ?? __('portal.public.devotee');
+        }
+
+        if ($this->family) {
+            return $this->family->family_name;
+        }
+
+        return __('portal.public.devotee');
     }
 
     /**
