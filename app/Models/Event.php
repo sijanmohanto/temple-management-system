@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class Event extends Model
 {
@@ -427,5 +428,31 @@ class Event extends Model
 
             return sprintf('EVT-%d-%04d', $year, $nextSequence);
         });
+    }
+
+    /**
+     * Generate a unique, URL-safe slug for the event.
+     */
+    public static function generateSlug(string $name, ?int $year = null, ?int $excludeId = null): string
+    {
+        $base = Str::slug($name);
+        if (empty($base)) {
+            $base = 'event';
+        }
+        if ($year) {
+            $base .= "-{$year}";
+        }
+
+        $slug = $base;
+        $counter = 1;
+
+        while (static::where('slug', $slug)
+            ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
+            ->exists()) {
+            $slug = "{$base}-{$counter}";
+            $counter++;
+        }
+
+        return $slug;
     }
 }

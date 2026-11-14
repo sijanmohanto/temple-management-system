@@ -32,6 +32,7 @@ use App\Http\Controllers\Procurement\VendorBillController;
 use App\Http\Controllers\Procurement\VendorController;
 use App\Http\Controllers\Procurement\VendorPaymentController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\PublicPortal\ComplaintController;
 use App\Http\Controllers\PublicPortal\EventDocumentController;
 use App\Http\Controllers\PublicPortal\PublicEventController;
@@ -45,9 +46,11 @@ use Illuminate\Support\Facades\Route;
 | Public Routes
 |--------------------------------------------------------------------------
 */
-Route::get('/', function () {
-    return view('welcome');
-})->name('home');
+Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/events', [App\Http\Controllers\Public\EventController::class, 'index'])->name('public.events.index');
+Route::get('/events/{slug}', [App\Http\Controllers\Public\EventController::class, 'show'])->name('public.events.show');
+Route::get('/events/{slug}/donor-details/{code}', [App\Http\Controllers\Public\EventController::class, 'donorDetails'])->name('public.events.donor_details');
+Route::post('/events/{slug}/complaint', [App\Http\Controllers\Public\EventController::class, 'storeComplaint'])->name('public.events.complaint.store');
 
 // Language switcher (available to guests and authenticated users)
 Route::get('/lang/{locale}', [LanguageController::class, 'switchLocale'])->name('lang.switch');
@@ -117,20 +120,22 @@ Route::middleware('auth')->group(function () {
     Route::put('/committees/{committee}/members/{membership}', [CommitteeController::class, 'updateMember'])->name('committees.members.update');
     Route::post('/committees/{committee}/members/{membership}/end', [CommitteeController::class, 'endMembership'])->name('committees.members.end');
 
-    // Event & Puja Management
-    Route::get('/events/dashboard', [EventDashboardController::class, 'index'])->name('events.dashboard');
-    Route::get('/events', [EventController::class, 'index'])->name('events.index');
-    Route::get('/events/create', [EventController::class, 'create'])->name('events.create');
-    Route::post('/events', [EventController::class, 'store'])->name('events.store');
-    Route::get('/events/{event}', [EventController::class, 'show'])->name('events.show');
-    Route::get('/events/{event}/edit', [EventController::class, 'edit'])->name('events.edit');
-    Route::put('/events/{event}', [EventController::class, 'update'])->name('events.update');
-    Route::delete('/events/{event}', [EventController::class, 'destroy'])->name('events.destroy');
-    Route::post('/events/{event}/transition', [EventController::class, 'transition'])->name('events.transition');
-    Route::post('/events/{event}/close', [EventController::class, 'close'])->name('events.close');
-    Route::post('/events/{event}/reopen', [EventController::class, 'reopen'])->name('events.reopen');
-    Route::post('/events/{event}/adjust', [EventController::class, 'adjust'])->name('events.adjust');
-    Route::post('/events/{event}/settle-funds', [EventSettlementController::class, 'settle'])->name('events.settle-funds');
+    // Event & Puja Management (Admin)
+    Route::prefix('admin/events')->group(function () {
+        Route::get('/dashboard', [EventDashboardController::class, 'index'])->name('events.dashboard');
+        Route::get('/', [EventController::class, 'index'])->name('events.index');
+        Route::get('/create', [EventController::class, 'create'])->name('events.create');
+        Route::post('/', [EventController::class, 'store'])->name('events.store');
+        Route::get('/{event}', [EventController::class, 'show'])->name('events.show');
+        Route::get('/{event}/edit', [EventController::class, 'edit'])->name('events.edit');
+        Route::put('/{event}', [EventController::class, 'update'])->name('events.update');
+        Route::delete('/{event}', [EventController::class, 'destroy'])->name('events.destroy');
+        Route::post('/{event}/transition', [EventController::class, 'transition'])->name('events.transition');
+        Route::post('/{event}/close', [EventController::class, 'close'])->name('events.close');
+        Route::post('/{event}/reopen', [EventController::class, 'reopen'])->name('events.reopen');
+        Route::post('/{event}/adjust', [EventController::class, 'adjust'])->name('events.adjust');
+        Route::post('/{event}/settle-funds', [EventSettlementController::class, 'settle'])->name('events.settle-funds');
+    });
 
     // Event Categories
     Route::get('/events-categories', [EventCategoryController::class, 'index'])->name('events.categories.index');

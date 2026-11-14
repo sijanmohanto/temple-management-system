@@ -6,6 +6,7 @@ use App\Models\CollectionPayment;
 use App\Models\Event;
 use App\Models\Expense;
 use App\Models\PaymentAllocation;
+use App\Models\Person;
 use App\Models\Pledge;
 
 class EventCollectionReportService
@@ -93,6 +94,67 @@ class EventCollectionReportService
             'net_surplus' => $netSurplus,
             'is_settled' => $isSettled,
             'settlement' => $settlement,
+        ];
+    }
+
+    /**
+     * Compute clean aggregate financial summary for public event details.
+     * High performance: single-pass aggregate queries, zero private donor data exposed.
+     */
+    public function getPublicSummary(Event $event): array
+    {
+        // 1. Total Pledged: active/valid pledges excluding cancelled and soft-deleted
+        $totalPledged = round((float) Pledge::where('event_id', $event->id)
+            ->where('status', '!=', Pledge::STATUS_CANCELLED)
+            ->sum('pledged_amount'), 2);
+
+        // 2. Verified Collections Applied to Pledges
+        $verifiedPledgeCollections = round((float) PaymentAllocation::where('is_active', true)
+            ->where('target_type', PaymentAllocation::TARGET_PLEDGE)
+            ->where(function ($q) use ($event) {
+                $q->where('event_id', $event->id)
+                    ->orWhereHas('pledge', fn ($pq) => $pq->where('event_id', $event->id));
+            })
+            ->whereHas('payment', fn ($q) => $q->where('status', CollectionPayment::STATUS_VERIFIED))
+            ->sum('amount'), 2);
+
+        // 3. Total Verified Event Collections (pledge payments + excess attributed to event + direct voluntary donations)
+        $totalVerifiedCollections = round((float) PaymentAllocation::where('is_active', true)
+            ->whereIn('target_type', [
+                PaymentAllocation::TARGET_PLEDGE,
+                PaymentAllocation::TARGET_VOLUNTARY_EVENT,
+            ])
+            ->where(function ($q) use ($event) {
+                $q->where('event_id', $event->id)
+                    ->orWhereHas('pledge', fn ($pq) => $pq->where('event_id', $event->id));
+            })
+            ->whereHas('payment', fn ($q) => $q->where('status', CollectionPayment::STATUS_VERIFIED))
+            ->sum('amount'), 2);
+
+        // 4. Total Due = max(Total Pledged - Total Verified Collection Against Pledges, 0)
+        $totalDue = max(0.00, round($totalPledged - $verifiedPledgeCollections, 2));
+
+        // 5. Collection Progress = (Verified Paid Against Pledges / Total Pledged) * 100
+        $progress = null;
+        $progressBarPercentage = 0.0;
+
+        if ($totalPledged > 0.0) {
+            $progress = round(($verifiedPledgeCollections / $totalPledged) * 100, 1);
+            $progressBarPercentage = min(100.0, max(0.0, $progress));
+        }
+
+        return [
+            'total_pledged' => $totalPledged,
+            'verified_pledge_collections' => $verifiedPledgeCollections,
+            'total_verified_collections' => $totalVerifiedCollections,
+            'total_due' => $totalDue,
+            'progress' => $progress,
+            'progress_bar_percentage' => $progressBarPercentage,
+            'has_pledges' => $totalPledged > 0.0,
+            'is_over_collected' => $totalPledged > 0.0 && ($totalVerifiedCollections > $totalPledged),
+            'over_collected_amount' => ($totalPledged > 0.0 && $totalVerifiedCollections > $totalPledged)
+                ? round($totalVerifiedCollections - $totalPledged, 2)
+                : 0.00,
         ];
     }
 
@@ -305,6 +367,162 @@ class EventCollectionReportService
                 'payment_id' => $payment?->id,
                 'receipt_number' => $payment?->receipt?->receipt_number,
             ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Compute donor-wise running collection report for public event transparency.
+     * Respects visibility preferences and omits sensitive personal identifying data.
+     */
+    public function getDonorCollectionReport(Event $event, array $filters = []): array
+    {
+        $rows = [];
+
+        // 1. Pledged Donors
+        $pledges = Pledge::with([
+            'person',
+            'family',
+            'allocations.payment',
+        ])
+            ->where('event_id', $event->id)
+            ->where('status', '!=', Pledge::STATUS_CANCELLED)
+            ->orderBy('id', 'asc')
+            ->get();
+
+        foreach ($pledges as $pledge) {
+            $verifiedAllocations = $pledge->allocations
+                ->where('is_active', true)
+                ->filter(fn ($a) => $a->payment && $a->payment->status === CollectionPayment::STATUS_VERIFIED);
+
+            $pledgePaid = (float) $verifiedAllocations
+                ->where('target_type', PaymentAllocation::TARGET_PLEDGE)
+                ->sum('amount');
+
+            // Excess contributed to this event fund
+            $eventExcess = (float) $verifiedAllocations
+                ->where('target_type', PaymentAllocation::TARGET_VOLUNTARY_EVENT)
+                ->sum('amount');
+
+            // Total verified contribution by devotee towards this event
+            $totalEventPaid = round($pledgePaid + $eventExcess, 2);
+
+            $pledged = (float) $pledge->pledged_amount;
+            $due = max(0.00, round($pledged - $pledgePaid, 2));
+
+            $progress = null;
+            $progressBarPercentage = 0.0;
+            if ($pledged > 0.0) {
+                $progress = round(($pledgePaid / $pledged) * 100, 1);
+                $progressBarPercentage = min(100.0, max(0.0, $progress));
+            }
+
+            $statusColor = 'bg-secondary';
+            if ($progress !== null) {
+                $statusColor = $progress >= 50.0 ? 'bg-success' : 'bg-danger';
+            }
+
+            $statusCategory = match (true) {
+                $due <= 0.001 && $pledged > 0 => 'paid',
+                $pledgePaid > 0 => 'partial',
+                default => 'due',
+            };
+
+            $rows[] = [
+                'type' => 'pledge',
+                'pledge_id' => $pledge->id,
+                'pledge_code' => $pledge->pledge_code,
+                'code' => $pledge->pledge_code,
+                'display_name' => $pledge->public_display_name,
+                'visibility' => $pledge->visibility ?? ($pledge->person?->visibility ?? 'public'),
+                'is_anonymous' => $pledge->isAnonymous(),
+                'is_private' => $pledge->isPrivate(),
+                'pledged_amount' => $pledged,
+                'pledge_paid' => $pledgePaid,
+                'excess_amount' => $eventExcess,
+                'verified_paid' => $totalEventPaid,
+                'due_amount' => $due,
+                'progress' => $progress,
+                'progress_bar_percentage' => $progressBarPercentage,
+                'status_color' => $statusColor,
+                'status' => $statusCategory,
+                'is_voluntary' => false,
+                'has_pledge' => true,
+            ];
+        }
+
+        // 2. Direct Voluntary / Guest Donors (without pledge)
+        $directAllocations = PaymentAllocation::with([
+            'payment.payerPerson',
+            'payment.payerFamily',
+        ])
+            ->where('event_id', $event->id)
+            ->where('is_active', true)
+            ->where('target_type', PaymentAllocation::TARGET_VOLUNTARY_EVENT)
+            ->whereNull('pledge_id')
+            ->whereHas('payment', fn ($q) => $q->where('status', CollectionPayment::STATUS_VERIFIED))
+            ->orderBy('id', 'asc')
+            ->get();
+
+        foreach ($directAllocations as $alloc) {
+            $payment = $alloc->payment;
+            $person = $payment?->payerPerson;
+            $family = $payment?->payerFamily;
+
+            $displayName = __('portal.public.voluntary_devotee');
+            $visibility = 'public';
+            $isAnonymous = false;
+            $isPrivate = false;
+
+            if ($person) {
+                $visibility = $person->visibility ?? 'public';
+                $isAnonymous = $person->visibility === Person::VISIBILITY_ANONYMOUS;
+                $isPrivate = $person->visibility === Person::VISIBILITY_PRIVATE;
+                $displayName = $person->public_display_name;
+            } elseif ($family) {
+                $displayName = $family->family_name;
+            } elseif (! empty($payment?->payer_name)) {
+                $displayName = $payment->payer_name;
+            }
+
+            $amount = (float) $alloc->amount;
+
+            $rows[] = [
+                'type' => 'voluntary',
+                'pledge_id' => null,
+                'pledge_code' => null,
+                'code' => $payment?->payment_code ?? ('VOL-'.$alloc->id),
+                'display_name' => $displayName,
+                'visibility' => $visibility,
+                'is_anonymous' => $isAnonymous,
+                'is_private' => $isPrivate,
+                'pledged_amount' => 0.00,
+                'pledge_paid' => 0.00,
+                'excess_amount' => $amount,
+                'verified_paid' => $amount,
+                'due_amount' => 0.00,
+                'progress' => null,
+                'progress_bar_percentage' => 0.0,
+                'status_color' => 'bg-secondary',
+                'status' => 'voluntary',
+                'is_voluntary' => true,
+                'has_pledge' => false,
+            ];
+        }
+
+        // Apply filters if provided
+        if (! empty($filters['search'])) {
+            $search = mb_strtolower(trim($filters['search']));
+            $rows = array_values(array_filter($rows, function ($r) use ($search) {
+                return str_contains(mb_strtolower($r['display_name']), $search)
+                    || str_contains(mb_strtolower($r['code'] ?? ''), $search);
+            }));
+        }
+
+        if (! empty($filters['status']) && $filters['status'] !== 'all') {
+            $statusFilter = $filters['status'];
+            $rows = array_values(array_filter($rows, fn ($r) => $r['status'] === $statusFilter));
         }
 
         return $rows;

@@ -11,6 +11,7 @@
 **Phase 4 Status**: **Completed, Corrected & Fully Tested** (101 tests, 513 assertions)  
 **Phase 5 Status**: **Completed & Fully Tested** (144 tests, 876 assertions total)  
 **Phase 6 Status**: **FINAL APPROVED — All Increments (1, 2, 3, 4 & 5) Completed, Audited & Fully Verified** (269 tests, 1,608 assertions total)  
+**Public Portal Status**: **Admin Panel, Increment 1 (Public Layout, Home Page & Event Listing), Increment 2 (Running Event Details & Collection Summary), and Increment 3 (Donor-wise Running Collection Report) Completed & Fully Tested** (395 tests, 2,219 assertions total)  
 **Next Phase**: Phase 7 (Inventory, Goods Receiving, Asset Registry & Maintenance) — On Standby Awaiting Explicit User Approval
 
 ---
@@ -970,3 +971,252 @@ Result:
   - **Immutability of Original Pledge**: The original `pledged_amount` (৳5,000) is NEVER modified.
   - **Idempotency & Fraud Prevention**: Method-aware uniqueness check prevents duplicate transaction IDs across bKash, Nagad, Rocket, and Bank Transfer. Already verified or rejected payments cannot be re-verified.
   - **Separation of Duties & Audit Trail**: Requires `verify_public_payments` permission. Verified payments record `verified_by`, `verified_at`, and mandatory `verification_note`. All actions are logged via `AuditLogger`.
+
+---
+
+### Public Portal — Increment 1: Public Layout, Home Page & Event Listing
+
+#### 1. Scope & Architectural Boundaries
+- **No SPA Frameworks**: Built strictly with standard Laravel 11 Blade templates, Bootstrap 5.3, custom CSS, and vanilla JS.
+- **Strict Scope Enforcement**: Implemented public layout, home page, event listing, and public event details. Payment submission forms, donor search/directory, payment details, public complaint submission, and prior event financial report downloads are intentionally excluded and preserved for subsequent increments.
+- **Zero Fictitious Info**: No invented email addresses, fake telephone numbers, or unverified contact lines in footer or layout.
+
+#### 2. Responsive Public Layout & Navigation (`resources/views/layouts/public.blade.php`)
+- **Visual Identity**: Dignified devotional aesthetic featuring Om (ॐ) branding, saffron-gold accents, accessible typography, and smooth transitions.
+- **Responsive Header & Navbar**:
+  - Brand identity with sacred emblem.
+  - Navigation links: Home (`/`), Events (`/events`), and placeholders with "coming soon" tooltips for future increments (Payment, Financial Reports, Complaints).
+  - Locale Switcher with current language badge (EN / BN) preserving user preference.
+  - Responsive hamburger toggler for mobile and tablet devices.
+- **Footer**:
+  - Temple name and devotional mission.
+  - Quick navigation links.
+  - Transparent system notices with localization support.
+  - Copyright and credits without fabricated contact details.
+
+#### 3. Public Home Page (`/` via `HomeController@index`)
+- **Hero Showcase**: Dignified header with temple title, welcoming subtitle, and primary call-to-action buttons ("Explore Events" & "Learn More").
+- **Core Pillars**: Transparency, Sacred Devotion, and Community Unity cards.
+- **Active & Running Events Section**: Cards displaying events with status `active` or `closing` that are marked `is_published = true`.
+- **Upcoming Events Preview**: Preview section highlighting scheduled Pujas (`status = 'upcoming'`).
+- **Completed Events Highlights**: Recent successfully concluded Pujas (`status = 'closed'`, limited to top 4) displaying completion badges.
+- **Community CTA Section**: Clean devotional message encouraging community participation.
+
+#### 4. Public Event Listing (`/events` via `EventController@index`)
+- **Server-Side Filters**:
+  - Category filter (dynamically loaded from `event_categories`).
+  - Liturgical / Calendar Year filter.
+  - Status filter (`all`, `active`, `upcoming`, `completed`).
+- **Card-Based Event Grid**:
+  - Event banner image (or elegant fallback gradient with category icon).
+  - Event name, category badge, and status pill.
+  - Event dates and venue.
+  - Collection window timeline.
+  - Responsive "View Details" button linking to `/events/{slug}`.
+- **Pagination & Empty States**: Clean Bootstrap 5 pagination with preserved query strings, and respectful empty-state illustration when no events match filter criteria.
+
+#### 5. Public Event Details (`/events/{slug}` via `EventController@show`)
+- **SEO & Route Safety**:
+  - Accessible strictly via slug (`/events/{slug}`). Numeric database IDs in URLs return 404.
+  - Unpublished, draft, or non-existent event slugs return HTTP 404.
+- **Content Presentation**:
+  - Rich header banner with event category, name, and publication status.
+  - Breadcrumb navigation (`Home > Events > [Event Name]`).
+  - Event schedule: start date, end date, and duration.
+  - Collection period: start date to end date.
+  - Venue / Location information.
+  - Detailed description and devotee instructions.
+  - Back to listing button.
+
+#### 6. Route Structure & Non-Interference
+- **Public Routes Added**:
+  - `GET /` -> `App\Http\Controllers\Public\HomeController@index` (`route('home')`)
+  - `GET /events` -> `App\Http\Controllers\Public\EventController@index` (`route('public.events.index')`)
+  - `GET /events/{slug}` -> `App\Http\Controllers\Public\EventController@show` (`route('public.events.show')`)
+- **Admin Event Routes Preserved**:
+  - Admin event management routes moved under `Route::prefix('admin/events')` to prevent collision with `/events`.
+  - All admin named routes (`events.dashboard`, `events.index`, `events.create`, `events.show`, `events.edit`, etc.) and middleware remain 100% intact. Existing admin tests (`EventManagementTest`, `EventDonationAndSettlementTest`) pass with zero regressions.
+
+#### 7. Localization Parity
+- All public UI strings mapped under `'public'` array in `lang/en/portal.php` and `lang/bn/portal.php` with 100% key parity.
+- Tested and verified via `Tests\Feature\LocalizationTest::all language files maintain key parity`.
+
+#### 8. Automated Feature Tests & Verification
+- **Test File**: `tests/Feature/PublicPortal/PublicPortalHomeAndEventsTest.php` (13 tests, 46 assertions):
+  1. `public home page renders successfully`
+  2. `home page lists published active upcoming and completed events`
+  3. `public event listing page renders successfully`
+  4. `event listing filters by category`
+  5. `event listing filters by year`
+  6. `event listing filters by status`
+  7. `unpublished events are not visible`
+  8. `event details work through slug`
+  9. `invalid or nonexistent slug returns 404`
+  10. `unpublished event slug returns 404`
+  11. `draft event slug returns 404`
+  12. `public routes never expose database ids`
+  13. `bengali and english localization work`
+  14. `existing admin event functionality remains unaffected`
+- **Full Application Test Suite**: **357 passed (2,061 assertions)** with 0 failures.
+- **Code Style (Laravel Pint)**: 100% PSR-12 code compliance verified via `./vendor/bin/pint --test` (0 issues).
+
+---
+
+### Public Portal — Increment 2: Running Event Details & Collection Summary
+
+#### 1. Scope & Architectural Boundaries
+- **Increment 2 Scope**: Enhanced running event details page with aggregate financial summary cards, visual collection progress bar, and transparency notice.
+- **Strict Boundary Control**:
+  - Excluded Donor-wise collection table (Increment 3).
+  - Excluded Public payment submission (Increment 4).
+  - Excluded Payment details lookup and public complaints (Increment 5).
+  - Excluded Previous event financial report download archives (Increment 6).
+- **Data & Model Reuse**:
+  - Reused `Event`, `Pledge`, `CollectionPayment`, and `PaymentAllocation` models.
+  - Reused centralized `EventCollectionReportService` to perform calculation without duplicate accounting math.
+  - No new database tables created.
+
+#### 2. Exact Financial Calculation Rules & Formulas
+- **Total Pledged**:
+  $$\text{Total Pledged} = \sum \text{pledged\_amount} \quad \text{where status} \neq \text{'cancelled' and not soft-deleted}$$
+  - Computed via direct database `SUM()` avoiding loading records into PHP memory.
+- **Verified Collections Applied to Pledges**:
+  $$\text{Verified Paid Against Pledges} = \sum \text{amount} \quad \text{where target\_type} = \text{'pledge', is\_active} = 1, \text{and payment status} = \text{'verified'}$$
+- **Total Verified Collection (Uncapped)**:
+  $$\text{Total Verified Collection} = \sum \text{amount} \quad \text{where target\_type} \in [\text{'pledge'}, \text{'voluntary\_event'}], \text{is\_active} = 1, \text{and payment status} = \text{'verified'}$$
+  - Accurately captures both pledge payments, excess contributions directed to the event, and guest voluntary event donations.
+  - Excludes unverified/pending payments, rejected payments, and reversed/cancelled payments.
+  - Uncapped: if verified collections exceed pledged targets, the full collection amount is displayed accurately.
+- **Total Due**:
+  $$\text{Total Due} = \max(\text{Total Pledged} - \text{Verified Paid Against Pledges}, 0)$$
+  - Invariant: Due is never negative.
+  - Excess contributions allocated to the event fund do not distort or reduce other donors' outstanding pledge dues.
+- **Collection Progress**:
+  $$\text{Progress} = \frac{\text{Verified Paid Against Pledges}}{\text{Total Pledged}} \times 100$$
+  - When $\text{Total Pledged} = 0$, Progress returns `null` and displays `N/A` cleanly without division-by-zero errors.
+  - Visual progress bar width is capped at $100\%$ ($\min(100.0, \max(0.0, \text{Progress}))\%$).
+  - Over-collection badge with exact extra amount ($+\text{৳}X$) is highlighted when total collections exceed pledges.
+
+#### 3. Responsive UI & Visual Design (`resources/views/public/events/show.blade.php`)
+- **Four Distinct Summary Cards**:
+  1. **Total Pledged (মোট প্রতিশ্রুত চাঁদা)** with bookmark icon and target subtitle.
+  2. **Total Verified Collection (মোট যাচাইকৃত আদায়)** with shield verification badge.
+  3. **Total Due (মোট বকেয়া)** with clock icon and pending status color.
+  4. **Collection Progress (চাঁদা সংগ্রহের অগ্রগতি)** with percentage rate badge.
+- **Large Progress Section**:
+  - Striped animated progress bar with ARIA accessibility tags.
+  - Textual fraction indicator showing verified against target.
+  - Zero-pledge informational notice when event has no formal pledge targets.
+- **Transparency Notice**:
+  - Highlights that only verified payments appear in published figures, and pending payments are verified prior to inclusion.
+- **Zero Exposure of Private Data**:
+  - Public page displays aggregate financial metrics only.
+  - No donor names, phone numbers, addresses, private notes, receipt numbers, or transaction references are rendered.
+
+#### 4. Localization Parity
+- All strings added to `lang/en/portal.php` and `lang/bn/portal.php` with 100% key parity.
+- Verified via automated `LocalizationTest`.
+
+#### 5. Automated Feature Tests & Verification
+- **Test File**: `tests/Feature/PublicPortal/PublicPortalEventSummaryTest.php` (15 tests, 71 assertions):
+  1. `running published event displays collection summary cards and progress`
+  2. `correct total pledge calculation and cancellation exclusion`
+  3. `correct verified collection calculation combining pledges and voluntary`
+  4. `pending payments are strictly excluded`
+  5. `rejected payments are strictly excluded`
+  6. `reversed and cancelled payments are excluded from net collection`
+  7. `correct due calculation and progress percentage`
+  8. `progress visually capped at 100 percent while actual collection remains uncapped`
+  9. `zero pledge event displays na without division by zero`
+  10. `excess contribution does not create negative due`
+  11. `excess contribution is not counted twice`
+  12. `unpublished events return 404 and do not expose financials`
+  13. `completed published events remain accessible with final summary`
+  14. `no private donor or payment details are exposed`
+  15. `bengali and english localization switch on summary cards`
+- **Public Portal Feature Test Suite**: **103 passed (524 assertions)**.
+- **Full Application Test Suite**: **372 passed (2,132 assertions)** with ZERO failures and ZERO regressions.
+- **Code Style (Laravel Pint)**: 100% PSR-12 code compliance verified via `php vendor/bin/pint --test` (0 issues).
+
+---
+
+### Public Portal — Increment 3: Donor-wise Running Collection Report
+
+#### 1. Scope & Architectural Boundaries
+- **Increment 3 Scope**: Donor-wise contribution and collection report on published event details page (`/events/{slug}`).
+- **Strict Boundary Control**:
+  - Excluded Public payment submission (Increment 4).
+  - Excluded Public payment details lookup / external verification portal (Increment 5).
+  - Excluded Previous event financial report download archive (Increment 6).
+- **Double-Entry Financial Invariant**:
+  - Complaint submissions strictly NEVER alter financial ledgers, journals, payment allocations, or pledges.
+  - Corrections or adjustments must proceed through authorized reversal procedures.
+- **Privacy & Security Boundaries**:
+  - Devotee visibility preferences: Public Name, Anonymous ("Anonymous Donor" / "বেনামী ভক্ত"), Private ("Private Devotee" / "ব্যক্তিগত অনুদান").
+  - Strictly NEVER exposes devotee phone numbers, emails, addresses, database IDs, receipt numbers, or committee roles/titles in public tables.
+  - Anonymous and private contributions remain 100% included in published aggregate metrics and reconciliations.
+  - Offcanvas View Details enforces strict security: unauthenticated guests receive a devotional privacy security notice; cross-donor unauthorized access returns HTTP 403 Forbidden.
+
+#### 2. Mandatory UI Table Structure (`resources/views/public/events/show.blade.php`)
+- **Exact Column Structure**:
+  `Name | Amount / Pledged | Paid | Status | Action`
+- **Zero Serial Number (#) Rule**: Strictly omits `#` or serial number column; compact row height.
+- **Horizontal Status Cell**:
+  - Compact progress bar and percentage aligned horizontally side by side in the same cell (`d-flex align-items-center gap-2`).
+  - Dynamic progress bar coloring: Green (`bg-success`) for progress $\ge 50\%$, Red (`bg-danger`) for progress $< 50\%$.
+  - Progress bar width visually capped at 100%, paid amount uncapped.
+  - Zero-pledge voluntary event donations display `N/A`.
+- **Action Buttons**:
+  - `View`: Compact eye icon (`bi-eye`) button triggering Bootstrap Offcanvas (`#donorDetailsOffcanvas`) via AJAX.
+  - `Complain`: Compact complaint icon (`bi-flag`) button triggering Bootstrap Modal (`#donorComplaintModal`).
+- **Interactive Search & Status Filtering**: Real-time client-side search by devotee name or pledge code, and dropdown status filter (`all`, `paid`, `partial`, `due`, `voluntary`).
+
+#### 3. Database & Models
+- **Migration**: `2026_11_14_000033_add_visibility_to_pledges_and_people_tables.php` added indexed `visibility` column with defensive `hasColumn` checks.
+- **Models Extended**:
+  - `App\Models\Pledge`: Added `VISIBILITY_PUBLIC`, `VISIBILITY_ANONYMOUS`, `VISIBILITY_PRIVATE`, `isAnonymous()`, `isPrivate()`, and `getPublicDisplayNameAttribute()`.
+  - `App\Models\Person`: Added visibility constants, `$fillable` entry, and `getPublicDisplayNameAttribute()`.
+- **Service Layer** (`App\Services\EventCollectionReportService`):
+  - Added `getDonorCollectionReport(Event $event, array $filters = []): array` supporting search, status filtering, and 100% mathematical reconciliation with `getPublicSummary()`.
+
+#### 4. Controller & Routes
+- **Routes Added** (`routes/web.php`):
+  - `GET /events/{slug}/donor-details/{code}` -> `public.events.donor_details`
+  - `POST /events/{slug}/complaint` -> `public.events.complaint.store`
+- **Controller Methods** (`App\Http\Controllers\Public\EventController`):
+  - `show()`: Injects `$donorReport` and `$filters` to event details view.
+  - `donorDetails()`: Returns verified payment breakdown and receipts for authorized donor/admin; returns security notice for guest; aborts 403 for unauthorized cross-donor access.
+  - `storeComplaint()`: Validates input, creates `Complaint` record (`category = 'payment_issue'`, `status = 'submitted'`, `priority = 'medium'`, sequential tracking number `CMP-YYYY-0001`), supporting file attachments without touching financial ledgers.
+
+#### 5. Bilingual Localization (EN & BN)
+- Added 35 keys across `lang/en/portal.php` and `lang/bn/portal.php` with 100% key parity.
+- Respectful Bengali localization: "চলমান চাঁদা ও অনুদান বিবরণী", "বেনামী ভক্ত", "ব্যক্তিগত অনুদান", "স্বেচ্ছাসেবী ভক্ত".
+
+#### 6. Automated Feature Tests & Verification
+- **Test File**: `tests/Feature/PublicPortal/PublicPortalDonorReportTest.php` (23 tests, 87 assertions):
+  1. `donor_wise_running_collection_table_is_rendered_with_exact_column_headers`
+  2. `strictly_no_serial_number_column_present_in_table`
+  3. `status_cell_displays_compact_horizontal_side_by_side_progress_and_percentage`
+  4. `status_progress_color_is_green_for_greater_equal_50_percent`
+  5. `status_progress_color_is_red_for_less_than_50_percent`
+  6. `zero_pledge_voluntary_donation_displays_na_status`
+  7. `progress_bar_is_capped_visually_at_100_percent_while_paid_amount_is_uncapped`
+  8. `public_donor_visibility_displays_actual_devotee_name`
+  9. `anonymous_donor_visibility_displays_anonymous_donor_label`
+  10. `private_donor_visibility_displays_private_devotee_label`
+  11. `privacy_invariants_never_leak_phone_email_address_or_committee_titles`
+  12. `anonymous_and_private_contributions_remain_fully_included_in_financial_totals`
+  13. `action_column_contains_compact_view_and_complain_buttons`
+  14. `unauthenticated_guest_accessing_donor_details_receives_security_notice`
+  15. `cross_donor_unauthorized_access_returns_403`
+  16. `matching_authorized_devotee_can_view_own_payment_history`
+  17. `admin_user_can_view_donor_payment_details`
+  18. `modal_complaint_submission_creates_complaint_record_without_touching_ledger`
+  19. `complaint_submission_validates_required_fields_and_rejects_invalid_type`
+  20. `cancelled_or_soft_deleted_pledges_are_strictly_excluded_from_report`
+  21. `donor_report_reconciles_100_percent_with_increment_2_aggregate_summary`
+  22. `service_donor_report_filtering_by_status_and_search_query`
+  23. `bilingual_parity_for_donor_report_and_complaint_labels`
+- **Public Portal Feature Test Suite**: **126 passed (611 assertions)**.
+- **Full Application Test Suite**: **395 passed (2,219 assertions)** with ZERO failures and ZERO regressions.
+- **Code Style (Laravel Pint)**: 100% PSR-12 code compliance verified via `php vendor/bin/pint --test` (0 issues).
