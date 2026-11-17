@@ -118,7 +118,7 @@
 
         var $scope = context ? $(context) : $(document);
 
-        $scope.find('select.select2, select[data-toggle="select2"]').each(function() {
+        $scope.find('select.select2, select.select2-enable, select[data-toggle="select2"]').each(function() {
             var $select = $(this);
             if ($select.hasClass('select2-hidden-accessible')) {
                 return; // Already initialized
@@ -134,6 +134,29 @@
                 placeholder: placeholder,
                 allowClear: allowClear
             };
+
+            // Support remote AJAX if data-ajax--url or data-ajax-url is specified
+            var ajaxUrl = $select.data('ajax--url') || $select.attr('data-ajax--url') || $select.data('ajax-url');
+            if (ajaxUrl) {
+                config.ajax = {
+                    url: ajaxUrl,
+                    dataType: 'json',
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            q: params.term || '',
+                            page: params.page || 1
+                        };
+                    },
+                    processResults: function(data, params) {
+                        return {
+                            results: data.results || (Array.isArray(data) ? data : [])
+                        };
+                    },
+                    cache: true
+                };
+                config.minimumInputLength = 1;
+            }
 
             // If inside a Bootstrap modal, set dropdownParent so it renders correctly
             var $modal = $select.closest('.modal');

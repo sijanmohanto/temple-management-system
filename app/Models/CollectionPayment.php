@@ -207,7 +207,7 @@ class CollectionPayment extends Model
     }
 
     /**
-     * Public payment proof URL.
+     * Authenticated and authorized payment proof URL (private storage protected).
      */
     public function getPaymentProofUrlAttribute(): ?string
     {
@@ -215,7 +215,19 @@ class CollectionPayment extends Model
             return null;
         }
 
-        return Storage::disk('public')->url($this->payment_proof_path);
+        if (auth()->check()) {
+            $user = auth()->user();
+            if ($user->can('view_public_payments')) {
+                return route('portal.payments.proof', $this);
+            }
+
+            $personId = $user->person?->id;
+            if (($personId && (int) $this->payer_person_id === (int) $personId) || (int) $this->submitted_by === (int) $user->id) {
+                return route('public.payments.proof', $this->payment_code);
+            }
+        }
+
+        return null;
     }
 
     /**

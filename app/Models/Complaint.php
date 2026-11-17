@@ -5,9 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Complaint extends Model
 {
@@ -16,6 +17,8 @@ class Complaint extends Model
     public const STATUS_SUBMITTED = 'submitted';
 
     public const STATUS_UNDER_REVIEW = 'under_review';
+
+    public const STATUS_REPLIED = 'replied';
 
     public const STATUS_RESOLVED = 'resolved';
 
@@ -26,6 +29,7 @@ class Complaint extends Model
     public const ALLOWED_STATUSES = [
         self::STATUS_SUBMITTED,
         self::STATUS_UNDER_REVIEW,
+        self::STATUS_REPLIED,
         self::STATUS_RESOLVED,
         self::STATUS_REJECTED,
         self::STATUS_CLOSED,
@@ -46,6 +50,16 @@ class Complaint extends Model
         self::PRIORITY_URGENT,
     ];
 
+    // Increment 6 Primary Categories
+    public const CATEGORY_PAYMENT_NOT_UPDATED = 'payment_not_updated';
+
+    public const CATEGORY_WRONG_PAID_AMOUNT = 'wrong_paid_amount';
+
+    public const CATEGORY_WRONG_DUE_AMOUNT = 'wrong_due_amount';
+
+    public const CATEGORY_OTHER = 'other';
+
+    // Legacy Categories (Preserved for backward compatibility)
     public const CATEGORY_PAYMENT_ISSUE = 'payment_issue';
 
     public const CATEGORY_EVENT_MANAGEMENT = 'event_management';
@@ -56,15 +70,16 @@ class Complaint extends Model
 
     public const CATEGORY_SUGGESTION = 'suggestion';
 
-    public const CATEGORY_OTHER = 'other';
-
     public const ALLOWED_CATEGORIES = [
+        self::CATEGORY_PAYMENT_NOT_UPDATED,
+        self::CATEGORY_WRONG_PAID_AMOUNT,
+        self::CATEGORY_WRONG_DUE_AMOUNT,
+        self::CATEGORY_OTHER,
         self::CATEGORY_PAYMENT_ISSUE,
         self::CATEGORY_EVENT_MANAGEMENT,
         self::CATEGORY_PRASADAM_SERVICE,
         self::CATEGORY_GENERAL_INQUIRY,
         self::CATEGORY_SUGGESTION,
-        self::CATEGORY_OTHER,
     ];
 
     protected $fillable = [
@@ -99,7 +114,7 @@ class Complaint extends Model
     }
 
     /**
-     * Generate concurrency-safe unique tracking number (CMP-YYYY-0001).
+     * Generate concurrency-safe unique sequential tracking number (CMP-YYYY-0001).
      */
     public static function generateTrackingNumber(?int $year = null): string
     {
@@ -134,6 +149,65 @@ class Complaint extends Model
         return $prefix.str_pad((string) rand(1000, 9999), 4, '0', STR_PAD_LEFT);
     }
 
+    /**
+     * Generate concurrency-safe unique opaque complaint reference (CMP-YYYY-XXXXXXXX).
+     */
+    public static function generateDonorTrackingNumber(?int $year = null): string
+    {
+        $year = $year ?? (int) date('Y');
+        $prefix = "CMP-{$year}-";
+        $maxRetries = 10;
+        $attempt = 0;
+
+        $chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+        $charLength = strlen($chars);
+
+        while ($attempt < $maxRetries) {
+            $attempt++;
+
+            $random = '';
+            for ($i = 0; $i < 8; $i++) {
+                $random .= $chars[random_int(0, $charLength - 1)];
+            }
+            $code = $prefix.$random;
+
+            if (! self::withTrashed()->where('tracking_number', $code)->exists()) {
+                return $code;
+            }
+        }
+
+        return $prefix.strtoupper(Str::random(8));
+    }
+
+    public function getComplaintReferenceAttribute(): string
+    {
+        return $this->tracking_number;
+    }
+
+    public function getReferenceAttribute(): string
+    {
+        return $this->tracking_number;
+    }
+
+    public function activities(): HasMany
+    {
+        return $this->hasMany(ComplaintActivity::class)->orderBy('created_at', 'asc');
+    }
+
+    public function donorVisibleActivities(): HasMany
+    {
+        return $this->hasMany(ComplaintActivity::class)
+            ->where('visibility', ComplaintActivity::VISIBILITY_DONOR)
+            ->orderBy('created_at', 'asc');
+    }
+
+    public function internalNotes(): HasMany
+    {
+        return $this->hasMany(ComplaintActivity::class)
+            ->where('visibility', ComplaintActivity::VISIBILITY_INTERNAL)
+            ->orderBy('created_at', 'asc');
+    }
+
     public function person(): BelongsTo
     {
         return $this->belongsTo(Person::class);
@@ -164,9 +238,29 @@ class Complaint extends Model
         return $this->belongsTo(User::class, 'closed_by');
     }
 
+    public function isSubmitted(): bool
+    {
+        return $this->status === self::STATUS_SUBMITTED;
+    }
+
+    public function isUnderReview(): bool
+    {
+        return $this->status === self::STATUS_UNDER_REVIEW;
+    }
+
+    public function isReplied(): bool
+    {
+        return $this->status === self::STATUS_REPLIED;
+    }
+
     public function isResolved(): bool
     {
         return $this->status === self::STATUS_RESOLVED;
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->status === self::STATUS_REJECTED;
     }
 
     public function isClosed(): bool
@@ -180,11 +274,22 @@ class Complaint extends Model
             return null;
         }
 
-        return Storage::disk('public')->url($this->attachment_path);
+        return route('portal.complaints.attachment', $this);
     }
 
     public function getCategoryNameAttribute(): string
     {
+        $map = [
+            self::CATEGORY_PAYMENT_NOT_UPDATED => __('portal.complaint_categories.payment_not_updated'),
+            self::CATEGORY_WRONG_PAID_AMOUNT => __('portal.complaint_categories.wrong_paid_amount'),
+            self::CATEGORY_WRONG_DUE_AMOUNT => __('portal.complaint_categories.wrong_due_amount'),
+            self::CATEGORY_OTHER => __('portal.complaint_categories.other'),
+        ];
+
+        if (isset($map[$this->category])) {
+            return $map[$this->category];
+        }
+
         $key = 'portal.complaint_categories.'.$this->category;
         $label = __($key);
 

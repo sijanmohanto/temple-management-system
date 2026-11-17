@@ -463,6 +463,12 @@ class CollectionPaymentService
                 ->lockForUpdate()
                 ->firstOrFail();
 
+            if ($lockedPayment->status !== CollectionPayment::STATUS_VERIFIED) {
+                throw ValidationException::withMessages([
+                    'payment' => __('donations.only_verified_payments_can_be_reversed'),
+                ]);
+            }
+
             $lockedPayment->update([
                 'status' => CollectionPayment::STATUS_REVERSED,
                 'reversed_by' => $reverserId,

@@ -28,6 +28,7 @@
                         <option value="">{{ __('portal.payments.all_statuses') }}</option>
                         <option value="submitted">{{ __('portal.complaint_statuses.submitted') }}</option>
                         <option value="under_review">{{ __('portal.complaint_statuses.under_review') }}</option>
+                        <option value="replied">{{ __('portal.complaint_statuses.replied') }}</option>
                         <option value="resolved">{{ __('portal.complaint_statuses.resolved') }}</option>
                         <option value="rejected">{{ __('portal.complaint_statuses.rejected') }}</option>
                         <option value="closed">{{ __('portal.complaint_statuses.closed') }}</option>
@@ -37,6 +38,9 @@
                     <label class="form-label small fw-bold">{{ __('portal.complaints_module.category') }}</label>
                     <select id="filterCategory" class="form-select">
                         <option value="">{{ __('portal.complaints_module.all_categories') }}</option>
+                        <option value="payment_not_updated">{{ __('portal.complaint_categories.payment_not_updated') }}</option>
+                        <option value="wrong_paid_amount">{{ __('portal.complaint_categories.wrong_paid_amount') }}</option>
+                        <option value="wrong_due_amount">{{ __('portal.complaint_categories.wrong_due_amount') }}</option>
                         <option value="payment_issue">{{ __('portal.complaint_categories.payment_issue') }}</option>
                         <option value="event_management">{{ __('portal.complaint_categories.event_management') }}</option>
                         <option value="prasadam_service">{{ __('portal.complaint_categories.prasadam_service') }}</option>
