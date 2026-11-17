@@ -279,4 +279,43 @@ class EventController extends Controller
 
         return back()->with('success', $message);
     }
+
+    /**
+     * Live search donors for a specific event by devotee name or mobile number for Select2.
+     * Respects visibility preferences and masks anonymous/private records.
+     */
+    public function searchDonors(Request $request, string $slug, EventCollectionReportService $reportService): JsonResponse
+    {
+        $event = Event::published()
+            ->whereNotIn('status', [Event::STATUS_DRAFT])
+            ->where('slug', $slug)
+            ->firstOrFail();
+
+        $term = trim((string) $request->input('q', ''));
+
+        if (mb_strlen($term) < 1) {
+            return response()->json(['results' => []]);
+        }
+
+        $donors = $reportService->getDonorCollectionReport($event, ['search' => $term]);
+
+        $results = [];
+        foreach ($donors as $donor) {
+            $name = $donor['display_name'];
+            $phone = ! empty($donor['phone']) ? " - {$donor['phone']}" : '';
+            $code = $donor['code'] ?? '';
+
+            $results[] = [
+                'id' => $code ?: $name,
+                'text' => "{$name}{$phone}",
+                'code' => $code,
+                'name' => $name,
+                'phone' => $donor['phone'] ?? null,
+                'status' => $donor['status'] ?? 'all',
+                'is_anonymous' => $donor['is_anonymous'] ?? false,
+            ];
+        }
+
+        return response()->json(['results' => $results]);
+    }
 }

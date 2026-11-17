@@ -429,12 +429,19 @@ class EventCollectionReportService
                 default => 'due',
             };
 
+            $isAnonOrPriv = $pledge->isAnonymous() || $pledge->isPrivate();
+            $rawNameEn = $isAnonOrPriv ? null : $pledge->person?->name_en;
+            $rawNameBn = $isAnonOrPriv ? null : $pledge->person?->name_bn;
+            $phone = $isAnonOrPriv ? null : ($pledge->person?->phone ?? $pledge->family?->primaryContact?->phone ?? null);
+
             $rows[] = [
                 'type' => 'pledge',
                 'pledge_id' => $pledge->id,
                 'pledge_code' => $pledge->pledge_code,
                 'code' => $pledge->pledge_code,
                 'display_name' => $pledge->public_display_name,
+                'raw_name_en' => $rawNameEn,
+                'raw_name_bn' => $rawNameBn,
                 'visibility' => $pledge->visibility ?? ($pledge->person?->visibility ?? 'public'),
                 'is_anonymous' => $pledge->isAnonymous(),
                 'is_private' => $pledge->isPrivate(),
@@ -449,6 +456,7 @@ class EventCollectionReportService
                 'status' => $statusCategory,
                 'is_voluntary' => false,
                 'has_pledge' => true,
+                'phone' => $phone,
             ];
         }
 
@@ -487,6 +495,9 @@ class EventCollectionReportService
             }
 
             $amount = (float) $alloc->amount;
+            $rawNameEn = ($isAnonymous || $isPrivate) ? null : ($person?->name_en);
+            $rawNameBn = ($isAnonymous || $isPrivate) ? null : ($person?->name_bn);
+            $phone = ($isAnonymous || $isPrivate) ? null : ($person?->phone ?? $payment?->public_donor_phone ?? $payment?->sender_mobile ?? null);
 
             $rows[] = [
                 'type' => 'voluntary',
@@ -494,6 +505,8 @@ class EventCollectionReportService
                 'pledge_code' => null,
                 'code' => $payment?->payment_code ?? ('VOL-'.$alloc->id),
                 'display_name' => $displayName,
+                'raw_name_en' => $rawNameEn,
+                'raw_name_bn' => $rawNameBn,
                 'visibility' => $visibility,
                 'is_anonymous' => $isAnonymous,
                 'is_private' => $isPrivate,
@@ -508,6 +521,7 @@ class EventCollectionReportService
                 'status' => 'voluntary',
                 'is_voluntary' => true,
                 'has_pledge' => false,
+                'phone' => $phone,
             ];
         }
 
@@ -516,7 +530,10 @@ class EventCollectionReportService
             $search = mb_strtolower(trim($filters['search']));
             $rows = array_values(array_filter($rows, function ($r) use ($search) {
                 return str_contains(mb_strtolower($r['display_name']), $search)
-                    || str_contains(mb_strtolower($r['code'] ?? ''), $search);
+                    || str_contains(mb_strtolower($r['code'] ?? ''), $search)
+                    || (! empty($r['phone']) && str_contains(mb_strtolower($r['phone']), $search))
+                    || (! empty($r['raw_name_en']) && str_contains(mb_strtolower($r['raw_name_en']), $search))
+                    || (! empty($r['raw_name_bn']) && str_contains(mb_strtolower($r['raw_name_bn']), $search));
             }));
         }
 

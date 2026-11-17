@@ -9,7 +9,7 @@
         <div class="row align-items-center g-4">
             <div class="col-lg-8">
                 <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-warning bg-opacity-25 text-warning fw-semibold small mb-3 border border-warning border-opacity-50">
-                    <span class="temple-emblem" style="width: 22px; height: 22px; font-size: 0.75rem; background: var(--temple-gold);">ॐ</span>
+                    <span class="temple-emblem" style="width: 22px; height: 22px; font-size: 0.75rem; background: var(--temple-gold); color: #ffffff;">ॐ</span>
                     <span>{{ __('portal.public.welcome_badge') }}</span>
                 </div>
                 <h1 class="display-5 fw-bold text-white lh-sm mb-3">
@@ -29,7 +29,7 @@
             </div>
             <div class="col-lg-4 d-none d-lg-block text-center">
                 <div class="p-4 rounded-4 bg-black bg-opacity-25 border border-white border-opacity-10 backdrop-blur">
-                    <div class="temple-emblem mx-auto mb-3 shadow-lg" style="width: 72px; height: 72px; font-size: 2.2rem; background: var(--temple-gold);">ॐ</div>
+                    <div class="temple-emblem mx-auto mb-3 shadow-lg" style="width: 72px; height: 72px; font-size: 2.2rem; background: var(--temple-gold); color: #ffffff;">ॐ</div>
                     <h5 class="text-white fw-bold mb-1">{{ __('common.app_name') }}</h5>
                     <small class="text-warning text-opacity-90 d-block mb-3">{{ __('common.temple_motto') }}</small>
                     <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50 px-3 py-2 rounded-pill small">
@@ -290,7 +290,7 @@
 
     <!-- Section D: Call To Action -->
     <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 mb-4 text-center bg-white border-top border-4 border-warning">
-        <div class="temple-emblem mx-auto mb-3" style="width: 50px; height: 50px; font-size: 1.6rem; background: var(--temple-gold);">ॐ</div>
+        <div class="temple-emblem mx-auto mb-3" style="width: 50px; height: 50px; font-size: 1.6rem; background: var(--temple-gold); color: #ffffff;">ॐ</div>
         <h3 class="fw-bold text-dark mb-2">{{ __('common.app_name') }}</h3>
         <p class="text-muted mx-auto mb-4" style="max-width: 620px;">
             {{ __('portal.public.hero_description') }}

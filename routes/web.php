@@ -33,6 +33,8 @@ use App\Http\Controllers\Procurement\VendorController;
 use App\Http\Controllers\Procurement\VendorPaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Public\HomeController;
+use App\Http\Controllers\Public\PaymentSubmissionController;
+use App\Http\Controllers\Public\PublicComplaintController;
 use App\Http\Controllers\PublicPortal\ComplaintController;
 use App\Http\Controllers\PublicPortal\EventDocumentController;
 use App\Http\Controllers\PublicPortal\PublicEventController;
@@ -49,8 +51,26 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/events', [App\Http\Controllers\Public\EventController::class, 'index'])->name('public.events.index');
 Route::get('/events/{slug}', [App\Http\Controllers\Public\EventController::class, 'show'])->name('public.events.show');
+Route::get('/events/{slug}/search-donors', [App\Http\Controllers\Public\EventController::class, 'searchDonors'])->name('public.events.donors.search');
 Route::get('/events/{slug}/donor-details/{code}', [App\Http\Controllers\Public\EventController::class, 'donorDetails'])->name('public.events.donor_details');
 Route::post('/events/{slug}/complaint', [App\Http\Controllers\Public\EventController::class, 'storeComplaint'])->name('public.events.complaint.store');
+
+// Increment 4 & 6: Public Payment Submission & Devotee Payment History & Details
+Route::get('/events/{slug}/pay', [PaymentSubmissionController::class, 'create'])->name('public.events.pay');
+Route::post('/events/{slug}/pay', [PaymentSubmissionController::class, 'store'])->name('public.events.pay.submit');
+Route::get('/my-contributions', [PaymentSubmissionController::class, 'history'])->name('public.payments.history');
+Route::get('/my-contributions/receipt/{receiptNumber}', [PaymentSubmissionController::class, 'receipt'])->name('public.payments.receipt');
+Route::get('/my-contributions/receipt/{receiptNumber}/download', [PaymentSubmissionController::class, 'downloadReceipt'])->name('public.payments.receipt.download');
+Route::get('/my-contributions/{paymentCode}', [PaymentSubmissionController::class, 'show'])->name('public.payments.show');
+Route::get('/my-contributions/{paymentCode}/proof', [PaymentSubmissionController::class, 'downloadProof'])->name('public.payments.proof');
+Route::get('/portal/receiver-accounts/by-method', [PaymentSubmissionController::class, 'getAccountsByMethod'])->name('public.receivers.by_method');
+
+// Increment 6: Authenticated Donor Complaint Management
+Route::get('/my-complaints', [PublicComplaintController::class, 'index'])->name('public.complaints.index');
+Route::get('/my-complaints/create', [PublicComplaintController::class, 'create'])->name('public.complaints.create');
+Route::post('/my-complaints', [PublicComplaintController::class, 'store'])->name('public.complaints.store');
+Route::get('/my-complaints/{reference}', [PublicComplaintController::class, 'show'])->name('public.complaints.show');
+Route::get('/my-complaints/{reference}/attachment', [PublicComplaintController::class, 'downloadAttachment'])->name('public.complaints.attachment');
 
 // Language switcher (available to guests and authenticated users)
 Route::get('/lang/{locale}', [LanguageController::class, 'switchLocale'])->name('lang.switch');
@@ -395,8 +415,10 @@ Route::middleware('auth')->group(function () {
             Route::get('/', [PublicPaymentController::class, 'index'])->name('index');
             Route::get('/search-persons', [PublicPaymentController::class, 'searchPersons'])->name('search-persons');
             Route::get('/{payment}', [PublicPaymentController::class, 'show'])->name('show');
+            Route::get('/{payment}/proof', [PublicPaymentController::class, 'downloadProof'])->name('proof');
             Route::post('/{payment}/verify', [PublicPaymentController::class, 'verify'])->name('verify');
             Route::post('/{payment}/reject', [PublicPaymentController::class, 'reject'])->name('reject');
+            Route::post('/{payment}/reverse', [PublicPaymentController::class, 'reverse'])->name('reverse');
             Route::post('/{payment}/link-devotee', [PublicPaymentController::class, 'linkDevotee'])->name('link-devotee');
         });
 
@@ -404,8 +426,11 @@ Route::middleware('auth')->group(function () {
         Route::prefix('complaints')->name('complaints.')->group(function () {
             Route::get('/', [ComplaintController::class, 'index'])->name('index');
             Route::get('/{complaint}', [ComplaintController::class, 'show'])->name('show');
+            Route::get('/{complaint}/attachment', [ComplaintController::class, 'downloadAttachment'])->name('attachment');
             Route::post('/{complaint}/assign', [ComplaintController::class, 'assign'])->name('assign');
+            Route::post('/{complaint}/under-review', [ComplaintController::class, 'markUnderReview'])->name('under-review');
             Route::post('/{complaint}/respond', [ComplaintController::class, 'respond'])->name('respond');
+            Route::post('/{complaint}/reply', [ComplaintController::class, 'respond'])->name('reply');
             Route::post('/{complaint}/resolve', [ComplaintController::class, 'resolve'])->name('resolve');
             Route::post('/{complaint}/reject', [ComplaintController::class, 'rejectComplaint'])->name('reject');
             Route::post('/{complaint}/close', [ComplaintController::class, 'close'])->name('close');

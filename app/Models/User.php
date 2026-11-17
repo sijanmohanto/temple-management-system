@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Log;
 
 class User extends Authenticatable
 {
@@ -171,5 +172,111 @@ class User extends Authenticatable
         }
 
         return app()->getLocale() === 'bn' ? $firstRole->name_bn : $firstRole->name_en;
+    }
+
+    /**
+     * Generate normalized phone number variants (raw, 11-digit BD, +880, 880).
+     *
+     * @return array<int, string>
+     */
+    public static function getPhoneVariants(?string $phone): array
+    {
+        if (empty($phone)) {
+            return [];
+        }
+
+        $trimmed = trim($phone);
+        $variants = [$trimmed];
+
+        $digits = preg_replace('/\D+/', '', $trimmed);
+        if (! empty($digits)) {
+            if (str_starts_with($digits, '8801') && strlen($digits) === 13) {
+                $std = substr($digits, 2); // 01XXXXXXXXX
+                $variants[] = $std;
+                $variants[] = '+88'.$std;
+                $variants[] = '88'.$std;
+            } elseif (str_starts_with($digits, '01') && strlen($digits) === 11) {
+                $variants[] = $digits;
+                $variants[] = '+88'.$digits;
+                $variants[] = '88'.$digits;
+            } else {
+                $variants[] = $digits;
+            }
+        }
+
+        return array_values(array_unique($variants));
+    }
+
+    /**
+     * Resolve the linked registered Person profile in the temple directory.
+     * Enforces active status, unambiguous candidate matching, and prevents
+     * conflicting phone/email matches across different people.
+     */
+    public function person(): ?Person
+    {
+        if (empty($this->phone) && empty($this->email)) {
+            return null;
+        }
+
+        $phoneMatches = collect();
+        if (! empty($this->phone)) {
+            $phoneVariants = self::getPhoneVariants($this->phone);
+            $phoneMatches = Person::where('status', 'active')
+                ->whereIn('phone', $phoneVariants)
+                ->get();
+        }
+
+        $emailMatches = collect();
+        if (! empty($this->email)) {
+            $normalizedEmail = strtolower(trim($this->email));
+            $emailMatches = Person::where('status', 'active')
+                ->whereRaw('LOWER(email) = ?', [$normalizedEmail])
+                ->get();
+        }
+
+        // If multiple active Person records share the same phone number, deny ambiguous resolution
+        if ($phoneMatches->count() > 1) {
+            Log::warning("Ambiguous devotee match: multiple active Person profiles matched phone for User ID {$this->id}");
+
+            return null;
+        }
+
+        // If multiple active Person records share the same email, deny ambiguous resolution
+        if ($emailMatches->count() > 1) {
+            Log::warning("Ambiguous devotee match: multiple active Person profiles matched email for User ID {$this->id}");
+
+            return null;
+        }
+
+        // If both matched, ensure they point to the exact same Person record
+        if ($phoneMatches->isNotEmpty() && $emailMatches->isNotEmpty()) {
+            if ($phoneMatches->first()->id !== $emailMatches->first()->id) {
+                Log::warning("Conflicting devotee match: phone and email matched different Person profiles for User ID {$this->id}");
+
+                return null;
+            }
+
+            return $phoneMatches->first();
+        }
+
+        // If only phone matched exactly one active Person
+        if ($phoneMatches->isNotEmpty()) {
+            return $phoneMatches->first();
+        }
+
+        // If only email matched exactly one active Person
+        if ($emailMatches->isNotEmpty()) {
+            return $emailMatches->first();
+        }
+
+        return null;
+    }
+
+    /**
+     * Accessor for linked Person profile.
+     */
+    public function getPersonAttribute(): ?Person
+    {
+        return $this->person();
     }
 }

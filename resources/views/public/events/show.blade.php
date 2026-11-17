@@ -36,7 +36,7 @@
             <img src="{{ asset('storage/' . $event->banner_image_path) }}" alt="{{ $event->name }}" class="w-100" style="max-height: 420px; object-fit: cover;">
         @else
             <div class="p-5 text-center text-white" style="background: linear-gradient(135deg, var(--temple-maroon), var(--temple-gold));">
-                <div class="temple-emblem mx-auto mb-3 shadow-sm" style="width: 64px; height: 64px; font-size: 2rem; background: var(--temple-gold);">ॐ</div>
+                <div class="temple-emblem mx-auto mb-3 shadow-sm" style="width: 64px; height: 64px; font-size: 2rem; background: var(--temple-gold); color: #ffffff;">ॐ</div>
                 <h3 class="fw-bold mb-1">{{ $event->category?->name ?? __('events.event') }}</h3>
                 <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50 px-3 py-1 fs-6">
                     {{ $event->event_year }}
@@ -70,9 +70,16 @@
                 </span>
             </div>
 
-            <h1 class="display-6 fw-bold text-dark mb-3">
-                {{ $event->name }}
-            </h1>
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+                <h1 class="display-6 fw-bold text-dark mb-0">
+                    {{ $event->name }}
+                </h1>
+                @if($event->status !== 'closed')
+                    <a href="{{ route('public.events.pay', $event->slug) }}" class="btn temple-btn-maroon shadow-sm px-4 py-2 fw-semibold align-self-start align-self-md-auto">
+                        <i class="bi bi-wallet2 me-1"></i> {{ __('portal.public.make_payment_btn') }}
+                    </a>
+                @endif
+            </div>
 
             @if($event->short_description)
                 <p class="lead text-secondary mb-4 fs-5">
@@ -89,11 +96,18 @@
                         </h4>
                         <p class="text-muted small mb-0">{{ __('portal.public.verified_notice') }}</p>
                     </div>
-                    @if($summary['is_over_collected'])
-                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 fs-6">
-                            <i class="bi bi-check2-all me-1"></i> {{ __('portal.public.over_collected_badge') }} (+৳{{ number_format($summary['over_collected_amount'], 2) }})
-                        </span>
-                    @endif
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        @if($summary['is_over_collected'])
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 fs-6">
+                                <i class="bi bi-check2-all me-1"></i> {{ __('portal.public.over_collected_badge') }} (+৳{{ number_format($summary['over_collected_amount'], 2) }})
+                            </span>
+                        @endif
+                        @if($event->status !== 'closed')
+                            <a href="{{ route('public.events.pay', $event->slug) }}" class="btn btn-outline-danger shadow-sm btn-sm px-3 py-2 fw-semibold">
+                                <i class="bi bi-wallet2 me-1"></i> {{ __('portal.public.make_payment_btn') }}
+                            </a>
+                        @endif
+                    </div>
                 </div>
 
                 <!-- 4 Summary Cards Grid -->
@@ -258,7 +272,7 @@
 
             <!-- Donor-wise Running Collection Report Section -->
             <div class="card border-0 rounded-4 bg-white shadow-sm border p-4 my-4" id="donor-collection-report">
-                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+                <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-3">
                     <div>
                         <h4 class="fw-bold text-dark mb-1">
                             <i class="bi bi-people text-primary me-2"></i>{{ __('portal.public.donor_report_title') }}
@@ -267,13 +281,14 @@
                     </div>
 
                     <!-- Search and Filter Controls -->
-                    <div class="d-flex flex-wrap gap-2 align-items-center">
-                        <div class="input-group input-group-sm" style="min-width: 220px;">
-                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-                            <input type="text" id="donorSearchInput" class="form-control border-start-0" placeholder="{{ __('portal.public.filter_search_placeholder') }}">
+                    <div class="d-flex flex-column flex-sm-row gap-2 align-items-stretch align-items-sm-center flex-grow-1 justify-content-lg-end" style="max-width: 650px;">
+                        <div class="flex-grow-1 donor-search-select2-wrap" style="min-width: 280px;">
+                            <select id="donorSearchInput" class="form-select" style="width: 100%;" data-placeholder="{{ __('portal.public.filter_search_placeholder') }}">
+                                <option value=""></option>
+                            </select>
                         </div>
 
-                        <select id="donorStatusFilter" class="form-select form-select-sm" style="min-width: 140px;">
+                        <select id="donorStatusFilter" class="form-select flex-shrink-0" style="width: auto; min-width: 140px;">
                             <option value="all">{{ __('portal.public.status_all') }}</option>
                             <option value="paid">{{ __('portal.public.status_paid') }}</option>
                             <option value="partial">{{ __('portal.public.status_partial') }}</option>
@@ -297,7 +312,12 @@
                         </thead>
                         <tbody>
                             @forelse($donorReport as $row)
-                                <tr class="donor-row" data-status="{{ $row['status'] }}" data-name="{{ mb_strtolower($row['display_name']) }}" data-code="{{ mb_strtolower($row['code'] ?? '') }}">
+                                <tr class="donor-row"
+                                    data-status="{{ $row['status'] }}"
+                                    data-name="{{ mb_strtolower($row['display_name']) }}"
+                                    data-code="{{ mb_strtolower($row['code'] ?? '') }}"
+                                    data-name-en="{{ mb_strtolower($row['raw_name_en'] ?? '') }}"
+                                    data-name-bn="{{ mb_strtolower($row['raw_name_bn'] ?? '') }}">
                                     <!-- Name -->
                                     <td class="py-2 fw-medium text-dark">
                                         @if($row['is_anonymous'])
@@ -492,30 +512,110 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // 1. Client-side Search & Status Filter
-    const searchInput = document.getElementById('donorSearchInput');
+    // 1. Select2 Remote Search & Status Filter
+    const $donorSearch = $('#donorSearchInput');
     const statusFilter = document.getElementById('donorStatusFilter');
     const rows = document.querySelectorAll('.donor-row');
+    let selectedDonorCode = '';
+    let liveSearchQuery = '';
 
     function filterTable() {
-        const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
+        const query = (liveSearchQuery || '').toLowerCase().trim();
+        const selectedCode = (selectedDonorCode || '').toLowerCase().trim();
         const status = statusFilter ? statusFilter.value : 'all';
 
         rows.forEach(function (row) {
-            const rowName = row.getAttribute('data-name') || '';
-            const rowCode = row.getAttribute('data-code') || '';
+            const rowName = (row.getAttribute('data-name') || '').toLowerCase();
+            const rowCode = (row.getAttribute('data-code') || '').toLowerCase();
+            const rowPhone = (row.getAttribute('data-phone') || '').toLowerCase();
+            const rowNameEn = (row.getAttribute('data-name-en') || '').toLowerCase();
+            const rowNameBn = (row.getAttribute('data-name-bn') || '').toLowerCase();
             const rowStatus = row.getAttribute('data-status') || '';
 
-            const matchesSearch = query === '' || rowName.includes(query) || rowCode.includes(query);
+            const matchesSelection = !selectedCode || rowCode === selectedCode || rowName.includes(selectedCode);
+            const matchesQuery = !query || rowName.includes(query) || rowCode.includes(query) || rowPhone.includes(query) || rowNameEn.includes(query) || rowNameBn.includes(query);
+            const matchesSearch = matchesSelection && matchesQuery;
             const matchesStatus = status === 'all' || rowStatus === status;
 
-            row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+            const isVisible = matchesSearch && matchesStatus;
+            row.style.display = isVisible ? '' : 'none';
+
+            if (selectedCode && matchesSelection && isVisible) {
+                row.classList.add('table-warning');
+            } else {
+                row.classList.remove('table-warning');
+            }
         });
     }
 
-    if (searchInput) {
-        searchInput.addEventListener('input', filterTable);
+    if ($donorSearch.length && $.fn.select2) {
+        $donorSearch.select2({
+            theme: 'bootstrap-5',
+            placeholder: "{{ __('portal.public.filter_search_placeholder') }}",
+            allowClear: true,
+            width: '100%',
+            ajax: {
+                url: "{{ route('public.events.donors.search', $event->slug) }}",
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                    return {
+                        q: params.term || ''
+                    };
+                },
+                processResults: function (data) {
+                    return {
+                        results: data.results || []
+                    };
+                },
+                cache: true
+            },
+            minimumInputLength: 1,
+            templateResult: function (item) {
+                if (!item.id) return item.text;
+
+                var $wrapper = $('<div class="py-1 px-1"></div>');
+                var displayName = item.name || item.text || '';
+                var $name = $('<div class="fw-semibold text-dark text-truncate"></div>').text(displayName);
+                $wrapper.append($name);
+
+                if (item.phone) {
+                    var $phone = $('<div class="text-muted small mt-1"><i class="bi bi-telephone me-1 text-primary"></i></div>');
+                    $phone.append(document.createTextNode(item.phone));
+                    $wrapper.append($phone);
+                }
+
+                return $wrapper;
+            },
+            templateSelection: function (item) {
+                if (!item.id) return item.text || "{{ __('portal.public.filter_search_placeholder') }}";
+                var displayName = item.name || item.text || '';
+                if (item.phone) {
+                    return displayName + ' (' + item.phone + ')';
+                }
+                return displayName;
+            }
+        });
+
+        $donorSearch.on('select2:select', function (e) {
+            const data = e.params.data;
+            selectedDonorCode = data.code || data.id || '';
+            liveSearchQuery = '';
+            filterTable();
+        });
+
+        $donorSearch.on('select2:clear', function () {
+            selectedDonorCode = '';
+            liveSearchQuery = '';
+            filterTable();
+        });
+
+        $(document).on('input', '.select2-container--open .select2-search__field', function () {
+            liveSearchQuery = $(this).val();
+            filterTable();
+        });
     }
+
     if (statusFilter) {
         statusFilter.addEventListener('change', filterTable);
     }

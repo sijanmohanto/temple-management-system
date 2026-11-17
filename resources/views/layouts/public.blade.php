@@ -11,6 +11,9 @@
     <link rel="stylesheet" href="{{ asset('assets/vendor/bootstrap/bootstrap.min.css') }}">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="{{ asset('assets/vendor/bootstrap/bootstrap-icons.min.css') }}">
+    <!-- Select2 CSS with Bootstrap 5 Theme -->
+    <link rel="stylesheet" href="{{ asset('assets/vendor/select2/select2.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/vendor/select2/select2-bootstrap-5-theme.min.css') }}">
     <!-- Toastr Notifications CSS -->
     <link rel="stylesheet" href="{{ asset('assets/vendor/toastr/toastr.min.css') }}">
     <!-- Custom Temple Theme -->
@@ -134,6 +137,18 @@
                                 <span class="badge bg-secondary-subtle text-secondary border small ms-1" style="font-size: 0.65rem;">{{ __('portal.public.coming_soon') }}</span>
                             </a>
                         </li>
+                        @auth
+                            <li class="nav-item">
+                                <a class="public-nav-link {{ request()->routeIs('public.payments.*') ? 'active' : '' }}" href="{{ route('public.payments.history') }}">
+                                    <i class="bi bi-wallet2 me-1"></i> {{ __('portal.public.my_contributions') }}
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="public-nav-link {{ request()->routeIs('public.complaints.*') ? 'active' : '' }}" href="{{ route('public.complaints.index') }}">
+                                    <i class="bi bi-chat-left-dots me-1"></i> {{ __('portal.public.my_complaints') }}
+                                </a>
+                            </li>
+                        @endauth
 
                         <!-- Language Switcher -->
                         <li class="nav-item ms-lg-2 my-2 my-lg-0">
@@ -184,7 +199,7 @@
                 <!-- Column 1: Organization Identity -->
                 <div class="col-lg-5 col-md-6">
                     <div class="d-flex align-items-center gap-2 mb-3">
-                        <span class="temple-emblem" style="width: 36px; height: 36px; font-size: 1.2rem; background: var(--temple-gold);">ॐ</span>
+                        <span class="temple-emblem" style="width: 36px; height: 36px; font-size: 1.2rem; background: var(--temple-gold); color: #ffffff;">ॐ</span>
                         <h5 class="fw-bold mb-0 text-white">{{ __('common.app_name') }}</h5>
                     </div>
                     <p class="text-light text-opacity-75 small mb-3">
@@ -254,6 +269,8 @@
     <script src="{{ asset('assets/vendor/jquery/jquery.min.js') }}"></script>
     <script src="{{ asset('assets/vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('assets/vendor/toastr/toastr.min.js') }}"></script>
+    <!-- Select2 JS -->
+    <script src="{{ asset('assets/vendor/select2/select2.min.js') }}"></script>
 
     <script>
         window.TempleConfig = {
@@ -269,6 +286,11 @@
                 loading: @json(__('common.loading')),
                 processing: @json(__('common.processing')),
                 validationError: @json(__('common.validation_error_occurred'))
+            },
+            select2i18n: {
+                placeholder: @json(__('select2.placeholder')),
+                noResults: @json(__('select2.no_results')),
+                searching: @json(__('select2.searching'))
             }
         };
     </script>

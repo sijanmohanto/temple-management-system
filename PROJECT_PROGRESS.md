@@ -11,7 +11,7 @@
 **Phase 4 Status**: **Completed, Corrected & Fully Tested** (101 tests, 513 assertions)  
 **Phase 5 Status**: **Completed & Fully Tested** (144 tests, 876 assertions total)  
 **Phase 6 Status**: **FINAL APPROVED — All Increments (1, 2, 3, 4 & 5) Completed, Audited & Fully Verified** (269 tests, 1,608 assertions total)  
-**Public Portal Status**: **Admin Panel, Increment 1 (Public Layout, Home Page & Event Listing), Increment 2 (Running Event Details & Collection Summary), and Increment 3 (Donor-wise Running Collection Report) Completed & Fully Tested** (395 tests, 2,219 assertions total)  
+**Public Portal Status**: **Admin Panel, Increments 1, 2, 3, 4, 4.1 Completed & Increment 5 Steps 1, 2, 3 & 4 (Security, Controller, Routes, Admin Verification UI & Payment Reversal Integration) Completed & Fully Tested** (460 tests, 2,706 assertions total)  
 **Next Phase**: Phase 7 (Inventory, Goods Receiving, Asset Registry & Maintenance) — On Standby Awaiting Explicit User Approval
 
 ---
@@ -1220,3 +1220,611 @@ Result:
 - **Public Portal Feature Test Suite**: **126 passed (611 assertions)**.
 - **Full Application Test Suite**: **395 passed (2,219 assertions)** with ZERO failures and ZERO regressions.
 - **Code Style (Laravel Pint)**: 100% PSR-12 code compliance verified via `php vendor/bin/pint --test` (0 issues).
+
+---
+
+### Public Portal — Increment 4: Public Payment Submission & Devotee Payment History
+
+- **Objective**: Implement the public payment submission feature and authenticated donor payment history tracking for published events without altering financial ledger invariants prior to authorized admin verification.
+- **Architecture & Implementation Details**:
+  1. **Person vs. User Decoupled Devotee Resolution**:
+     - Added `person(): ?Person` method and `getPersonAttribute()` accessor to `User` model, dynamically resolving the linked registered devotee profile from the temple directory by matching phone or email where `status = 'active'`.
+     - Guests accessing submission form are redirected to `route('login')`.
+     - Authenticated users without an active linked devotee profile in the directory are denied submission access with a localized warning.
+     - Never trusts client-supplied donor IDs; all records are resolved server-side from `auth()->user()`.
+  2. **Dedicated Payment Submission Form (`GET /events/{slug}/pay`)**:
+     - Pre-fills read-only registered devotee profile details (Name, Devotee Code, Phone, Email).
+     - Displays active pledges for the event with pledged amount, verified paid, and remaining due, allowing selection of pledge or voluntary donation.
+     - Method selector for bKash, Nagad, Rocket, and Bank Transfer with offline Bootstrap icons.
+     - Dynamic receiver account selector card showing verified account name, number with one-click copy, account type, bank/branch routing numbers, QR code image, and payment instructions without exposing internal ledger IDs.
+  3. **Strict Validation & Duplicate Prevention (`StorePublicPaymentRequest`)**:
+     - FormRequest enforces published running event, active & verified receiver account, positive amount, non-future payment date, and BD sender mobile for MFS.
+     - Server-side method-aware duplicate transaction reference validation (`in_array(status, ['verified', 'pending_verification'])`), preventing duplicate submissions for the same payment method.
+  4. **Strict Financial Ledger Invariants**:
+     - Submitting public payments creates `CollectionPayment` in `STATUS_PENDING` (`pending_verification`) and associated `PaymentAllocation`.
+     - Submissions strictly do NOT create `JournalEntry` records, do NOT issue `Receipt` numbers, do NOT alter account balances, do NOT change pledge verified paid amounts, and do NOT alter public aggregate verified collection metrics.
+     - Only authorized admin verification (`POST /admin/portal/payments/{id}/verify`) posts balanced double-entry vouchers to general ledger and generates official receipts.
+  5. **Authenticated Devotee Payment History (`/my-contributions`)**:
+     - Comprehensive tracking page showing the donor's submitted payments, reference code (`PAY-YYYY-XXXX`), event, method, transaction ID, date, amount, and status badges.
+     - IDOR-protected receipt download route (`/my-contributions/receipt/{receiptNumber}`) allowing authenticated owners to view and print official receipts once verified.
+  6. **UI Integration & Localization**:
+     - "Pay Contribution" / "অর্থ প্রদান করুন" button prominently displayed on published running event showcase and summary headers.
+     - "My Contributions" / "আমার জমাকৃত অর্থ" nav link in public header for authenticated users.
+     - 100% bilingual parity across `lang/en/portal.php` and `lang/bn/portal.php`.
+  7. **Feature Test Suite (`tests/Feature/PublicPortal/PublicPaymentSubmissionTest.php`)**:
+     - 12 automated tests (63 assertions) covering access control, unlinked user denial, form viewing, closed event blocking, MFS submission, strict ledger invariants, method-aware duplicate prevention, file upload, donor history isolation, IDOR receipt protection, and full admin verification workflow.
+- **Public Portal Feature Test Suite**: **138 passed (674 assertions)**.
+- **Full Application Test Suite**: **407 passed (2,282 assertions)** with ZERO failures, ZERO errors, and ZERO regressions.
+- **Code Style (Laravel Pint)**: 100% PSR-12 code compliance verified via `php vendor/bin/pint --test` (0 issues).
+
+---
+
+### Public Portal — Increment 4.1: Security & Workflow Hardening
+
+- **Objective**: Address security, authorization, privacy, and workflow issues identified in the Increment 4 audit, hardening payment proof storage, person resolution, voluntary event donations, receiver account scopes, collection date boundaries, and transaction reference concurrency.
+- **Key Enhancements Implemented**:
+  1. **Private Payment Proof Storage & IDOR Protection**:
+     - Uploads routed strictly to private disk (`'local'` disk: `storage/app/payment_proofs/`), preventing direct public access via public storage symlink.
+     - Added secure authenticated download/stream endpoints:
+       - Admin: `GET /admin/portal/payments/{payment}/proof` (`portal.payments.proof`) protected by `permission:view_public_payments`.
+       - Public: `GET /my-contributions/{paymentCode}/proof` (`public.payments.proof`) protected by owner IDOR verification and staff authorization.
+     - Enforced directory traversal protections (`str_contains($path, '..')`, path sanitization) and graceful backward-compatible fallback for legacy public files.
+     - Replaced direct `Storage::disk('public')->url(...)` accessors in `CollectionPayment` with authorization-aware routing.
+     - Created Artisan migration command `php artisan portal:migrate-proofs` (`app/Console/Commands/MigratePaymentProofsCommand.php`) with SHA-256 checksum verification and dry-run simulation.
+  2. **Person vs. User Unambiguous Resolution**:
+     - Hardened `User::person()` with normalized BD phone variants (`+880`, `88`, `01...`).
+     - Added collision detection: if multiple active Person records share a phone or email, or phone matches Person A and email matches Person B, the method safely logs a warning and returns `null` instead of arbitrarily picking a record.
+  3. **Voluntary Public Donation Admin Verification**:
+     - Enhanced `PublicPaymentController@verify` to support voluntary event donations without requiring or creating a pledge.
+     - Posts balanced double-entry vouchers to `CODE_INCOME_EVENT` (4020), issues official receipts, and preserves existing pledge balances without reducing dues.
+     - UI updated to display "Voluntary Event Donation" badges and verification notices in admin payment show and verify modal.
+  4. **Receiver Account Event Scope Enforcement**:
+     - Validated server-side in `StorePublicPaymentRequest` and controller that receiver accounts assigned to a specific event (`event_id != null`) cannot be used for a different event, while general accounts (`event_id == null`) remain available across all events.
+  5. **Event Collection Date Boundaries**:
+     - Enforced application timezone (`config('app.timezone')`) collection date window (`collection_start_date` and `collection_end_date`) in both `create` and `store` methods.
+  6. **Concurrency-Safe Duplicate Transaction Prevention**:
+     - Added method-aware transaction reference verification with row locking (`lockForUpdate()`) inside the database transaction to prevent concurrent duplicate submissions.
+  7. **Feature & Regression Test Suite**:
+     - Expanded `tests/Feature/PublicPortal/PublicPaymentSubmissionTest.php` from 12 to 21 automated tests (113 assertions).
+     - Full application suite: **416 passed (2,332 assertions)** with ZERO failures and ZERO regressions.
+     - Code style: 100% PSR-12 verified via `php vendor/bin/pint --test`.
+
+
+
+---
+
+### Public Portal — Increment 5, Step 1: Security & Validation Hardening
+
+- **Objective**: Implement comprehensive Form Request validation, strict permission enforcement, separation of duties, cross-person/cross-event pledge mismatch prevention, and transactional row locking concurrency protection for public payment verification, rejection, and devotee linking without modifying UI or introducing Step 2 features.
+- **Key Deliverables Implemented**:
+  1. **Dedicated Form Request Architecture**:
+     - `app/Http/Requests/PublicPortal/VerifyPublicPaymentRequest.php`:
+       - Enforces `verify_public_payments` permission (or `super_admin` role).
+       - Validates optional `verification_note` (max 1000).
+       - Validates optional `person_id` (must exist in `people` with `status = 'active'`).
+       - Validates optional `pledge_id` (must exist in `pledges`, not cancelled, matching devotee person ID, and matching payment event ID).
+       - Rejects unlinked public payments when neither pre-linked nor explicitly provided.
+       - Method-aware duplicate transaction reference check for bKash, Nagad, Rocket, and Bank Transfer.
+       - Enforces separation of duties: administrative submitters cannot verify their own submission unless super admin.
+       - Standardized AJAX/JSON failed validation format with `['success' => false, 'message' => ..., 'errors' => ...]`.
+     - `app/Http/Requests/PublicPortal/RejectPublicPaymentRequest.php`:
+       - Enforces `reject_public_payments` or `verify_public_payments` permission (or `super_admin`).
+       - Validates mandatory `rejection_reason` (min 3, max 1000 characters).
+       - Rejects payments not in `STATUS_PENDING` (cannot reject verified or reversed payments).
+     - `app/Http/Requests/PublicPortal/ReversePublicPaymentRequest.php`:
+       - Enforces `reverse_collections`, `reverse_transactions`, or `reverse_payments` permission (or `super_admin`).
+       - Validates mandatory `reversal_reason` (min 3, max 1000 characters).
+       - Ensures only verified payments can be reversed (rejects pending or already reversed payments).
+       - *Note: Reversal controller, route, and UI remain deferred to Step 2 as specified.*
+  2. **Controller Security Hardening (`PublicPaymentController.php`)**:
+     - `verify()`: Injected `VerifyPublicPaymentRequest`. Entire operation wrapped in authoritative `DB::transaction(...)` with pessimistic row locking (`lockForUpdate()`) on `CollectionPayment` and associated `Pledge`. Prevents race conditions and duplicate receipts/journal entries. Preserves voluntary event donation verification without a pledge.
+     - `reject()`: Injected `RejectPublicPaymentRequest`. Wrapped in `DB::transaction(...)` with `lockForUpdate()`. Validates status `STATUS_PENDING`. Deactivates allocations, records audit trail, and generates no receipts or journal entries.
+     - `linkDevotee()`: Wrapped in `DB::transaction(...)` with `lockForUpdate()`. Validates target Person exists and has `status = 'active'`. Rechecks payment status is `STATUS_PENDING` under lock; rejects relinking of verified, rejected, or reversed payments with localized error message.
+  3. **Bilingual Localization Parity**:
+     - Added new keys in `lang/en/portal.php` and `lang/bn/portal.php`:
+       - `pledge_donor_mismatch`: "The selected pledge does not belong to the payment devotee." / "নির্বাচিত অঙ্গীকারটি এই ভক্তের নয়।"
+       - `pledge_event_mismatch`: "The selected pledge does not belong to the payment event." / "নির্বাচিত অঙ্গীকারটি এই ইভেন্টের নয়।"
+       - `inactive_or_invalid_person`: "The selected devotee profile is inactive or invalid." / "নির্বাচিত ভক্তের প্রোফাইলটি নিষ্ক্রিয় বা অবৈধ।"
+       - `cannot_relink_processed_payment`: "Cannot link devotee because this payment has already been processed." / "পেমেন্টটি ইতিমধ্যে প্রক্রিয়া সম্পন্ন হওয়ায় ভক্ত পরিবর্তন করা যাবে না।"
+  4. **Automated Test Suite Expansion**:
+     - Expanded `tests/Feature/PublicPortal/PublicPaymentTest.php` from 17 to 38 automated tests (202 assertions).
+     - Fully verified all 20 required cases:
+       1. Authorized admin can verify eligible pledge payment.
+       2. Unauthorized admin cannot verify (devotee 403).
+       3. Submitter cannot approve own submission unless super admin.
+       4. Admin cannot verify same payment twice (idempotent 422).
+       5. Admin cannot verify payment using another Person's pledge (cross-person rejection).
+       6. Admin cannot verify payment using another Event's pledge (cross-event rejection).
+       7. Voluntary event donation verification works without pledge.
+       8. Admin can reject pending payment with valid reason.
+       9. Rejection without valid reason fails (empty or < 3 chars).
+       10. Rejected payments create no journal entries or receipts.
+       11. Verified payments cannot be rejected.
+       12. Reversed payments cannot be verified or rejected.
+       13. Pending payment can be linked to eligible active Person.
+       14. Verified payment cannot be relinked.
+       15. Rejected payment cannot be relinked.
+       16. Reversed payment cannot be relinked.
+       17. Unauthorized Person linking is denied.
+       18. Invalid or inactive Person linking is denied.
+       19. Cross-event Person/Pledge manipulation is rejected.
+       20. Existing financial balances and receipt integrity remain intact after failed requests.
+       21. `ReversePublicPaymentRequest` authorization policy and validation invariants.
+  5. **Verification & Regression Metrics**:
+     - `php artisan test --filter=PublicPayment`: **59 passed (315 assertions)** across `PublicPaymentSubmissionTest` (21 tests) and `PublicPaymentTest` (38 tests).
+     - Full application test suite (`php vendor/bin/phpunit`): **437 passed (2,447 assertions)** with ZERO failures, ZERO errors, and ZERO regressions.
+     - Laravel Pint (`php vendor/bin/pint --test`): **100% PSR-12 code compliance** (0 issues).
+  6. **Current Status & Strict Boundaries**:
+     - **Increment 5 Step 1 is COMPLETED**.
+     - Step 2 (Verification modal redesign, receipt print/download UI enhancements, payment reversal route/controller/UI) has NOT been implemented and remains on standby awaiting user approval.
+
+
+---
+
+### Public Portal — Increment 5, Step 2: Controller & Route Integration
+
+- **Objective**: Complete backend controller and route integration for admin public payment verification, rejection, and devotee linking with strict transactional concurrency, cross-donor pledge sanitization on linking, support for both event-specific and general voluntary donations, and robust authorization boundaries.
+- **Key Deliverables Implemented**:
+  1. **Controller Integration (`PublicPortal\PublicPaymentController.php`)**:
+     - `verify()`:
+       - Uses `VerifyPublicPaymentRequest` for type-hinted validation and authorization.
+       - Enclosed within an atomic `DB::transaction(...)` with pessimistic row locking (`lockForUpdate()`) on `CollectionPayment` and associated `Pledge`.
+       - Rechecks payment status under lock (`STATUS_PENDING`); duplicate or concurrent verify attempts safely fail with status 422.
+       - Handles dynamic allocation mapping: automatically selects `TARGET_VOLUNTARY_EVENT` (4020 Event Income) when `event_id` is present, or `TARGET_VOLUNTARY_GENERAL` (4010 General Income) when `event_id` is null.
+       - Delegates authoritative financial posting and receipt creation to `CollectionPaymentService::verifyPayment()`. No financial posting logic is duplicated in the controller.
+       - Generates structured audit trail entries for pledge payments, event voluntary donations, and general voluntary donations.
+     - `reject()`:
+       - Uses `RejectPublicPaymentRequest` enforcing reason validation and pending status.
+       - Enclosed within `DB::transaction(...)` with `lockForUpdate()`.
+       - Calls `CollectionPaymentService::rejectPayment()`, deactivates allocations, records rejection audit log, and creates no journal entries or receipts.
+     - `linkDevotee()`:
+       - Enforces active status check on selected `Person` profile.
+       - Wrapped in `DB::transaction(...)` with `lockForUpdate()`.
+       - Only pending payments can be linked; relinking verified, rejected, or reversed payments returns status 422.
+       - **Cross-Donor Pledge Disassociation**: If the payment previously held an attached pledge belonging to another person, changing the devotee automatically disassociates the obsolete pledge (`pledge_id = null`) and converts active allocations to voluntary donations, preventing cross-donor pledge credit contamination.
+  2. **Route & Authorization Verification**:
+     - Admin payment routes confirmed in `routes/web.php` under `admin/portal/payments` (`portal.payments.`):
+       - `portal.payments.index` (`GET /admin/portal/payments`): protected by `permission:view_public_payments`.
+       - `portal.payments.search-persons` (`GET /admin/portal/payments/search-persons`): protected by `permission:view_public_payments`.
+       - `portal.payments.show` (`GET /admin/portal/payments/{payment}`): protected by `permission:view_public_payments`.
+       - `portal.payments.proof` (`GET /admin/portal/payments/{payment}/proof`): protected by `permission:view_public_payments`.
+       - `portal.payments.verify` (`POST /admin/portal/payments/{payment}/verify`): protected by `permission:verify_public_payments`.
+       - `portal.payments.reject` (`POST /admin/portal/payments/{payment}/reject`): protected by `permission:reject_public_payments|verify_public_payments`.
+       - `portal.payments.link-devotee` (`POST /admin/portal/payments/{payment}/link-devotee`): protected by `permission:verify_public_payments`.
+     - Preserved all existing route names and URLs.
+     - Reversal routes remain strictly omitted in Step 2.
+  3. **Automated Feature Tests Added (`tests/Feature/PublicPortal/PublicPaymentTest.php`)**:
+     - Added `test_competing_verification_and_rejection_concurrency_protection()`: verifies competing state transitions under row locking.
+     - Added `test_linking_devotee_disassociates_pledge_belonging_to_previous_person()`: verifies cross-donor pledge disassociation upon devotee re-linking.
+     - Added `test_general_voluntary_donation_verification_without_event()`: verifies voluntary general temple donation verification and double-entry ledger posting to account 4010.
+     - Total `PublicPaymentTest` suite expanded to **41 tests (220 assertions)**.
+  4. **Verification & Regression Metrics**:
+     - `php artisan test --filter=PublicPayment`: **62 passed (339 assertions)** across `PublicPaymentSubmissionTest` (21 tests) and `PublicPaymentTest` (41 tests).
+     - Full application test suite (`php vendor/bin/phpunit`): **440 passed (2,457 assertions)** with ZERO failures, ZERO errors, and ZERO regressions.
+     - Code style: **100% PSR-12 code compliance** verified via `php vendor/bin/pint --test`.
+  5. **Current Status & Strict Boundaries**:
+     - **Increment 5 Step 2 is COMPLETED**.
+     - UI enhancements, verification modal redesign, receipt print/download buttons, and reversal routes/controllers/UI remain deferred to subsequent approved steps.
+     - Increment 5 is NOT marked complete.
+
+---
+
+### Public Portal — Increment 5, Step 3: Admin Payment Verification UI
+
+- **Objective**: Implement the Admin Payment Verification UI enhancements across the public payments DataTable listing, Quick Verify modal, Reject Payment modal, payment details view, and receipt action integrations.
+- **Key Deliverables Implemented**:
+  1. **Admin Payment DataTable Improvements (`resources/views/portal/payments/index.blade.php` & `app/Http/Controllers/PublicPortal/PublicPaymentController.php`)**:
+     - Preserved server-side DataTables with compact layout and strictly without serial `#` column.
+     - Eager-loaded `pledge` relationship in DataTable controller queries (`CollectionPayment::with(['payerPerson', 'event', 'receiverAccount', 'receipt', 'pledge'])`).
+     - Enhanced `.btn-verify-payment` with complete data attributes: `data-donor`, `data-event`, `data-method`, `data-trx`, `data-proof`, `data-type`, `data-pledge-code`, `data-pledged`, `data-paid`, `data-due`, and `data-url`.
+     - Enhanced `.btn-reject-payment` with contextual data attributes: `data-code`, `data-donor`, `data-event`, `data-amount`, and `data-url`.
+     - **Strict Receipt Action Guard**: In `formatActionsColumn()`, View Receipt (`route('receipts.show', $receipt)`) and Print Receipt (`route('receipts.print', $receipt)`) actions are rendered ONLY when the payment is verified (`STATUS_VERIFIED`) AND has an issued receipt (`$payment->receipt`). Receipt action buttons are never rendered for pending or rejected submissions.
+  2. **Quick Verify Modal Redesign (`resources/views/portal/payments/index.blade.php`)**:
+     - Upgraded modal to structured 2-column layout (`modal-lg`).
+     - **Eliminated Obsolete Guest Checkbox**: Completely removed `<input type="checkbox" name="create_guest_person">` from both UI view and DOM.
+     - Displays comprehensive submission details: Donor Name, Event Name, Payment Code, Amount, Payment Method, and TrxID.
+     - Added Proof Preview container (`#modalVerifyProofBox`) displaying image thumbnail with target="_blank" preview link via authorized route `portal.payments.proof`, or fallback badge when no proof is attached.
+     - Added Allocation Details container (`#modalVerifyPledgeBox` & `#modalVerifyVoluntaryBox`):
+       - If associated with a pledge, displays Pledge Code, Original Pledged, Total Verified Paid, and Remaining Due.
+       - If voluntary donation, displays voluntary donation title and explanatory destination information (Event Fund vs. General Temple Fund).
+     - Added reusable button loading spinner (`#btnSubmitVerifySpinner`) and Toastr notification feedback upon submission.
+     - Server calculations remain 100% authoritative; JavaScript does not perform financial arithmetic.
+  3. **Reject Payment Modal Improvements (`resources/views/portal/payments/index.blade.php` & `show.blade.php`)**:
+     - Rejection modal displays Payment Code, Donor Name, Event Name, and Amount for context.
+     - Requires mandatory rejection reason with clear placeholder.
+     - Implemented button loading spinner and disabled state on submit.
+     - Refreshes DataTable and displays Toastr notification on success.
+  4. **Receipt Print & Download Actions (`resources/views/portal/payments/show.blade.php`)**:
+     - Added View Receipt, Print Receipt (`target="_blank"`), and Download Receipt buttons in the payment details header when an issued receipt exists.
+     - Enforced server-side permission gates: `view_receipts` for viewing and `print_receipts` for printing/downloading.
+  5. **Devotee Linking UI (`resources/views/portal/payments/show.blade.php`)**:
+     - Configured Select2 AJAX search targeting `route('portal.payments.search-persons')`.
+     - Displays currently linked devotee profile with direct link to devotee details.
+     - Provides a clean "Change Linked Devotee" collapsible interface for pending payments.
+     - **Strict Status Guard**: Devotee linking form and change actions are visible ONLY when the payment is in pending status (`STATUS_PENDING`). For verified, rejected, or reversed payments, the linking form is completely hidden from the UI.
+  6. **Voluntary Donation Support & Localization Parity**:
+     - Enhanced `show.blade.php` allocation card to distinguish between Voluntary Event Donations (`voluntary_event`) and Voluntary General Temple Donations (`voluntary_general`).
+     - Maintained 100% localization parity across `lang/en/portal.php` and `lang/bn/portal.php` for all new UI keys (`voluntary_general_donation`, `voluntary_general_donation_help`, `download_receipt`, `change_linked_devotee`, `current_linked_devotee`).
+  7. **Automated Feature Tests (`tests/Feature/PublicPortal/PublicPaymentTest.php`)**:
+     - Added 8 dedicated feature tests (92 assertions):
+       1. `test_admin_payment_datatable_actions_include_receipt_actions_for_verified_payments`: verifies receipt actions appear only for verified payments.
+       2. `test_admin_payment_datatable_actions_never_display_receipt_actions_for_pending_or_rejected_payments`: verifies receipt actions are never rendered on pending or rejected payments.
+       3. `test_admin_payment_datatable_actions_include_rich_verification_data_attributes`: verifies verification and rejection data attributes in DataTable rows.
+       4. `test_admin_payment_verification_modal_does_not_contain_obsolete_guest_checkbox`: verifies complete removal of obsolete guest checkbox and presence of structured modal sections.
+       5. `test_payment_details_view_shows_receipt_actions_only_when_receipt_exists`: verifies receipt header action visibility.
+       6. `test_payment_details_view_displays_voluntary_event_vs_voluntary_general_donation_cards`: verifies voluntary event vs general cards.
+       7. `test_payment_details_view_devotee_linking_ui_state`: verifies linking form is visible for pending and hidden for verified/rejected payments.
+       8. `test_localization_parity_for_step_3_new_ui_keys`: verifies bilingual key parity.
+     - Total `PublicPaymentTest` suite expanded to **49 tests (318 assertions)**.
+  8. **Verification & Regression Metrics**:
+     - `php artisan test --filter=PublicPayment`: **70 passed (431 assertions)** across `PublicPaymentSubmissionTest` (21 tests) and `PublicPaymentTest` (49 tests).
+     - Full application test suite (`php vendor/bin/phpunit`): **448 passed (2,563 assertions)** with ZERO failures, ZERO errors, and ZERO regressions.
+     - Code style: **100% PSR-12 code compliance** verified via `php vendor/bin/pint --test`.
+  9. **Current Status & Strict Boundaries**:
+     - **Increment 5 Step 3 is COMPLETED**.
+
+---
+
+### Public Portal — Increment 5, Step 4: Payment Reversal UI, Routes & Controller Integration
+
+- **Objective**: Integrate the existing payment reversal workflow into the Admin Panel with secure controller actions, routes, server authorization, and user interface.
+- **Key Deliverables Implemented**:
+  1. **Service Concurrency Hardening (`app/Services/CollectionPaymentService.php`)**:
+     - Hardened `reversePayment()` by introducing a pessimistic lock status recheck inside `DB::transaction(...)`:
+       ```php
+       $lockedPayment = CollectionPayment::where('id', $payment->id)->lockForUpdate()->firstOrFail();
+       if ($lockedPayment->status !== CollectionPayment::STATUS_VERIFIED) {
+           throw ValidationException::withMessages(['payment' => __('donations.only_verified_payments_can_be_reversed')]);
+       }
+       ```
+     - Enforces full rollback on any failure, prevents concurrent double reversals, updates status to `STATUS_REVERSED`, records `reversed_by`, `reversed_at`, and `reversal_reason`.
+     - Deactivates allocations (`is_active = false`), recalculates affected pledge status (restoring unpaid balance), voids official receipts (`voidReceipt()`), generates compensating balanced inverse journal vouchers via `FinancePostingService` / `JournalEntryService`, and records comprehensive audit logs.
+  2. **Route Integration (`routes/web.php`)**:
+     - Added `Route::post('/{payment}/reverse', [PublicPaymentController::class, 'reverse'])->name('reverse');` under the `portal.payments.` route group.
+  3. **Controller & Authorization Integration (`app/Http/Controllers/PublicPortal/PublicPaymentController.php`)**:
+     - Protected endpoint with middleware `permission:reverse_payments|reverse_collections`.
+     - Handled requests via `ReversePublicPaymentRequest` (authorizes `super_admin`, `reverse_payments`, `reverse_collections`, `reverse_transactions` and validates `reversal_reason` min:3, max:1000).
+     - Returns JSON `{ success: true, message: ..., payment: { id, payment_code, status } }` for AJAX / DataTables calls, or redirect with flash message for standard form submissions.
+     - Eager-loaded `reverser` and `journalEntry.reversedByJournal.lines.account` in `show()` view query.
+     - Eager-loaded `journalEntry` in `index()` query to determine reversal eligibility.
+     - Updated `formatActionsColumn()`: Renders `.btn-reverse-payment` strictly when `$payment->status === CollectionPayment::STATUS_VERIFIED`, the payment has an active posted journal, and the user has reversal permission. Injects rich data attributes (`data-id`, `data-code`, `data-amount`, `data-donor`, `data-event`, `data-method`, `data-trx`, `data-receipt`, `data-type`, `data-pledge-code`, `data-pledged`, `data-paid`, `data-due`, `data-url`).
+  4. **Admin Payment DataTable & Reversal Modal UI (`resources/views/portal/payments/index.blade.php`)**:
+     - Added `#reversePaymentModal` dialog (`modal-lg`) with prominent warning banner (`reversal_warning_title`, `reversal_warning_body`), payment summary grid, pledge restoration vs. voluntary donation explanation, and mandatory `reversal_reason` textarea.
+     - Added jQuery event handler for `.btn-reverse-payment` populating modal fields and configuring form action URL.
+     - Added AJAX form submit handler with loading spinner (`#btnSubmitReverseSpinner`), Toastr feedback, and automatic DataTable refresh (`table.ajax.reload(null, false)`).
+  5. **Payment Details View Reversal Presentation (`resources/views/portal/payments/show.blade.php`)**:
+     - Header: If payment is reversed, displays a voided receipt badge (`receipt_status_voided`) rather than active receipt action buttons.
+     - Reversal Information Banner: Displays a clear secondary/danger alert with `reversal_reason`, `reversed_by`, `reversed_at`, and direct link to the compensating reversal journal entry.
+     - Compensating Reversal Ledger Voucher: Renders a dedicated card displaying the inverse balanced journal voucher with full account lines (Debits and Credits) and voucher badge.
+     - Actions Sidebar: Renders Reverse Payment button only when payment is verified and user has reversal permission; hides reverse action when payment is already reversed.
+     - Audit Sidebar: Displays `reversed_by`, `reversed_at`, and `reversal_reason` fields when reversed.
+     - Modal: Added `#reversePaymentModal` with submit spinner for single payment detail page workflow.
+  6. **Localization Parity (`lang/en/portal.php` & `lang/bn/portal.php`)**:
+     - Added 100% bilingual parity for new UI keys: `reversal_warning_title`, `reversal_warning_body`, `reversal_pledge_restoration_help`, `reversal_voluntary_help`, and `reversal_receipt_voided_help`.
+  7. **Automated Feature Tests (`tests/Feature/PublicPortal/PublicPaymentTest.php`)**:
+     - Added 12 dedicated feature tests (143 assertions):
+       1. `test_authorized_user_can_reverse_verified_payment_via_route`: Verifies both AJAX/JSON and standard redirect flows for authorized users (`treasurer` and `super_admin`).
+       2. `test_unauthorized_user_cannot_reverse_payment`: Verifies 403 Forbidden for devotees and unauthorized admins, and redirect to login for guests.
+       3. `test_pending_or_rejected_or_reversed_payment_cannot_be_reversed`: Verifies 422 Unprocessable Entity when attempting to reverse pending, rejected, or already reversed payments.
+       4. `test_reversal_requires_valid_reason_between_3_and_1000_chars`: Verifies 422 validation failure on missing, whitespace-only, or too-short reasons (< 3 chars).
+       5. `test_reversal_creates_balanced_compensating_journal_entry_and_preserves_original_journal`: Verifies original journal is preserved as `reversed` and compensating journal is created with exact inverted lines and balanced debits/credits.
+       6. `test_reversal_restores_pledge_outstanding_balance`: Verifies allocation deactivation and pledge recalculation restoring outstanding balance and `unpaid` status.
+       7. `test_voluntary_event_and_general_donation_reversal_leaves_pledges_untouched`: Verifies voluntary donations reversals do not mutate pledge balances.
+       8. `test_reversal_preserves_original_receipt_and_marks_it_voided`: Verifies receipt is preserved in DB and marked `voided` with audit trail (`voided_by`, `void_reason`, `voided_at`).
+       9. `test_reversed_payment_details_view_renders_reversal_audit_and_compensating_journal`: Verifies UI alerts, voided receipt badge, compensating journal voucher table, and hidden reverse actions on reversed payments.
+       10. `test_datatable_actions_column_includes_reverse_button_only_for_verified_posted_payments`: Verifies reverse button is rendered exclusively for verified payments with posted journals and hidden for pending, rejected, reversed, and unauthorized states.
+       11. `test_concurrency_lock_for_update_prevents_double_reversal`: Verifies second concurrent reversal attempt throws `ValidationException`.
+       12. `test_localization_parity_for_step_4_reversal_ui_keys`: Verifies 100% key and text parity in EN and BN.
+     - Total `PublicPaymentTest` suite expanded to **61 tests (461 assertions)**.
+  8. **Verification & Regression Metrics**:
+     - `php artisan test --filter=PublicPayment`: **82 passed (574 assertions)** across `PublicPaymentSubmissionTest` (21 tests) and `PublicPaymentTest` (61 tests).
+     - Full application test suite (`php vendor/bin/phpunit`): **460 passed (2,706 assertions)** with ZERO failures, ZERO errors, and ZERO regressions.
+     - Code style: **100% PSR-12 code compliance** verified via `php vendor/bin/pint --test`.
+  9. **Current Status & Strict Boundaries**:
+     - **Increment 5 Step 4 is COMPLETED**.
+     - All four steps of Increment 5 (Step 1: Security & Validation, Step 2: Controller & Routes, Step 3: Admin Payment Verification UI, Step 4: Payment Reversal UI, Routes & Controller Integration) are implemented and fully verified.
+     - **STOP Condition Applied**: Awaiting explicit user review and approval before considering Increment 5 complete or proceeding to Increment 6.
+
+
+---
+
+## Public Portal — Increment 6: Payment Details & Complaint Management (COMPLETED)
+
+- **Objective**: Complete end-to-end implementation of Public Portal Increment 6 encompassing:
+  1. **Feature A — Donor Payment Details & History Breakdown**: Complete breakdown of submitted payments with full status handling (`pending_verification`, `verified`, `rejected`, `reversed`), allocation targets, pledge balances, voluntary donation summaries, verified paid amounts, remaining due, and IDOR-protected View/Download receipt actions for active verified receipts.
+  2. **Feature B — Authenticated Public Complaint Submission & History**: Structured 4 complaint categories (`payment_not_updated`, `wrong_paid_amount`, `wrong_due_amount`, `other`), unique non-sequential opaque tracking reference generation (`CMP-YYYY-XXXXXXXX`), anti-duplicate submission protection, payment ownership validation, donor complaint listing, detailed timeline with admin replies visible and internal notes strictly hidden.
+  3. **Feature C — Admin Complaint Management**: DataTables-powered complaint index strictly without row number / `#` column, status/category/event/assignee filtering, quick actions for Mark Under Review, Respond to Complainant, Resolve (mandatory note), Reject (mandatory reason), Add Internal Note (isolated private visibility), and Close (terminal status immutability).
+  4. **Strict Financial Integrity Invariants**: Complaints are strictly non-financial records. Complaint actions never mutate `CollectionPayment` records, allocations, pledge balances, journal entries, or receipt void states.
+
+### Key Deliverables Implemented
+
+1. **Database Schema & Migrations**:
+   - `complaint_activities` table (`2026_11_15_000034_create_complaint_activities_table.php`):
+     - `complaint_id`: Foreign key to `complaints` (`cascadeOnDelete`).
+     - `actor_id`: Foreign key to `users` (`nullOnDelete`).
+     - `activity_type`: Enum (`submission`, `reply`, `status_change`, `internal_note`, `assignment`, `resolution`, `rejection`).
+     - `previous_status`, `new_status`: Strings.
+     - `content`: Text of reply, note, or reason.
+     - `visibility`: Enum (`donor`, `internal`) ensuring airtight segregation of internal committee notes from public devotee view.
+     - Timestamps and composite index `['complaint_id', 'visibility']`.
+   - Executed migration cleanly on MySQL database (`188.65ms DONE`).
+
+2. **Domain Models**:
+   - `app/Models/ComplaintActivity.php`:
+     - Relationships: `complaint()`, `actor()`.
+     - Scopes: `donorVisible()`, `internalOnly()`.
+     - Helpers: `isDonorVisible()`, `isInternal()`.
+   - `app/Models/Complaint.php`:
+     - Added categories: `CATEGORY_PAYMENT_NOT_UPDATED`, `CATEGORY_WRONG_PAID_AMOUNT`, `CATEGORY_WRONG_DUE_AMOUNT`, `CATEGORY_OTHER`.
+     - Added status: `STATUS_REPLIED`.
+     - Added opaque non-sequential tracking generator: `generateDonorTrackingNumber()` (`CMP-YYYY-XXXXXXXX` with 8 random alphanumeric characters).
+     - Preserved backward-compatible sequential generator: `generateTrackingNumber()` (`CMP-YYYY-0001`).
+     - Added relationships: `activities()`, `donorVisibleActivities()`, `internalNotes()`.
+     - Added status helper methods: `isSubmitted()`, `isUnderReview()`, `isReplied()`, `isResolved()`, `isRejected()`, `isClosed()`.
+
+3. **Form Requests & Security**:
+   - `app/Http/Requests/Public/StoreDonorComplaintRequest.php`:
+     - Enforces donor authentication and directory linking.
+     - Validates categories (`payment_not_updated`, `wrong_paid_amount`, `wrong_due_amount`, `other`).
+     - Enforces server-side payment ownership check (devotee can only link payments they submitted).
+     - Anti-duplicate submission check (blocks identical descriptions submitted within 10 minutes).
+     - Attachment validation: images/PDF up to 5MB.
+   - `app/Http/Requests/PublicPortal/AdminComplaintReplyRequest.php`:
+     - RBAC authorization (`respond_complaints`, `reply_public_complaints`, `manage_complaints`, `super_admin`).
+     - Terminal status immutability guard (blocks replying to `resolved`, `rejected`, or `closed` complaints).
+     - Validates reply content (min:3, max:5000) and optional status progression (`under_review`, `replied`, `resolved`).
+   - `app/Http/Requests/PublicPortal/AdminComplaintStatusRequest.php`:
+     - RBAC authorization (`resolve_complaints`, `resolve_public_complaints`, `manage_complaints`, `super_admin`).
+     - Auto-infers status from named routes (`portal.complaints.resolve`, `reject`, `close`, `under-review`).
+     - Terminal status immutability guard.
+     - Mandatory resolution note (min:3, max:5000).
+     - Mandatory rejection reason (min:3, max:5000).
+   - `app/Http/Requests/PublicPortal/AdminComplaintNoteRequest.php`:
+     - RBAC authorization for private notes (`manage_complaints`, `view_complaints`, `super_admin`).
+     - Validates note content (min:3, max:5000).
+
+4. **Controllers & Routes**:
+   - `app/Http/Controllers/Public/PaymentSubmissionController.php`:
+     - Added `show(Request $request, string $paymentCode)`: Detailed payment view with IDOR protection, pledge breakdown, verified vs pending allocation segregation, and voluntary contribution card.
+     - Added `downloadReceipt(string $receiptNumber)`: Dedicated receipt download endpoint with active receipt verification (`STATUS_VERIFIED` only, non-voided only) and IDOR ownership verification.
+     - Hardened `receipt()` with non-voided verified status guard.
+     - Updated `history()` query eager-loading (`allocations.pledge`, `allocations.event`, `reverser`, `rejecter`).
+   - `app/Http/Controllers/Public/PublicComplaintController.php`:
+     - `index()`: Authenticated devotee complaint listing with status, category, and search filters.
+     - `create()`: Complaint submission form pre-loading donor's payments and published events.
+     - `store()`: Atomic creation of complaint record and initial `ComplaintActivity` (`visibility: donor`), with audit logging.
+     - `show()`: Complaint detail view with IDOR verification, strictly passing only `$complaint->donorVisibleActivities` (internal notes completely isolated).
+   - `app/Http/Controllers/PublicPortal/ComplaintController.php`:
+     - Added `markUnderReview()` action.
+     - Updated `respond()`, `resolve()`, `rejectComplaint()`, `close()`, and `addInternalNote()` to record structured `ComplaintActivity` entries.
+     - Enforced terminal status immutability across all endpoints.
+     - DataTables formatters updated with `replied` status badge, payment context, and action buttons.
+   - `routes/web.php`:
+     - Registered `public.payments.show` (`GET /my-contributions/{paymentCode}`).
+     - Registered `public.payments.receipt.download` (`GET /my-contributions/receipt/{receiptNumber}/download`).
+     - Registered `public.complaints.index` (`GET /my-complaints`).
+     - Registered `public.complaints.create` (`GET /my-complaints/create`).
+     - Registered `public.complaints.store` (`POST /my-complaints`).
+     - Registered `public.complaints.show` (`GET /my-complaints/{reference}`).
+     - Registered admin route aliases: `under-review` and `reply`.
+
+5. **User Interface Implementation**:
+   - `resources/views/public/payments/show.blade.php`:
+     - Full payment breakdown: payment reference, date/time, amount, method, sender mobile, transaction reference, receiver account details, status badge with contextual alerts (rejection reason, reversal info & voided receipt note, pending notice).
+     - Allocation & pledge summary with verified paid amount and remaining due calculations.
+     - Voluntary contribution card for unpledged event or general donations.
+     - Receipt View and Download action buttons (rendered only for verified payments with active receipts).
+     - Direct "Report Issue" link to pre-fill complaint form.
+   - `resources/views/public/payments/history.blade.php`:
+     - Added `reversed` filter option in status dropdown.
+     - Added `reversed` badge styling.
+     - Actions column updated with View Receipt and Download Receipt buttons for verified payments, and eye icon button linking to full payment details.
+     - Modal updated with reversal information and "View Full Breakdown" button.
+   - `resources/views/public/complaints/index.blade.php`:
+     - Devotee complaint listing with reference code, category badge, related payment/event link, submitted date, status badge, latest admin reply, and view action.
+     - Filter card for status, category, and search.
+     - Empty state with direct "Submit Complaint" action.
+   - `resources/views/public/complaints/create.blade.php`:
+     - 4 complaint categories dropdown, optional related payment dropdown, optional related event dropdown, description textarea with dynamic character counter (min:5, max:2000), file attachment upload, financial disclaimer alert, and submit button loading state.
+   - `resources/views/public/complaints/show.blade.php`:
+     - Complaint details header with reference, status badge, category, submitted timestamp.
+     - Complainant and related payment/event context card.
+     - Original inquiry description and attachment download link.
+     - Chronological communication timeline displaying donor-visible submissions, status changes, and official committee replies (strictly zero internal notes).
+   - `resources/views/portal/complaints/index.blade.php`:
+     - Server-side DataTables strictly without row number / `#` column.
+     - Filter controls for status (including `replied`), category, priority, assigned staff, and event.
+   - `resources/views/portal/complaints/show.blade.php`:
+     - Official admin response drafting form with resolution checkbox.
+     - Private internal notes thread.
+     - Unified activity timeline with distinct visual styling for internal notes vs donor-visible activities.
+     - Action buttons for Mark Under Review, Resolve (modal), Reject (modal), and Close.
+     - Terminal status immutability alert when complaint is resolved, rejected, or closed.
+   - `resources/views/layouts/public.blade.php`:
+     - Added "My Complaints" navigation link alongside "My Contributions" for authenticated devotees.
+
+6. **Bilingual Localization (EN & BN)**:
+   - 100% key and text parity maintained across `lang/en/portal.php` and `lang/bn/portal.php` for:
+     - Complaint categories: `payment_not_updated`, `wrong_paid_amount`, `wrong_due_amount`, `other`.
+     - Complaint statuses: `submitted`, `under_review`, `replied`, `resolved`, `rejected`, `closed`.
+     - Admin complaint module labels: `mark_under_review`, `terminal_status_error`, `activity_history`, `internal_note_badge`, `donor_visible_badge`, `rejection_reason_required`, `resolution_note_required`.
+     - Public donor portal labels: `my_complaints`, `my_complaints_subtitle`, `submit_complaint`, `complaint_reference`, `timeline`, `original_inquiry`, `status_reversed`, `reversal_reason_label`, `reversed_at_label`, `anti_duplicate_error`, `invalid_payment_ownership`, `voluntary_contribution_details`.
+
+7. **Automated Feature Tests**:
+   - `tests/Feature/PublicPortal/DonorPaymentDetailsTest.php` (9 tests, 32 assertions):
+     - Guest redirection to login from payment history and details.
+     - Donor can view own payment history and filter by `reversed` status.
+     - Donor can view own payment details breakdown page.
+     - Cross-donor cannot view another donor's payment details (403 Forbidden).
+     - Verified payment with receipt exposes View and Download receipt actions.
+     - Reversed or pending payment does NOT expose active receipt; download receipt endpoint returns 403/404.
+     - Cross-donor cannot download receipt of another donor (IDOR check).
+     - Only verified allocations count towards paid amount; pending/rejected/reversed allocations do not.
+     - Voluntary contributions displayed cleanly without pledge.
+   - `tests/Feature/PublicPortal/DonorComplaintTest.php` (9 tests, 40 assertions):
+     - Guest is redirected to login or denied.
+     - Donor can view own complaints list.
+     - Donor can submit valid complaint with `CMP-YYYY-XXXXXXXX` reference format.
+     - Invalid complaint data is rejected (short description, invalid category).
+     - Donor cannot attach another donor's payment.
+     - Donor can view own complaint details and activity timeline.
+     - Cross-donor cannot view another donor's complaint (403 Forbidden).
+     - Admin replies are visible to donor while internal notes are strictly hidden.
+     - Anti-duplicate submission is prevented (identical description within 10 minutes rejected).
+   - `tests/Feature/PublicPortal/AdminComplaintManagementTest.php` (11 tests, 63 assertions):
+     - Guest cannot access admin complaints.
+     - Devotee without permission is denied.
+     - Authorized admin can view complaints DataTable strictly without `#` column.
+     - Admin can filter complaints by status, category, and event.
+     - Admin can assign complaint to staff.
+     - Admin can mark complaint under review.
+     - Admin can submit reply to donor.
+     - Admin can resolve complaint with mandatory note.
+     - Admin can reject complaint with mandatory reason.
+     - Terminal status immutability: resolved/rejected/closed complaints cannot be modified.
+     - Admin can add private internal notes with isolated visibility.
+   - `tests/Feature/PublicPortal/ComplaintFinancialIntegrityTest.php` (1 test, 10 assertions):
+     - Full complaint lifecycle (submission, under review, reply, internal notes, resolution, closure) strictly never modifies payment status, payment amount, allocation status, allocation amount, pledge status, pledge amount, receipt void state, journal entries count, or journal lines count.
+
+8. **Verification & Regression Metrics**:
+   - Increment 6 Dedicated Test Suite: **30 passed (145 assertions)** across the 4 new test classes.
+   - Total Public Portal Feature Test Suite: **221 passed (1,243 assertions)** with 100% PASS rate.
+   - Full Application Test Suite (`php artisan test`): **490 passed (2,851 assertions)** with ZERO failures, ZERO errors, and ZERO regressions across the entire application.
+   - Code Style (`php vendor/bin/pint --test`): **100% PSR-12 code compliance** (`{"tool":"pint","result":"passed"}`).
+
+9. **Current Status**:
+   - **Increment 6 is 100% COMPLETE**.
+   - Awaiting explicit user review and approval before proceeding to subsequent increments.
+
+---
+
+## Public Portal - Increment 6: Post-Implementation Security & Integrity Corrections (COMPLETED)
+
+- **Objective**: Address security, authorization, and data integrity items identified during post-implementation inspection of Increment 6 (Payment Details & Complaint Management), strictly preserving all approved Increment 5 and Increment 6 functionality without breaking regressions.
+
+1. **Private Complaint Attachment Security**:
+   - **Private Storage**: Updated `PublicComplaintController::store()` to save attachments directly to private storage (`local` disk: `storage/app/complaints/...`), completely avoiding the `public` storage symlink.
+   - **Public Symlink Elimination**: Removed all direct `asset('storage/...')` and `Storage::disk('public')->url(...)` calls for complaint attachments. Updated `Complaint::getAttachmentUrlAttribute()` to reference the authenticated admin route.
+   - **Dedicated Secure Donor Download**: Implemented `GET /my-complaints/{reference}/attachment` (`public.complaints.attachment`) in `PublicComplaintController::downloadAttachment()`.
+     - Validates session authentication (`auth()->check()`).
+     - Strictly enforces IDOR ownership: `$isOwner = ($donor && (int) $complaint->person_id === (int) $donor->id);` or authorized staff permission (`view_complaints|view_public_complaints`).
+     - Cross-donor unauthorized download attempts return HTTP 403 Forbidden.
+     - Unauthenticated requests are redirected to login.
+     - Protects against directory traversal via `str_contains($path, '..')` (HTTP 400 Bad Request).
+     - Checks `Storage::disk('local')` with safe backward-compatibility fallback to `Storage::disk('public')` for legacy files.
+   - **Dedicated Secure Admin Download**: Implemented `GET /admin/portal/complaints/{complaint}/attachment` (`portal.complaints.attachment`) in `ComplaintController::downloadAttachment()`.
+     - Gated by middleware `permission:view_complaints|view_public_complaints`.
+     - Protected against path traversal.
+     - Downloads and previews attachments safely without exposing raw server file paths.
+   - **Server-Side Validation**: `StoreDonorComplaintRequest` validates `'attachment' => ['nullable', 'file', 'mimes:jpeg,jpg,png,pdf', 'max:5120']`.
+
+2. **Complaint Reference Database Uniqueness & Concurrency Safety**:
+   - Verified that `complaints.tracking_number` possesses a database-level `UNIQUE` index in migration `2026_11_02_000030_create_complaints_table.php` (`$table->string('tracking_number', 32)->unique();`).
+   - Hardened `PublicComplaintController::store()` with a 5-attempt concurrency retry loop catching `QueryException` (duplicate key / code 23000) ensuring atomic uniqueness even under extreme microsecond concurrency.
+
+3. **Complaint Activity History Preservation**:
+   - Updated migration `2026_11_15_000034_create_complaint_activities_table.php` foreign key constraint from `cascadeOnDelete()` to `restrictOnDelete()` (`$table->foreignId('complaint_id')->constrained('complaints')->restrictOnDelete()`).
+   - Hard deletion (`$complaint->forceDelete()`) is now blocked at the database level by foreign key integrity constraints whenever activity logs exist.
+   - Model `Complaint` uses `SoftDeletes`, ensuring ordinary deletion (`$complaint->delete()`) soft-deletes the record and preserves all activity and audit trails intact.
+   - Confirmed no hard-delete actions or routes exist in `PublicComplaintController` or admin `ComplaintController`.
+
+4. **Related Payment & Event Consistency**:
+   - Enforced in `StoreDonorComplaintRequest::withValidator()`:
+     - Payment ownership: verified that `payment_code` belongs to authenticated donor.
+     - Event vs Payment linkage: if both `payment_code` and `event_id` are supplied, the selected event must match `$payment->event_id`. If payment has no event, selecting an event is rejected with `portal.public.event_payment_mismatch`.
+     - Event publication status: selected `event_id` must be active, published (`publication_status === 'published'`), and not in draft status.
+   - In `PublicComplaintController::store()`, `$event` is derived from `$payment->event` when a payment is linked.
+
+5. **Admin Permissions & Assignment Hardening**:
+   - In `ComplaintController::assign()`:
+     - Enforces that `assigned_to` belongs to an active user (`status === 'active'`) with staff/admin roles (`super_admin`, `temple_admin`, `committee_member`, `treasurer`) or complaint permissions (`view_complaints`, `manage_complaints`, `assign_complaints`).
+     - Ordinary devotees without permissions are strictly rejected from assignment (HTTP 422 / error).
+     - Access to `assign` action is server-enforced by middleware `permission:assign_complaints|manage_complaints|manage_public_complaints`.
+     - Creates `ComplaintActivity` (`assignment`) recording both the previous assignee and the new assignee: `"Assignment changed from [Previous] to [New]"` or `"Assigned to [New]"`.
+     - Logs assignment action with actor, previous assignee, and new assignee in `AuditLogger`.
+   - Updated staff user dropdown queries in `index()` and `show()` to filter out ordinary devotees.
+
+6. **Anti-Duplicate Submission**:
+   - Idempotency check in `StoreDonorComplaintRequest` strictly configured for a 10-minute duplicate window (`subMinutes(10)`).
+   - Scoped strictly to `person_id === $donor->id`, ensuring different donors submitting similar or identical issue descriptions are never falsely blocked.
+
+7. **Financial Ledger Invariants Reconfirmed**:
+   - Zero complaint workflows modify `CollectionPayment`, `PaymentAllocation`, `Pledge`, `Receipt`, `JournalEntry`, or `JournalLine`.
+   - Verified that all ledger entries remain 100% immutable throughout the entire complaint lifecycle.
+
+8. **Localization Parity**:
+   - Maintained full parity across `lang/en/portal.php` and `lang/bn/portal.php` for:
+     - `no_attachment_file`, `event_payment_mismatch`, `invalid_or_unpublished_event`.
+     - `status_updated`, `invalid_assignee`, `internal_note_saved`, `unassigned`.
+
+9. **Verification & Regression Metrics**:
+   - `tests/Feature/PublicPortal/DonorComplaintTest.php`: **16 passed (58 assertions)**.
+   - `tests/Feature/PublicPortal/AdminComplaintManagementTest.php`: **15 passed (74 assertions)**.
+   - `tests/Feature/PublicPortal/ComplaintFinancialIntegrityTest.php`: **1 passed (10 assertions)**.
+   - `tests/Feature/PublicPortal/DonorPaymentDetailsTest.php`: **9 passed (32 assertions)**.
+   - Dedicated Increment 6 Test Suite: **41 passed (174 assertions)**.
+   - Full Application Test Suite (`php artisan test`): **501 passed (2,880 assertions)** with ZERO failures, ZERO errors, and ZERO regressions across the entire application.
+   - Code Style (`php vendor/bin/pint --test`): **100% PSR-12 code compliance** (`{"tool":"pint","result":"passed"}`).
+
+10. **Public Portal Demo Dataset & Manual QA Readiness**:
+    - **Dedicated Demo Seeder**: Created `database/seeders/PublicPortalDemoSeeder.php` implementing safe, repeatable, and idempotent seeding of all Public Portal scenarios.
+    - **Administrative Accounts**: Ensured `admin@temple.local` (`Admin@123456`, `super_admin`) and `manager@temple.local` (`Manager@123456`, `temple_admin`).
+    - **Receiver Accounts**: Created 4 active, verified receiver accounts: bKash Merchant (`01711001122`), Nagad Merchant (`01811002233`), Rocket Merchant (`01911003344`), and Bank Current Account (`4401200033445`, Sonali Bank PLC).
+    - **Events Catalog**: Created 4 distinct events:
+      - `Sharodiya Durga Puja 2026` (`durga-puja-2026`, active, published, open for public payments).
+      - `Shyama Kali Puja & Deepavali 2026` (`shyama-kali-puja-2026`, upcoming, published).
+      - `Shri Krishna Janmashtami 2026` (`janmashtami-festival-2026`, closed, published archive).
+      - `Saraswati Puja Planning 2027` (`saraswati-puja-planning-2027`, draft, unpublished — hidden from public).
+    - **10 Fictional Donors with Linked Person & User Profiles** (password: `Donor@123456`):
+      1. `subir.donor@temple.local` (Subir Ghosh, `public`, fully paid pledge: 10,000 / 10,000, 0 due, verified).
+      2. `ananya.donor@temple.local` (Ananya Roy, `public`, partially paid: 8,000 / 15,000, 7,000 due, verified).
+      3. `bikash.donor@temple.local` (Bikash Chandra Das, `anonymous`, fully paid: 12,000 / 12,000, masked as "Anonymous Donor").
+      4. `sunil.donor@temple.local` (Sunil Kumar Sen, `private`, partially paid: 10,000 / 20,000, masked as "Private Devotee").
+      5. `prabir.donor@temple.local` (Prabir Sengupta, `public`, pending verification: 8,000 BDT, private proof upload).
+      6. `tapash.donor@temple.local` (Tapash Paul, `public`, rejected payment: 5,000 BDT, rejected reason displayed).
+      7. `debabrata.donor@temple.local` (Debabrata Bhattacharya, `public`, reversed payment: 6,000 BDT, voided receipt, restored due).
+      8. `madhuri.donor@temple.local` (Madhuri Chakraborty, `public`, voluntary event contribution without pledge: 3,000 BDT).
+      9. `kalyan.donor@temple.local` (Kalyan Kumar Bose, `public`, excess payment: 7,000 BDT -> 5,000 pledge + 2,000 voluntary).
+      10. `gopal.donor@temple.local` (Gopal Chandra Dey, `public`, unpaid pledge: 0 / 5,000, 5,000 due).
+    - **Collection Summary Arithmetic**:
+      - Total Pledged: `86,000.00 BDT`
+      - Verified Pledge Collections: `45,000.00 BDT`
+      - Excess Contributions: `2,000.00 BDT`
+      - Voluntary Event Donations: `3,000.00 BDT`
+      - Total Verified Collections: `50,000.00 BDT` (58.14%)
+      - Pending Collections: `8,000.00 BDT`
+      - Outstanding Pledges: `41,000.00 BDT`
+    - **5 Complaint Management Scenarios**:
+      1. `CMP-DEMO-001`: Payment Not Updated (`submitted`, Prabir Sengupta).
+      2. `CMP-DEMO-002`: Wrong Paid Amount (`under_review`, Tapash Paul, with private PDF bank statement attachment).
+      3. `CMP-DEMO-003`: Wrong Due Amount (`replied`, Ananya Roy, with admin response & internal note).
+      4. `CMP-DEMO-004`: Other (`resolved`, Kalyan Kumar Bose, with resolution note).
+      5. `CMP-DEMO-005`: General Inquiry (`rejected`, Gopal Chandra Dey, with policy rationale).
+    - **Safe Cleanup Mechanism**: Created `app/Console/Commands/CleanupPublicPortalDemoData.php` (`php artisan demo:public-portal-cleanup`) safely removing ONLY demo-tagged records without modifying real financial transactions or users.
+    - **Documentation**: Generated complete manual QA testing guide in `PUBLIC_PORTAL_DEMO_GUIDE.md`.
+    - **Automated Verification**: Created `tests/Feature/PublicPortal/DemoDataSetupTest.php` passing all 30 assertions.
+
+11. **STOP Condition Applied**:
+    - Public Portal Demo Data Setup & Manual QA Readiness is 100% COMPLETE.
+    - Increments 1 through 6 are fully verified and ready for manual owner exploration.
+    - STRICT PROHIBITION OBSERVED: Zero business features modified. Increment 7 NOT started.
+    - Awaiting explicit user feedback and approval.
+
+12. **Devotee Name & Mobile Number Select2 Remote AJAX Search Integration**:
+    - **Public Event Donor Search**: Replaced plain `#donorSearchInput` in `resources/views/public/events/show.blade.php` with a remote Select2 dropdown querying `route('public.events.donors.search', $event->slug)` in real time.
+    - **Name & Mobile Search Backend**: Implemented `EventController::searchDonors` and updated `EventCollectionReportService::getDonorCollectionReport` to search directly against devotee names (English and Bengali), mobile numbers (`phone`, `public_donor_phone`, `sender_mobile`), and codes.
+    - **Privacy Protection Maintained**: Respects `anonymous` and `private` visibility rules; personal mobile numbers and confidential identities are strictly masked from public suggestions.
+    - **Real-Time Suggestions & Synchronized Table Filtering**: Select2 displays formatted suggestions with **Devotee Name on top** and **Mobile Number below** (`<i class="bi bi-telephone"></i>`). PLG numbers (`PLG-2026-XXXX`) have been completely removed from the selection options per UI requirements. Selecting a suggestion narrows and highlights the corresponding donor row in `#donorReportTable`; clearing restores all rows.
+    - **Select2 Box Width & UI Layout Refinement**: Fixed the search box container width to properly fill the available header space (`flex-grow-1`, max-width: 650px) alongside the status filter without wrapping or leaving empty right margins. Added enhanced contrast styling on highlighted options for readability.
+    - **Global Admin & Portal Devotee Search Parity**:
+      - Updated `PersonController::search` (`route('people.search')`) to include mobile numbers in Select2 suggestion text (`{name} - {phone} ({code})`).
+      - Updated `PublicPaymentController::searchPersons` (`route('portal.payments.search-persons')`) with mobile numbers and localized names.
+      - Updated `resources/views/portal/complaints/show.blade.php` link devotee select with remote Select2 search.
+    - **Select2 Asset Integration in Public Layout**: Added Select2 CSS and JS bundles to `resources/views/layouts/public.blade.php` along with bilingual `select2i18n` configurations in `TempleConfig`.
+    - **Automated Test Coverage**: Created `tests/Feature/PublicPortal/EventDonorSearchTest.php` (8 tests, 25 assertions) verifying bilingual name search, phone search, privacy masking, and admin search endpoints. 100% clean pass across all 241 Public Portal tests and Laravel Pint PSR-12 code hygiene.
+
+13. **Temple Emblem Icon & Sacred Symbol High-Contrast Display Fix**:
+    - **Identified Root Cause**: In five key public UI locations (Home hero welcome badge, Hero showcase card, CTA card, Public footer, and Event details showcase banner), `.temple-emblem` had inline `background: var(--temple-gold);`, while the CSS class defined `color: var(--temple-gold);`. The identical text color and background color caused the sacred `ॐ` emblem symbol to render completely invisible (solid circle).
+    - **High-Contrast Styling Enforced**: Explicitly added `color: #ffffff;` inline and updated `public/assets/css/temple-theme.css` with selector `.temple-emblem[style*="background: var(--temple-gold)"] { color: #ffffff !important; border-color: rgba(255, 255, 255, 0.5) !important; }`.
+    - **Cross-Platform Font Stack**: Ensured robust Devanagari font fallbacks (`Hind Siliguri`, `Segoe UI`, `Noto Sans Devanagari`, Arial) for crisp glyph rendering across all operating systems and browsers.
+    - **Full Verification**: All Public Portal tests pass (242 tests, 1,331 assertions) and Pint PSR-12 code style passed cleanly.

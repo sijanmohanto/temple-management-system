@@ -379,6 +379,15 @@ body {
     font-weight: 800;
     font-size: 1.2rem;
     border: 2px solid var(--temple-saffron);
+    line-height: 1;
+    font-family: "Hind Siliguri", "Segoe UI", "Noto Sans Devanagari", Arial, sans-serif;
+    user-select: none;
+}
+
+.temple-emblem[style*="background: var(--temple-gold)"],
+.temple-emblem[style*="background:var(--temple-gold)"] {
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
 }
 
 /* Role Badges */
@@ -494,6 +503,25 @@ body {
 .select2-container--bootstrap-5 .select2-dropdown .select2-results__option--highlighted {
     background-color: var(--temple-maroon) !important;
     color: #ffffff !important;
+}
+
+.select2-container--bootstrap-5 .select2-dropdown .select2-results__option--highlighted .text-muted,
+.select2-container--bootstrap-5 .select2-dropdown .select2-results__option--highlighted .text-dark {
+    color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.select2-container--bootstrap-5 .select2-dropdown .select2-results__option--highlighted .text-primary {
+    color: #fef08a !important;
+}
+
+.donor-search-select2-wrap .select2-container {
+    width: 100% !important;
+}
+
+.donor-search-select2-wrap .select2-selection {
+    height: 38px !important;
+    display: flex !important;
+    align-items: center;
 }
 
 .select2-container--bootstrap-5 .select2-dropdown {

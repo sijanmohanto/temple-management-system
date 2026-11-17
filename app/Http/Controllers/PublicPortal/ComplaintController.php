@@ -3,7 +3,11 @@
 namespace App\Http\Controllers\PublicPortal;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\PublicPortal\AdminComplaintNoteRequest;
+use App\Http\Requests\PublicPortal\AdminComplaintReplyRequest;
+use App\Http\Requests\PublicPortal\AdminComplaintStatusRequest;
 use App\Models\Complaint;
+use App\Models\ComplaintActivity;
 use App\Models\Event;
 use App\Models\Person;
 use App\Models\User;
@@ -13,18 +17,21 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 class ComplaintController extends Controller implements HasMiddleware
 {
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:view_complaints', only: ['index', 'show']),
-            new Middleware('permission:manage_complaints', only: ['updatePriority', 'addInternalNote', 'linkPerson', 'destroy']),
-            new Middleware('permission:assign_complaints|manage_complaints', only: ['assign']),
-            new Middleware('permission:respond_complaints|manage_complaints', only: ['respond']),
-            new Middleware('permission:resolve_complaints|manage_complaints', only: ['resolve', 'rejectComplaint', 'close']),
+            new Middleware('permission:view_complaints|view_public_complaints', only: ['index', 'show', 'downloadAttachment']),
+            new Middleware('permission:manage_complaints|manage_public_complaints', only: ['updatePriority', 'addInternalNote', 'linkPerson', 'markUnderReview']),
+            new Middleware('permission:assign_complaints|manage_complaints|manage_public_complaints', only: ['assign']),
+            new Middleware('permission:respond_complaints|reply_public_complaints|manage_complaints|manage_public_complaints', only: ['respond', 'reply']),
+            new Middleware('permission:resolve_complaints|resolve_public_complaints|manage_complaints|manage_public_complaints', only: ['resolve', 'rejectComplaint', 'close']),
         ];
     }
 
@@ -120,7 +127,17 @@ class ComplaintController extends Controller implements HasMiddleware
         }
 
         $events = Event::orderBy('name_en')->get(['id', 'name_en', 'name_bn', 'event_code']);
-        $staffUsers = User::where('status', 'active')->orderBy('name')->get(['id', 'name', 'email']);
+        $staffUsers = User::where('status', 'active')
+            ->where(function ($q) {
+                $q->whereHas('roles', function ($rq) {
+                    $rq->whereIn('slug', ['super_admin', 'temple_admin', 'committee_member', 'treasurer'])
+                        ->orWhereHas('permissions', function ($pq) {
+                            $pq->whereIn('slug', ['view_complaints', 'manage_complaints', 'resolve_complaints', 'respond_complaints', 'assign_complaints']);
+                        });
+                });
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
 
         return view('portal.complaints.index', compact('events', 'staffUsers'));
     }
@@ -130,8 +147,18 @@ class ComplaintController extends Controller implements HasMiddleware
      */
     public function show(Complaint $complaint): View
     {
-        $complaint->load(['person', 'event', 'payment.receiverAccount', 'assignee', 'resolver', 'closer']);
-        $staffUsers = User::where('status', 'active')->orderBy('name')->get(['id', 'name', 'email']);
+        $complaint->load(['person', 'event', 'payment.receiverAccount', 'assignee', 'resolver', 'closer', 'activities.actor']);
+        $staffUsers = User::where('status', 'active')
+            ->where(function ($q) {
+                $q->whereHas('roles', function ($rq) {
+                    $rq->whereIn('slug', ['super_admin', 'temple_admin', 'committee_member', 'treasurer'])
+                        ->orWhereHas('permissions', function ($pq) {
+                            $pq->whereIn('slug', ['view_complaints', 'manage_complaints', 'resolve_complaints', 'respond_complaints', 'assign_complaints']);
+                        });
+                });
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
 
         // Suggested match for Person by phone
         $suggestedPersons = collect();
@@ -141,7 +168,55 @@ class ComplaintController extends Controller implements HasMiddleware
                 ->get();
         }
 
-        return view('portal.complaints.show', compact('complaint', 'staffUsers', 'suggestedPersons'));
+        $activities = $complaint->activities;
+
+        return view('portal.complaints.show', compact('complaint', 'staffUsers', 'suggestedPersons', 'activities'));
+    }
+
+    /**
+     * Mark complaint as Under Review.
+     */
+    public function markUnderReview(Request $request, Complaint $complaint): JsonResponse|RedirectResponse
+    {
+        if (in_array($complaint->status, [Complaint::STATUS_RESOLVED, Complaint::STATUS_REJECTED, Complaint::STATUS_CLOSED])) {
+            $msg = __('portal.complaints_module.terminal_status_error', ['status' => strtoupper($complaint->status)]);
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+
+            return back()->with('error', $msg);
+        }
+
+        $prevStatus = $complaint->status;
+
+        DB::transaction(function () use ($complaint, $prevStatus) {
+            $complaint->update(['status' => Complaint::STATUS_UNDER_REVIEW]);
+
+            ComplaintActivity::create([
+                'complaint_id' => $complaint->id,
+                'actor_id' => auth()->id(),
+                'activity_type' => ComplaintActivity::TYPE_STATUS_CHANGE,
+                'previous_status' => $prevStatus,
+                'new_status' => Complaint::STATUS_UNDER_REVIEW,
+                'content' => 'Marked under review by admin',
+                'visibility' => ComplaintActivity::VISIBILITY_DONOR,
+            ]);
+
+            AuditLogger::log(
+                'complaint_under_review',
+                "Marked complaint {$complaint->tracking_number} as under review",
+                $complaint
+            );
+        });
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => __('portal.complaints_module.status_updated'),
+            ]);
+        }
+
+        return back()->with('success', __('portal.complaints_module.status_updated'));
     }
 
     /**
@@ -154,138 +229,215 @@ class ComplaintController extends Controller implements HasMiddleware
         ]);
 
         $assignedTo = $request->input('assigned_to') ? $request->integer('assigned_to') : null;
+        $targetUser = null;
+
+        if ($assignedTo) {
+            $targetUser = User::where('id', $assignedTo)->where('status', 'active')->first();
+            if (! $targetUser) {
+                if ($request->wantsJson()) {
+                    return response()->json(['success' => false, 'message' => __('portal.complaints_module.invalid_assignee')], 422);
+                }
+
+                return back()->with('error', __('portal.complaints_module.invalid_assignee'));
+            }
+
+            // Ensure target user is active staff/admin and not ordinary devotee
+            $isStaffOrAdmin = $targetUser->hasRole(['super_admin', 'temple_admin', 'committee_member', 'treasurer'])
+                || $targetUser->can('view_complaints')
+                || $targetUser->can('manage_complaints')
+                || $targetUser->can('assign_complaints');
+
+            if (! $isStaffOrAdmin) {
+                if ($request->wantsJson()) {
+                    return response()->json(['success' => false, 'message' => __('portal.complaints_module.invalid_assignee')], 422);
+                }
+
+                return back()->with('error', __('portal.complaints_module.invalid_assignee'));
+            }
+        }
+
+        $prevAssigneeName = $complaint->assignee?->name ?? __('portal.complaints_module.unassigned');
+        $newAssigneeName = $targetUser?->name ?? __('portal.complaints_module.unassigned');
+
         $status = $complaint->status;
+        $prevStatus = $complaint->status;
 
         // Auto move from submitted to under_review if assigned
         if ($assignedTo && $complaint->status === Complaint::STATUS_SUBMITTED) {
             $status = Complaint::STATUS_UNDER_REVIEW;
         }
 
-        $complaint->update([
-            'assigned_to' => $assignedTo,
-            'status' => $status,
-        ]);
+        DB::transaction(function () use ($complaint, $assignedTo, $status, $prevStatus, $prevAssigneeName, $newAssigneeName) {
+            $complaint->update([
+                'assigned_to' => $assignedTo,
+                'status' => $status,
+            ]);
 
-        $assigneeName = $complaint->assignee?->name ?? 'Unassigned';
-        AuditLogger::log(
-            'complaint_assigned',
-            "Assigned complaint {$complaint->tracking_number} to {$assigneeName}",
-            $complaint
-        );
+            $assignmentContent = ($prevAssigneeName !== __('portal.complaints_module.unassigned'))
+                ? "Assignment changed from {$prevAssigneeName} to {$newAssigneeName}"
+                : "Assigned to {$newAssigneeName}";
+
+            ComplaintActivity::create([
+                'complaint_id' => $complaint->id,
+                'actor_id' => auth()->id(),
+                'activity_type' => ComplaintActivity::TYPE_ASSIGNMENT,
+                'previous_status' => $prevStatus,
+                'new_status' => $status,
+                'content' => $assignmentContent,
+                'visibility' => ComplaintActivity::VISIBILITY_DONOR,
+            ]);
+
+            AuditLogger::log(
+                'complaint_assigned',
+                "Assigned complaint {$complaint->tracking_number} to {$newAssigneeName} (previous: {$prevAssigneeName})",
+                $complaint
+            );
+        });
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => __('portal.complaints.assigned_successfully'),
-                'assignee_name' => $assigneeName,
+                'message' => __('portal.complaints_module.assigned_successfully'),
+                'assignee_name' => $newAssigneeName,
             ]);
         }
 
-        return back()->with('success', __('portal.complaints.assigned_successfully'));
+        return back()->with('success', __('portal.complaints_module.assigned_successfully'));
     }
 
     /**
      * Respond to complaint (and optionally update status).
      */
-    public function respond(Request $request, Complaint $complaint): JsonResponse|RedirectResponse
+    public function respond(AdminComplaintReplyRequest $request, Complaint $complaint): JsonResponse|RedirectResponse
     {
-        $request->validate([
-            'admin_response' => ['required', 'string', 'min:3', 'max:5000'],
-            'update_status' => ['nullable', 'string', 'in:under_review,resolved'],
-        ]);
+        $replyContent = $request->input('admin_response') ?: $request->input('reply');
+        $newStatus = $request->input('update_status') ?: Complaint::STATUS_REPLIED;
+        $prevStatus = $complaint->status;
 
-        $data = [
-            'admin_response' => $request->input('admin_response'),
-        ];
+        DB::transaction(function () use ($complaint, $replyContent, $newStatus, $prevStatus) {
+            $updateData = [
+                'admin_response' => $replyContent,
+                'status' => $newStatus,
+            ];
 
-        if ($request->input('update_status') === Complaint::STATUS_RESOLVED) {
-            $data['status'] = Complaint::STATUS_RESOLVED;
-            $data['resolved_at'] = now();
-            $data['resolved_by'] = auth()->id();
-        } elseif ($request->input('update_status') === Complaint::STATUS_UNDER_REVIEW || $complaint->status === Complaint::STATUS_SUBMITTED) {
-            $data['status'] = Complaint::STATUS_UNDER_REVIEW;
-        }
+            if ($newStatus === Complaint::STATUS_RESOLVED) {
+                $updateData['resolved_at'] = now();
+                $updateData['resolved_by'] = auth()->id();
+            }
 
-        $complaint->update($data);
+            $complaint->update($updateData);
 
-        AuditLogger::log(
-            'complaint_responded',
-            "Recorded admin response for complaint {$complaint->tracking_number}",
-            $complaint
-        );
+            ComplaintActivity::create([
+                'complaint_id' => $complaint->id,
+                'actor_id' => auth()->id(),
+                'activity_type' => ComplaintActivity::TYPE_REPLY,
+                'previous_status' => $prevStatus,
+                'new_status' => $newStatus,
+                'content' => $replyContent,
+                'visibility' => ComplaintActivity::VISIBILITY_DONOR,
+            ]);
+
+            AuditLogger::log(
+                'complaint_responded',
+                "Recorded admin response for complaint {$complaint->tracking_number}",
+                $complaint
+            );
+        });
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => __('portal.complaints.response_recorded'),
+                'message' => __('portal.complaints_module.response_recorded'),
             ]);
         }
 
-        return back()->with('success', __('portal.complaints.response_recorded'));
+        return back()->with('success', __('portal.complaints_module.response_recorded'));
     }
 
     /**
      * Resolve complaint with resolution note.
      */
-    public function resolve(Request $request, Complaint $complaint): JsonResponse|RedirectResponse
+    public function resolve(AdminComplaintStatusRequest $request, Complaint $complaint): JsonResponse|RedirectResponse
     {
-        $request->validate([
-            'admin_response' => ['required', 'string', 'min:3', 'max:5000'],
-        ]);
+        $note = $request->input('note') ?: ($request->input('admin_response') ?: 'Resolved');
+        $prevStatus = $complaint->status;
 
-        $complaint->update([
-            'admin_response' => $request->input('admin_response'),
-            'status' => Complaint::STATUS_RESOLVED,
-            'resolved_at' => now(),
-            'resolved_by' => auth()->id(),
-        ]);
+        DB::transaction(function () use ($complaint, $note, $prevStatus) {
+            $complaint->update([
+                'admin_response' => $note,
+                'status' => Complaint::STATUS_RESOLVED,
+                'resolved_at' => now(),
+                'resolved_by' => auth()->id(),
+            ]);
 
-        AuditLogger::log(
-            'complaint_resolved',
-            "Resolved complaint {$complaint->tracking_number}",
-            $complaint
-        );
+            ComplaintActivity::create([
+                'complaint_id' => $complaint->id,
+                'actor_id' => auth()->id(),
+                'activity_type' => ComplaintActivity::TYPE_RESOLUTION,
+                'previous_status' => $prevStatus,
+                'new_status' => Complaint::STATUS_RESOLVED,
+                'content' => $note,
+                'visibility' => ComplaintActivity::VISIBILITY_DONOR,
+            ]);
+
+            AuditLogger::log(
+                'complaint_resolved',
+                "Resolved complaint {$complaint->tracking_number}",
+                $complaint
+            );
+        });
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => __('portal.complaints.resolved_successfully'),
+                'message' => __('portal.complaints_module.resolved_successfully'),
             ]);
         }
 
-        return back()->with('success', __('portal.complaints.resolved_successfully'));
+        return back()->with('success', __('portal.complaints_module.resolved_successfully'));
     }
 
     /**
      * Reject complaint with reason.
      */
-    public function rejectComplaint(Request $request, Complaint $complaint): JsonResponse|RedirectResponse
+    public function rejectComplaint(AdminComplaintStatusRequest $request, Complaint $complaint): JsonResponse|RedirectResponse
     {
-        $request->validate([
-            'rejection_reason' => ['required', 'string', 'min:3', 'max:5000'],
-        ]);
+        $reason = $request->input('rejection_reason') ?: ($request->input('note') ?: 'Rejected');
+        $prevStatus = $complaint->status;
 
-        $complaint->update([
-            'admin_response' => $request->input('rejection_reason'),
-            'status' => Complaint::STATUS_REJECTED,
-            'resolved_at' => now(),
-            'resolved_by' => auth()->id(),
-        ]);
+        DB::transaction(function () use ($complaint, $reason, $prevStatus) {
+            $complaint->update([
+                'admin_response' => $reason,
+                'status' => Complaint::STATUS_REJECTED,
+                'resolved_at' => now(),
+                'resolved_by' => auth()->id(),
+            ]);
 
-        AuditLogger::log(
-            'complaint_rejected',
-            "Rejected complaint {$complaint->tracking_number} (Reason: {$request->input('rejection_reason')})",
-            $complaint
-        );
+            ComplaintActivity::create([
+                'complaint_id' => $complaint->id,
+                'actor_id' => auth()->id(),
+                'activity_type' => ComplaintActivity::TYPE_REJECTION,
+                'previous_status' => $prevStatus,
+                'new_status' => Complaint::STATUS_REJECTED,
+                'content' => $reason,
+                'visibility' => ComplaintActivity::VISIBILITY_DONOR,
+            ]);
+
+            AuditLogger::log(
+                'complaint_rejected',
+                "Rejected complaint {$complaint->tracking_number} (Reason: {$reason})",
+                $complaint
+            );
+        });
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => __('portal.complaints.rejected_successfully'),
+                'message' => __('portal.complaints_module.rejected_successfully'),
             ]);
         }
 
-        return back()->with('success', __('portal.complaints.rejected_successfully'));
+        return back()->with('success', __('portal.complaints_module.rejected_successfully'));
     }
 
     /**
@@ -293,26 +445,40 @@ class ComplaintController extends Controller implements HasMiddleware
      */
     public function close(Request $request, Complaint $complaint): JsonResponse|RedirectResponse
     {
-        $complaint->update([
-            'status' => Complaint::STATUS_CLOSED,
-            'closed_at' => now(),
-            'closed_by' => auth()->id(),
-        ]);
+        $prevStatus = $complaint->status;
 
-        AuditLogger::log(
-            'complaint_closed',
-            "Closed complaint {$complaint->tracking_number}",
-            $complaint
-        );
+        DB::transaction(function () use ($complaint, $prevStatus) {
+            $complaint->update([
+                'status' => Complaint::STATUS_CLOSED,
+                'closed_at' => now(),
+                'closed_by' => auth()->id(),
+            ]);
+
+            ComplaintActivity::create([
+                'complaint_id' => $complaint->id,
+                'actor_id' => auth()->id(),
+                'activity_type' => ComplaintActivity::TYPE_CLOSE,
+                'previous_status' => $prevStatus,
+                'new_status' => Complaint::STATUS_CLOSED,
+                'content' => 'Closed complaint',
+                'visibility' => ComplaintActivity::VISIBILITY_DONOR,
+            ]);
+
+            AuditLogger::log(
+                'complaint_closed',
+                "Closed complaint {$complaint->tracking_number}",
+                $complaint
+            );
+        });
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => __('portal.complaints.closed_successfully'),
+                'message' => __('portal.complaints_module.closed_successfully'),
             ]);
         }
 
-        return back()->with('success', __('portal.complaints.closed_successfully'));
+        return back()->with('success', __('portal.complaints_module.closed_successfully'));
     }
 
     /**
@@ -337,45 +503,55 @@ class ComplaintController extends Controller implements HasMiddleware
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => __('portal.complaints.priority_updated'),
+                'message' => __('portal.complaints_module.priority_updated'),
             ]);
         }
 
-        return back()->with('success', __('portal.complaints.priority_updated'));
+        return back()->with('success', __('portal.complaints_module.priority_updated'));
     }
 
     /**
      * Add private internal note.
      */
-    public function addInternalNote(Request $request, Complaint $complaint): JsonResponse|RedirectResponse
+    public function addInternalNote(AdminComplaintNoteRequest $request, Complaint $complaint): JsonResponse|RedirectResponse
     {
-        $request->validate([
-            'note' => ['required', 'string', 'max:3000'],
-        ]);
+        $note = trim($request->input('internal_notes') ?: $request->input('note'));
 
-        $timestamp = now()->format('d M Y, h:i A');
-        $userName = auth()->user()->name;
-        $newEntry = "[{$timestamp} by {$userName}]:\n".trim($request->input('note'))."\n\n";
+        DB::transaction(function () use ($complaint, $note) {
+            $timestamp = now()->format('d M Y, h:i A');
+            $userName = auth()->user()->name;
+            $entry = "[{$timestamp} - {$userName}]: {$note}";
+            $newInternal = $complaint->internal_notes
+                ? $complaint->internal_notes."\n\n".$entry
+                : $entry;
 
-        $complaint->update([
-            'internal_notes' => $newEntry.($complaint->internal_notes ?? ''),
-        ]);
+            $complaint->update(['internal_notes' => $newInternal]);
 
-        AuditLogger::log(
-            'complaint_note_added',
-            "Added internal note to complaint {$complaint->tracking_number}",
-            $complaint
-        );
+            ComplaintActivity::create([
+                'complaint_id' => $complaint->id,
+                'actor_id' => auth()->id(),
+                'activity_type' => ComplaintActivity::TYPE_INTERNAL_NOTE,
+                'previous_status' => $complaint->status,
+                'new_status' => $complaint->status,
+                'content' => $note,
+                'visibility' => ComplaintActivity::VISIBILITY_INTERNAL,
+            ]);
+
+            AuditLogger::log(
+                'complaint_internal_note_added',
+                "Added internal note to complaint {$complaint->tracking_number}",
+                $complaint
+            );
+        });
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => __('portal.complaints.note_added'),
-                'notes' => $complaint->internal_notes,
+                'message' => __('portal.complaints_module.internal_note_saved'),
             ]);
         }
 
-        return back()->with('success', __('portal.complaints.note_added'));
+        return back()->with('success', __('portal.complaints_module.internal_note_saved'));
     }
 
     /**
@@ -402,11 +578,36 @@ class ComplaintController extends Controller implements HasMiddleware
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => __('portal.complaints.person_linked'),
+                'message' => __('portal.complaints_module.person_linked'),
             ]);
         }
 
-        return back()->with('success', __('portal.complaints.person_linked'));
+        return back()->with('success', __('portal.complaints_module.person_linked'));
+    }
+
+    /**
+     * Download or stream complaint attachment for authorized administrator.
+     */
+    public function downloadAttachment(Complaint $complaint): Response
+    {
+        if (! $complaint->attachment_path) {
+            abort(404, __('portal.complaints_module.no_attachment'));
+        }
+
+        $path = str_replace('\\', '/', $complaint->attachment_path);
+        if (str_contains($path, '..')) {
+            abort(400, 'Invalid file path.');
+        }
+
+        if (Storage::disk('local')->exists($path)) {
+            return Storage::disk('local')->response($path);
+        }
+
+        if (Storage::disk('public')->exists($path)) {
+            return Storage::disk('public')->response($path);
+        }
+
+        abort(404, __('portal.complaints_module.no_attachment'));
     }
 
     // -------------------------------------------------------------
@@ -483,7 +684,7 @@ class ComplaintController extends Controller implements HasMiddleware
             return '<span class="badge bg-light text-dark border"><i class="bi bi-person me-1"></i>'.e($c->assignee->name).'</span>';
         }
 
-        return '<span class="badge bg-warning-subtle text-warning-emphasis border"><i class="bi bi-person-dash me-1"></i>'.__('portal.complaints.unassigned').'</span>';
+        return '<span class="badge bg-warning-subtle text-warning-emphasis border"><i class="bi bi-person-dash me-1"></i>'.__('portal.complaints_module.unassigned').'</span>';
     }
 
     protected function formatStatusBadge(string $status): string
@@ -492,6 +693,7 @@ class ComplaintController extends Controller implements HasMiddleware
             Complaint::STATUS_RESOLVED => '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>'.__('portal.complaint_statuses.resolved').'</span>',
             Complaint::STATUS_REJECTED => '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>'.__('portal.complaint_statuses.rejected').'</span>',
             Complaint::STATUS_CLOSED => '<span class="badge bg-dark"><i class="bi bi-lock me-1"></i>'.__('portal.complaint_statuses.closed').'</span>',
+            Complaint::STATUS_REPLIED => '<span class="badge bg-info text-dark"><i class="bi bi-chat-dots me-1"></i>'.__('portal.complaint_statuses.replied').'</span>',
             Complaint::STATUS_UNDER_REVIEW => '<span class="badge bg-primary"><i class="bi bi-eye me-1"></i>'.__('portal.complaint_statuses.under_review').'</span>',
             default => '<span class="badge bg-warning text-dark"><i class="bi bi-envelope me-1"></i>'.__('portal.complaint_statuses.submitted').'</span>',
         };
@@ -505,23 +707,23 @@ class ComplaintController extends Controller implements HasMiddleware
         $html = '<div class="btn-group btn-group-sm" role="group">';
         $html .= '<a href="'.$showUrl.'" class="btn btn-outline-secondary" title="'.__('portal.actions.view').'"><i class="bi bi-eye"></i></a>';
 
-        if (! in_array($c->status, [Complaint::STATUS_RESOLVED, Complaint::STATUS_CLOSED]) && $user) {
-            if ($user->can('respond_complaints') || $user->can('manage_complaints')) {
+        if (! in_array($c->status, [Complaint::STATUS_RESOLVED, Complaint::STATUS_REJECTED, Complaint::STATUS_CLOSED]) && $user) {
+            if ($user->can('respond_complaints') || $user->can('manage_complaints') || $user->can('reply_public_complaints')) {
                 $html .= '<button type="button" class="btn btn-outline-primary btn-respond" '
                     .'data-id="'.$c->id.'" '
                     .'data-tracking="'.e($c->tracking_number).'" '
                     .'data-url="'.route('portal.complaints.respond', $c).'" '
-                    .'title="'.__('portal.complaints.respond').'">'
+                    .'title="'.__('portal.complaints_module.respond').'">'
                     .'<i class="bi bi-reply"></i>'
                     .'</button>';
             }
 
-            if ($user->can('resolve_complaints') || $user->can('manage_complaints')) {
+            if ($user->can('resolve_complaints') || $user->can('manage_complaints') || $user->can('resolve_public_complaints')) {
                 $html .= '<button type="button" class="btn btn-outline-success btn-resolve" '
                     .'data-id="'.$c->id.'" '
                     .'data-tracking="'.e($c->tracking_number).'" '
                     .'data-url="'.route('portal.complaints.resolve', $c).'" '
-                    .'title="'.__('portal.complaints.resolve').'">'
+                    .'title="'.__('portal.complaints_module.resolve').'">'
                     .'<i class="bi bi-check-lg"></i>'
                     .'</button>';
             }

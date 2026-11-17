@@ -42,7 +42,17 @@
                         <span class="badge {{ $pBadge }}">{{ $complaint->priority_name }}</span>
                     </div>
                     <div>
-                        <span class="badge {{ $complaint->status === 'resolved' ? 'bg-success' : ($complaint->status === 'rejected' ? 'bg-danger' : ($complaint->status === 'closed' ? 'bg-dark' : 'bg-warning text-dark')) }} fs-6">
+                        @php
+                            $stClass = match ($complaint->status) {
+                                \App\Models\Complaint::STATUS_RESOLVED => 'bg-success text-white',
+                                \App\Models\Complaint::STATUS_REJECTED => 'bg-danger text-white',
+                                \App\Models\Complaint::STATUS_CLOSED => 'bg-dark text-white',
+                                \App\Models\Complaint::STATUS_REPLIED => 'bg-primary text-white',
+                                \App\Models\Complaint::STATUS_UNDER_REVIEW => 'bg-warning text-dark',
+                                default => 'bg-info text-dark',
+                            };
+                        @endphp
+                        <span class="badge {{ $stClass }} fs-6">
                             {{ $complaint->status_name }}
                         </span>
                     </div>
@@ -64,7 +74,7 @@
                                 </div>
                             </div>
                             <div>
-                                <a href="{{ $complaint->attachment_url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                <a href="{{ route('portal.complaints.attachment', $complaint) }}" target="_blank" class="btn btn-outline-primary btn-sm">
                                     <i class="bi bi-box-arrow-up-right me-1"></i> {{ __('portal.actions.preview') }}
                                 </a>
                             </div>
@@ -93,10 +103,10 @@
                                 @if(auth()->user()->can('manage_complaints'))
                                     <form action="{{ route('portal.complaints.link-person', $complaint) }}" method="POST" class="d-flex gap-2">
                                         @csrf
-                                        <select name="person_id" class="form-select form-select-sm select2-enable" required>
+                                        <select name="person_id" class="form-select form-select-sm select2" data-ajax--url="{{ route('people.search') }}" data-placeholder="-- {{ __('portal.payments.select_person') }} --" required style="min-width: 250px;">
                                             <option value="">-- {{ __('portal.payments.select_person') }} --</option>
                                             @foreach($suggestedPersons as $sp)
-                                                <option value="{{ $sp->id }}">{{ $sp->name_en }} ({{ $sp->person_code }}) - {{ $sp->phone }}</option>
+                                                <option value="{{ $sp->id }}">{{ $sp->name_en }}{{ $sp->phone ? ' - '.$sp->phone : '' }} ({{ $sp->person_code }})</option>
                                             @endforeach
                                         </select>
                                         <button type="submit" class="btn btn-outline-primary btn-sm">Link</button>
@@ -215,6 +225,55 @@
                     @endif
                 </div>
             </div>
+
+            {{-- Activity History & Communication Card --}}
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="card-title mb-0 fw-semibold">
+                        <i class="bi bi-clock-history me-1 text-primary"></i> {{ __('portal.complaints_module.activity_history') }}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    @forelse($activities as $act)
+                        <div class="d-flex gap-3 mb-3 pb-3 border-bottom">
+                            <div class="flex-shrink-0">
+                                @if($act->visibility === \App\Models\ComplaintActivity::VISIBILITY_INTERNAL)
+                                    <span class="badge bg-secondary p-2"><i class="bi bi-lock"></i></span>
+                                @elseif($act->activity_type === 'reply')
+                                    <span class="badge bg-primary p-2"><i class="bi bi-reply-fill"></i></span>
+                                @elseif($act->activity_type === 'submission')
+                                    <span class="badge bg-info p-2"><i class="bi bi-envelope"></i></span>
+                                @elseif($act->activity_type === 'resolution')
+                                    <span class="badge bg-success p-2"><i class="bi bi-check-lg"></i></span>
+                                @elseif($act->activity_type === 'rejection')
+                                    <span class="badge bg-danger p-2"><i class="bi bi-x-lg"></i></span>
+                                @else
+                                    <span class="badge bg-light text-dark border p-2"><i class="bi bi-arrow-repeat"></i></span>
+                                @endif
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <div>
+                                        <strong class="small text-dark">{{ $act->actor?->name ?? 'System' }}</strong>
+                                        @if($act->visibility === \App\Models\ComplaintActivity::VISIBILITY_INTERNAL)
+                                            <span class="badge bg-secondary-subtle text-secondary border ms-1">{{ __('portal.complaints_module.internal_note_badge') }}</span>
+                                        @else
+                                            <span class="badge bg-success-subtle text-success border ms-1">{{ __('portal.complaints_module.donor_visible_badge') }}</span>
+                                        @endif
+                                        <span class="badge bg-light text-dark border ms-1">{{ strtoupper($act->activity_type) }}</span>
+                                    </div>
+                                    <small class="text-muted font-monospace">{{ $act->created_at->format('d M Y, h:i A') }}</small>
+                                </div>
+                                @if($act->content)
+                                    <div class="small text-secondary" style="white-space: pre-wrap;">{{ $act->content }}</div>
+                                @endif
+                            </div>
+                        </div>
+                    @empty
+                        <p class="text-muted small mb-0">{{ __('portal.public.no_activities_yet') }}</p>
+                    @endforelse
+                </div>
+            </div>
         </div>
 
         {{-- Sidebar: Controls & Audit --}}
@@ -270,12 +329,21 @@
             </div>
 
             {{-- Status Resolution Actions --}}
-            @if(! in_array($complaint->status, [\App\Models\Complaint::STATUS_RESOLVED, \App\Models\Complaint::STATUS_CLOSED]))
+            @if(! in_array($complaint->status, [\App\Models\Complaint::STATUS_RESOLVED, \App\Models\Complaint::STATUS_REJECTED, \App\Models\Complaint::STATUS_CLOSED]))
                 <div class="card shadow-sm border-0 mb-4">
                     <div class="card-header bg-white py-3">
                         <h6 class="card-title mb-0 fw-semibold">{{ __('common.actions') }}</h6>
                     </div>
                     <div class="card-body d-grid gap-2">
+                        @if($complaint->status === \App\Models\Complaint::STATUS_SUBMITTED && (auth()->user()->can('manage_complaints') || auth()->user()->can('manage_public_complaints')))
+                            <form action="{{ route('portal.complaints.under-review', $complaint) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-warning w-100 mb-2">
+                                    <i class="bi bi-hourglass-split me-1"></i> {{ __('portal.complaints_module.mark_under_review') }}
+                                </button>
+                            </form>
+                        @endif
+
                         @if(auth()->user()->can('resolve_complaints') || auth()->user()->can('manage_complaints'))
                             <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#resolveModal">
                                 <i class="bi bi-check-circle me-1"></i> {{ __('portal.complaints_module.resolve') }}
@@ -286,18 +354,24 @@
                         @endif
                     </div>
                 </div>
-            @elseif($complaint->status === \App\Models\Complaint::STATUS_RESOLVED && (auth()->user()->can('resolve_complaints') || auth()->user()->can('manage_complaints')))
+            @elseif(in_array($complaint->status, [\App\Models\Complaint::STATUS_RESOLVED, \App\Models\Complaint::STATUS_REJECTED, \App\Models\Complaint::STATUS_CLOSED]))
                 <div class="card shadow-sm border-0 mb-4">
                     <div class="card-header bg-white py-3">
-                        <h6 class="card-title mb-0 fw-semibold">Closure</h6>
+                        <h6 class="card-title mb-0 fw-semibold">{{ __('common.status') }}</h6>
                     </div>
                     <div class="card-body">
-                        <form action="{{ route('portal.complaints.close', $complaint) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="btn btn-dark w-100">
-                                <i class="bi bi-lock me-1"></i> {{ __('portal.complaints_module.close') }}
-                            </button>
-                        </form>
+                        <div class="alert alert-secondary small mb-2">
+                            <i class="bi bi-lock me-1"></i>
+                            {{ __('portal.complaints_module.terminal_status_error', ['status' => strtoupper($complaint->status)]) }}
+                        </div>
+                        @if($complaint->status === \App\Models\Complaint::STATUS_RESOLVED && (auth()->user()->can('resolve_complaints') || auth()->user()->can('manage_complaints')))
+                            <form action="{{ route('portal.complaints.close', $complaint) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="btn btn-dark w-100">
+                                    <i class="bi bi-lock me-1"></i> {{ __('portal.complaints_module.close') }}
+                                </button>
+                            </form>
+                        @endif
                     </div>
                 </div>
             @endif
@@ -345,6 +419,7 @@
     <div class="modal-dialog">
         <form action="{{ route('portal.complaints.resolve', $complaint) }}" method="POST">
             @csrf
+            <input type="hidden" name="status" value="resolved">
             <div class="modal-content">
                 <div class="modal-header bg-success text-white">
                     <h5 class="modal-title fw-bold">
@@ -371,6 +446,7 @@
     <div class="modal-dialog">
         <form action="{{ route('portal.complaints.reject', $complaint) }}" method="POST">
             @csrf
+            <input type="hidden" name="status" value="rejected">
             <div class="modal-content">
                 <div class="modal-header bg-danger text-white">
                     <h5 class="modal-title fw-bold">

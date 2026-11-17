@@ -21,9 +21,30 @@
                 <i class="bi bi-arrow-left me-1"></i> {{ __('portal.actions.back_to_list') }}
             </a>
             @if($payment->receipt)
-                <a href="{{ route('receipts.show', $payment->receipt) }}" class="btn btn-outline-primary">
-                    <i class="bi bi-receipt me-1"></i> {{ $payment->receipt->receipt_number }}
-                </a>
+                @if($payment->isReversed())
+                    <span class="badge bg-danger-subtle text-danger border p-2 align-self-center">
+                        <i class="bi bi-slash-circle me-1"></i> {{ $payment->receipt->receipt_number }} ({{ __('donations.receipt_status_voided') }})
+                    </span>
+                    @can('view_receipts')
+                        <a href="{{ route('receipts.show', $payment->receipt) }}" class="btn btn-outline-secondary" title="{{ __('donations.view_receipt') }}">
+                            <i class="bi bi-eye me-1"></i> {{ __('donations.view_receipt') }}
+                        </a>
+                    @endcan
+                @else
+                    @can('view_receipts')
+                        <a href="{{ route('receipts.show', $payment->receipt) }}" class="btn btn-outline-primary" title="{{ __('donations.view_receipt') }}">
+                            <i class="bi bi-receipt me-1"></i> {{ $payment->receipt->receipt_number }}
+                        </a>
+                    @endcan
+                    @can('print_receipts')
+                        <a href="{{ route('receipts.print', $payment->receipt) }}" target="_blank" class="btn btn-outline-dark" title="{{ __('donations.print_receipt') }}">
+                            <i class="bi bi-printer me-1"></i> {{ __('donations.print_receipt') }}
+                        </a>
+                        <a href="{{ route('receipts.download', $payment->receipt) }}" class="btn btn-outline-secondary" title="{{ __('portal.payments.download_receipt') }}">
+                            <i class="bi bi-download me-1"></i> {{ __('portal.payments.download_receipt') }}
+                        </a>
+                    @endcan
+                @endif
             @endif
         </div>
     </div>
@@ -121,6 +142,28 @@
                             @endif
                         </div>
                     @endif
+
+                    @if($payment->isReversed())
+                        <div class="alert alert-secondary border-danger border-start border-4 mb-0">
+                            <h6 class="alert-heading fw-bold text-danger mb-1">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i> {{ __('donations.status_reversed') }}
+                            </h6>
+                            <p class="mb-1 text-danger-emphasis">
+                                <strong>{{ __('donations.reversal_reason') }}:</strong> {{ $payment->reversal_reason }}
+                            </p>
+                            <div class="small text-muted mt-2">
+                                Reversed by <strong>{{ $payment->reverser?->name ?? 'System' }}</strong> on <strong>{{ $payment->reversed_at?->format('d M Y, h:i A') }}</strong>
+                                @if($payment->journalEntry?->reversedByJournal)
+                                    &bull; Reversal Journal: <code>{{ $payment->journalEntry->reversedByJournal->journal_number }}</code>
+                                    @can('view_journals')
+                                        <a href="{{ route('finance.journals.show', $payment->journalEntry->reversedByJournal) }}" class="btn btn-xs btn-outline-secondary ms-1 py-0 px-1 text-decoration-none">
+                                            <i class="bi bi-journal-text me-1"></i> {{ __('common.view') }}
+                                        </a>
+                                    @endcan
+                                @endif
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
 
@@ -156,28 +199,50 @@
                         </div>
                     </div>
 
-                    {{-- Devotee Linking Section if unlinked --}}
-                    @if(! $payment->payer_person_id && auth()->user()->can('verify_public_payments'))
-                        <hr>
-                        <h6 class="fw-bold mb-2 text-secondary">{{ __('portal.payments.link_devotee') }}</h6>
-                        <form action="{{ route('portal.payments.link-devotee', $payment) }}" method="POST" class="row g-2 align-items-center">
-                            @csrf
-                            <div class="col-md-8">
-                                <select name="person_id" id="linkPersonSelect" class="form-select select2-enable" required>
-                                    <option value="">-- {{ __('portal.payments.select_person') }} --</option>
-                                    @foreach($suggestedPersons as $sp)
-                                        <option value="{{ $sp->id }}">
-                                            {{ $sp->name_en }} ({{ $sp->person_code }}) - {{ $sp->phone }} [{{ __('portal.payments.suggested_match') }}]
-                                        </option>
-                                    @endforeach
-                                </select>
+                    @if($payment->payer_person_id && $payment->payerPerson)
+                        <div class="p-3 bg-light rounded border mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="text-muted small d-block">{{ __('portal.payments.current_linked_devotee') }}:</span>
+                                    <a href="{{ route('people.show', $payment->payerPerson) }}" class="fw-bold text-decoration-none">
+                                        <i class="bi bi-person-badge me-1"></i>{{ $payment->payerPerson->name_en }} ({{ $payment->payerPerson->person_code }})
+                                    </a>
+                                    <div class="small text-muted">{{ $payment->payerPerson->phone }}</div>
+                                </div>
+                                @if($payment->isPending() && auth()->user()->can('verify_public_payments'))
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#changeDevoteeCollapse">
+                                        <i class="bi bi-arrow-repeat me-1"></i> {{ __('portal.payments.change_linked_devotee') }}
+                                    </button>
+                                @endif
                             </div>
-                            <div class="col-md-4">
-                                <button type="submit" class="btn btn-outline-primary w-100">
-                                    <i class="bi bi-link-45deg me-1"></i> {{ __('portal.payments.link_devotee') }}
-                                </button>
-                            </div>
-                        </form>
+                        </div>
+                    @endif
+
+                    {{-- Devotee Linking Section ONLY if payment is pending and user has permission --}}
+                    @if($payment->isPending() && auth()->user()->can('verify_public_payments'))
+                        <div class="{{ $payment->payer_person_id ? 'collapse' : '' }}" id="changeDevoteeCollapse">
+                            <hr>
+                            <h6 class="fw-bold mb-2 text-secondary">{{ __('portal.payments.link_devotee') }}</h6>
+                            <form action="{{ route('portal.payments.link-devotee', $payment) }}" method="POST" class="row g-2 align-items-center" id="linkDevoteeForm">
+                                @csrf
+                                <div class="col-md-8">
+                                    <select name="person_id" id="linkPersonSelect" class="form-select select2-person-search" required style="width: 100%;">
+                                        <option value="">-- {{ __('portal.payments.select_person') }} --</option>
+                                        @foreach($suggestedPersons as $sp)
+                                            <option value="{{ $sp->id }}">
+                                                {{ $sp->name_en }} ({{ $sp->person_code }}) - {{ $sp->phone }} [{{ __('portal.payments.suggested_match') }}]
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="submit" class="btn btn-outline-primary w-100" id="btnSubmitLink">
+                                        <span class="spinner-border spinner-border-sm me-1 d-none" id="btnSubmitLinkSpinner" role="status" aria-hidden="true"></span>
+                                        <i class="bi bi-link-45deg me-1" id="btnSubmitLinkIcon"></i> {{ __('portal.payments.link_devotee') }}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     @endif
                 </div>
             </div>
@@ -266,15 +331,43 @@
                         </div>
                     </div>
                 </div>
+            @else
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0 fw-semibold text-success">
+                            <i class="bi bi-heart-fill me-1"></i>
+                            @if($payment->collection_type === \App\Models\CollectionPayment::TYPE_GENERAL_DONATION)
+                                {{ __('portal.payments.voluntary_general_donation') }}
+                            @else
+                                {{ __('portal.payments.voluntary_event_donation') }}
+                            @endif
+                        </h6>
+                        <span class="badge bg-success-subtle text-success border">
+                            {{ __('portal.public.voluntary_donation') }}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-0">
+                            @if($payment->collection_type === \App\Models\CollectionPayment::TYPE_GENERAL_DONATION)
+                                {{ __('portal.payments.voluntary_general_donation_help') }}
+                            @else
+                                {{ __('portal.payments.voluntary_donation_help') }}
+                            @endif
+                        </p>
+                    </div>
+                </div>
             @endif
 
             {{-- Accounting & Ledger Details (If Verified) --}}
             @if($payment->journalEntry)
                 <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-white py-3">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                         <h6 class="card-title mb-0 fw-semibold">
                             <i class="bi bi-journal-text text-success me-1"></i> Double-Entry Accounting Ledger Entry
                         </h6>
+                        <span class="badge {{ $payment->journalEntry->isReversed() ? 'bg-secondary' : 'bg-success' }} font-monospace">
+                            {{ $payment->journalEntry->journal_number }} ({{ strtoupper($payment->journalEntry->status) }})
+                        </span>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
@@ -306,6 +399,49 @@
                         </div>
                     </div>
                 </div>
+
+                {{-- Compensating Reversal Ledger Voucher if payment was reversed --}}
+                @if($payment->journalEntry->reversedByJournal)
+                    <div class="card shadow-sm border-0 mb-4 border-danger border-start border-4">
+                        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                            <h6 class="card-title mb-0 fw-semibold text-danger">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i> Compensating Reversal Ledger Voucher
+                            </h6>
+                            <span class="badge bg-danger font-monospace">
+                                {{ $payment->journalEntry->reversedByJournal->journal_number }}
+                            </span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-sm mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Account</th>
+                                            <th class="text-end">Debit (৳)</th>
+                                            <th class="text-end">Credit (৳)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($payment->journalEntry->reversedByJournal->lines as $revLine)
+                                            <tr>
+                                                <td>
+                                                    <div class="fw-semibold">{{ $revLine->account?->account_name }}</div>
+                                                    <div class="small text-muted">{{ $revLine->account?->account_code }}</div>
+                                                </td>
+                                                <td class="text-end fw-semibold {{ $revLine->debit_amount > 0 ? 'text-primary' : 'text-muted' }}">
+                                                    {{ $revLine->debit_amount > 0 ? number_format((float) $revLine->debit_amount, 2) : '—' }}
+                                                </td>
+                                                <td class="text-end fw-semibold {{ $revLine->credit_amount > 0 ? 'text-success' : 'text-muted' }}">
+                                                    {{ $revLine->credit_amount > 0 ? number_format((float) $revLine->credit_amount, 2) : '—' }}
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                @endif
             @endif
         </div>
 
@@ -318,9 +454,9 @@
                 </div>
                 <div class="card-body p-4">
                     @if($payment->payment_proof_path)
-                        <img src="{{ $payment->payment_proof_url }}" alt="Proof" class="img-fluid rounded border shadow-sm mb-3" style="max-height: 250px;">
+                        <img src="{{ route('portal.payments.proof', $payment) }}" alt="Proof" class="img-fluid rounded border shadow-sm mb-3" style="max-height: 250px;">
                         <div>
-                            <a href="{{ $payment->payment_proof_url }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                            <a href="{{ route('portal.payments.proof', $payment) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
                                 <i class="bi bi-arrows-fullscreen me-1"></i> {{ __('portal.actions.preview') }}
                             </a>
                         </div>
@@ -351,6 +487,17 @@
                                 <i class="bi bi-x-lg me-1"></i> {{ __('portal.payments.reject') }}
                             </button>
                         @endif
+                    </div>
+                </div>
+            @elseif($payment->isVerified() && (auth()->user()->hasPermission('reverse_payments') || auth()->user()->hasPermission('reverse_collections') || auth()->user()->hasRole('super_admin')))
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="card-title mb-0 fw-semibold text-danger">{{ __('common.actions') }}</h6>
+                    </div>
+                    <div class="card-body d-grid gap-2">
+                        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#reversePaymentModal">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> {{ __('donations.reverse_payment') }}
+                        </button>
                     </div>
                 </div>
             @endif
@@ -386,6 +533,22 @@
                                 </li>
                             @endif
                         @endif
+                        @if($payment->isReversed())
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span class="text-muted">{{ __('donations.reversed_by') }}:</span>
+                                <span class="fw-semibold text-danger">{{ $payment->reverser?->name ?? '—' }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span class="text-muted">{{ __('donations.reversed_at') }}:</span>
+                                <span class="fw-semibold">{{ $payment->reversed_at?->format('d M Y, h:i A') }}</span>
+                            </li>
+                            @if($payment->reversal_reason)
+                                <li class="list-group-item">
+                                    <div class="text-muted">{{ __('donations.reversal_reason') }}:</div>
+                                    <div class="text-danger fw-semibold">{{ $payment->reversal_reason }}</div>
+                                </li>
+                            @endif
+                        @endif
                     </ul>
                 </div>
             </div>
@@ -397,7 +560,7 @@
 @if($payment->status === \App\Models\CollectionPayment::STATUS_PENDING)
     <div class="modal fade" id="verifyPaymentModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
-            <form action="{{ route('portal.payments.verify', $payment) }}" method="POST">
+            <form action="{{ route('portal.payments.verify', $payment) }}" method="POST" id="showVerifyPaymentForm">
                 @csrf
                 <div class="modal-content">
                     <div class="modal-header bg-success text-white">
@@ -417,6 +580,16 @@
                                 <div class="text-muted">Remaining Due: ৳ {{ number_format((float) $pledge->outstanding_amount, 2) }}</div>
                             </div>
                             <input type="hidden" name="pledge_id" value="{{ $pledge->id }}">
+                        @elseif($payment->collection_type === \App\Models\CollectionPayment::TYPE_GENERAL_DONATION)
+                            <div class="p-3 bg-light-subtle rounded border mb-3 small">
+                                <div class="fw-bold text-success mb-1"><i class="bi bi-heart-fill me-1"></i> {{ __('portal.payments.voluntary_general_donation') }}</div>
+                                <div class="text-muted">{{ __('portal.payments.voluntary_general_donation_help') }}</div>
+                            </div>
+                        @else
+                            <div class="p-3 bg-light-subtle rounded border mb-3 small">
+                                <div class="fw-bold text-success mb-1"><i class="bi bi-heart-fill me-1"></i> {{ __('portal.payments.voluntary_event_donation') }}</div>
+                                <div class="text-muted">{{ __('portal.payments.voluntary_verification_info') }}</div>
+                            </div>
                         @endif
                         <div class="mb-3">
                             <label for="modal_verification_note" class="form-label small fw-bold">
@@ -429,8 +602,9 @@
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                             {{ __('portal.actions.cancel') }}
                         </button>
-                        <button type="submit" class="btn btn-success">
-                            <i class="bi bi-check-lg me-1"></i> {{ __('portal.payments.verify_and_post') }}
+                        <button type="submit" class="btn btn-success" id="btnShowSubmitVerify">
+                            <span class="spinner-border spinner-border-sm me-1 d-none" id="btnShowSubmitVerifySpinner" role="status" aria-hidden="true"></span>
+                            <i class="bi bi-check-lg me-1" id="btnShowSubmitVerifyIcon"></i> {{ __('portal.payments.verify_and_post') }}
                         </button>
                     </div>
                 </div>
@@ -440,7 +614,7 @@
 
     <div class="modal fade" id="rejectPaymentModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
-            <form action="{{ route('portal.payments.reject', $payment) }}" method="POST">
+            <form action="{{ route('portal.payments.reject', $payment) }}" method="POST" id="showRejectPaymentForm">
                 @csrf
                 <div class="modal-content">
                     <div class="modal-header bg-danger text-white">
@@ -464,8 +638,101 @@
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                             {{ __('portal.actions.cancel') }}
                         </button>
-                        <button type="submit" class="btn btn-danger">
-                            <i class="bi bi-x-lg me-1"></i> {{ __('portal.payments.reject') }}
+                        <button type="submit" class="btn btn-danger" id="btnShowSubmitReject">
+                            <span class="spinner-border spinner-border-sm me-1 d-none" id="btnShowSubmitRejectSpinner" role="status" aria-hidden="true"></span>
+                            <i class="bi bi-x-lg me-1" id="btnShowSubmitRejectIcon"></i> {{ __('portal.payments.reject') }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+@endif
+
+@if($payment->isVerified() && (auth()->user()->hasPermission('reverse_payments') || auth()->user()->hasPermission('reverse_collections') || auth()->user()->hasRole('super_admin')))
+    <div class="modal fade" id="reversePaymentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <form action="{{ route('portal.payments.reverse', $payment) }}" method="POST" id="showReversePaymentForm">
+                @csrf
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title fw-bold">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> {{ __('donations.reverse_payment') }}
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-danger py-2 px-3 small d-flex align-items-center mb-3">
+                            <i class="bi bi-exclamation-triangle-fill fs-4 me-2"></i>
+                            <div>
+                                <strong>{{ __('portal.payments.reversal_warning_title') }}</strong>:
+                                {{ __('portal.payments.reversal_warning_body') }}
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-light rounded border mb-3">
+                            <div class="row g-2 small">
+                                <div class="col-6">
+                                    <span class="text-muted d-block">Payment Code:</span>
+                                    <code class="fw-bold">{{ $payment->payment_code }}</code>
+                                </div>
+                                <div class="col-6">
+                                    <span class="text-muted d-block">{{ __('portal.payments.amount') }}:</span>
+                                    <span class="fw-bold text-danger fs-6">৳ {{ number_format((float) $payment->amount, 2) }}</span>
+                                </div>
+                                <div class="col-6">
+                                    <span class="text-muted d-block">{{ __('portal.payments.donor') }}:</span>
+                                    <span class="fw-bold">{{ $payment->payer_display_name }}</span>
+                                </div>
+                                <div class="col-6">
+                                    <span class="text-muted d-block">{{ __('portal.payments.event') }}:</span>
+                                    <span class="fw-semibold">{{ $payment->event?->name ?? __('portal.payments.general_temple_donation') }}</span>
+                                </div>
+                                @if($payment->receipt)
+                                    <div class="col-12 mt-1">
+                                        <span class="text-muted d-block">{{ __('donations.receipts') }}:</span>
+                                        <span class="badge bg-secondary font-monospace">{{ $payment->receipt->receipt_number }}</span>
+                                        <span class="small text-muted ms-1">({{ __('portal.payments.reversal_receipt_voided_help', ['receipt' => $payment->receipt->receipt_number]) }})</span>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+
+                        @if($pledge)
+                            <div class="p-3 bg-light-subtle rounded border border-primary-subtle mb-3 small">
+                                <div class="fw-bold text-primary mb-1">
+                                    <i class="bi bi-bookmark-check-fill me-1"></i> Pledge: {{ $pledge->pledge_code }}
+                                </div>
+                                <div class="text-muted">{{ __('portal.payments.reversal_pledge_restoration_help') }}</div>
+                            </div>
+                        @else
+                            <div class="p-3 bg-success-subtle rounded border border-success-subtle mb-3 small">
+                                <div class="fw-bold text-success mb-1">
+                                    <i class="bi bi-heart-fill me-1"></i>
+                                    @if($payment->collection_type === \App\Models\CollectionPayment::TYPE_GENERAL_DONATION)
+                                        {{ __('portal.payments.voluntary_general_donation') }}
+                                    @else
+                                        {{ __('portal.payments.voluntary_event_donation') }}
+                                    @endif
+                                </div>
+                                <div class="text-muted">{{ __('portal.payments.reversal_voluntary_help') }}</div>
+                            </div>
+                        @endif
+
+                        <div class="mb-3">
+                            <label for="modal_reversal_reason_show" class="form-label small fw-bold">
+                                {{ __('donations.reversal_reason') }} <span class="text-danger">*</span>
+                            </label>
+                            <textarea name="reversal_reason" id="modal_reversal_reason_show" rows="3" class="form-control" required placeholder="State why this verified payment is being reversed..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            {{ __('portal.actions.cancel') }}
+                        </button>
+                        <button type="submit" class="btn btn-danger" id="btnShowSubmitReverse">
+                            <span class="spinner-border spinner-border-sm me-1 d-none" id="btnShowSubmitReverseSpinner" role="status" aria-hidden="true"></span>
+                            <i class="bi bi-arrow-counterclockwise me-1" id="btnShowSubmitReverseIcon"></i> {{ __('donations.reverse_payment') }}
                         </button>
                     </div>
                 </div>
@@ -474,3 +741,59 @@
     </div>
 @endif
 @endsection
+
+@push('scripts')
+<script>
+$(document).ready(function () {
+    if ($('#linkPersonSelect').length) {
+        $('#linkPersonSelect').select2({
+            theme: 'bootstrap-5',
+            placeholder: "{{ __('portal.payments.select_person') }}",
+            allowClear: true,
+            ajax: {
+                url: "{{ route('portal.payments.search-persons') }}",
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                    return {
+                        q: params.term
+                    };
+                },
+                processResults: function (data) {
+                    return {
+                        results: data.results
+                    };
+                },
+                cache: true
+            },
+            minimumInputLength: 2
+        });
+    }
+
+    // Button loaders on form submit
+    $('#linkDevoteeForm').on('submit', function () {
+        $('#btnSubmitLink').prop('disabled', true);
+        $('#btnSubmitLinkSpinner').removeClass('d-none');
+        $('#btnSubmitLinkIcon').addClass('d-none');
+    });
+
+    $('#showVerifyPaymentForm').on('submit', function () {
+        $('#btnShowSubmitVerify').prop('disabled', true);
+        $('#btnShowSubmitVerifySpinner').removeClass('d-none');
+        $('#btnShowSubmitVerifyIcon').addClass('d-none');
+    });
+
+    $('#showRejectPaymentForm').on('submit', function () {
+        $('#btnShowSubmitReject').prop('disabled', true);
+        $('#btnShowSubmitRejectSpinner').removeClass('d-none');
+        $('#btnShowSubmitRejectIcon').addClass('d-none');
+    });
+
+    $('#showReversePaymentForm').on('submit', function () {
+        $('#btnShowSubmitReverse').prop('disabled', true);
+        $('#btnShowSubmitReverseSpinner').removeClass('d-none');
+        $('#btnShowSubmitReverseIcon').addClass('d-none');
+    });
+});
+</script>
+@endpush

@@ -342,14 +342,20 @@ class PersonController extends Controller implements HasMiddleware
             ->search($term)
             ->active()
             ->limit(30)
-            ->get(['id', 'person_code', 'name_en', 'name_bn']);
+            ->get(['id', 'person_code', 'name_en', 'name_bn', 'phone']);
 
-        $results = $people->map(function ($person) {
-            $name = $person->name;
+        $locale = app()->getLocale();
+
+        $results = $people->map(function ($person) use ($locale) {
+            $name = ($locale === 'bn' && ! empty($person->name_bn)) ? $person->name_bn : ($person->name_en ?: $person->name_bn);
+            $phone = $person->phone ? " - {$person->phone}" : '';
 
             return [
                 'id' => $person->id,
-                'text' => "{$name} ({$person->person_code})",
+                'text' => "{$name}{$phone} ({$person->person_code})",
+                'name' => $name,
+                'phone' => $person->phone,
+                'person_code' => $person->person_code,
             ];
         });
 
