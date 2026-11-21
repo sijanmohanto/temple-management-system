@@ -1,4 +1,4 @@
-@extends('layouts.public')
+@extends(auth()->check() ? 'layouts.app' : 'layouts.public')
 
 @section('title', __('portal.public.events') . ' — ' . __('common.app_name'))
 
@@ -8,8 +8,8 @@
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb mb-0 small bg-white p-2 px-3 rounded-3 shadow-sm border">
             <li class="breadcrumb-item">
-                <a href="{{ route('home') }}" class="text-decoration-none text-muted">
-                    <i class="bi bi-house-door me-1"></i> {{ __('portal.public.home') }}
+                <a href="{{ auth()->check() ? route('devotee.dashboard') : route('home') }}" class="text-decoration-none text-muted">
+                    <i class="bi bi-house-door me-1"></i> {{ auth()->check() ? __('devotee.my_dashboard') : __('portal.public.home') }}
                 </a>
             </li>
             <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">
@@ -94,20 +94,19 @@
     @if($events->isNotEmpty())
         <div class="row g-4 mb-4">
             @foreach($events as $event)
-                <div class="col-lg-4 col-md-6">
-                    <div class="public-event-card shadow-sm">
-                        <!-- Banner Image -->
-                        @if($event->banner_image_path)
-                            <img src="{{ asset('storage/' . $event->banner_image_path) }}" alt="{{ $event->name }}" class="public-event-banner">
-                        @else
-                            <div class="public-event-banner-placeholder" style="{{ $event->status === 'closed' ? 'background: linear-gradient(135deg, #475569, #334155);' : ($event->status === 'upcoming' ? 'background: linear-gradient(135deg, #1e3a8a, #0284c7);' : '') }}">
-                                <span class="temple-emblem mb-2" style="width: 44px; height: 44px; font-size: 1.4rem;">ॐ</span>
-                                <span class="fw-bold">{{ $event->category?->name ?? __('events.event') }}</span>
-                                <small class="text-warning">{{ $event->event_year }}</small>
+                <div class="col-lg-4 col-md-6 d-flex">
+                    <div class="public-event-card shadow-sm w-100">
+                        <!-- Banner Image (Uploaded or Deity Specific) -->
+                        <div class="public-event-banner-wrapper">
+                            <img src="{{ $event->featured_image_url }}" alt="{{ $event->name }}" class="public-event-banner" loading="lazy">
+                            <div class="public-event-banner-badge">
+                                <span class="badge bg-dark bg-opacity-75 text-warning border border-warning border-opacity-50 px-2 py-1 shadow-sm">
+                                    {{ $event->event_year }}
+                                </span>
                             </div>
-                        @endif
+                        </div>
 
-                        <div class="card-body p-4 d-flex flex-column">
+                        <div class="public-event-card-body">
                             <!-- Status Badges -->
                             <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
                                 @if($event->status === 'active' || $event->status === 'closing')
@@ -124,38 +123,37 @@
                                     </span>
                                 @endif
 
-                                <span class="badge bg-light text-secondary border">
-                                    {{ $event->category?->name ?? __('events.event') }} — {{ $event->event_year }}
+                                <span class="badge bg-light text-secondary border text-truncate" style="max-width: 60%;" title="{{ $event->category?->name ?? __('events.event') }}">
+                                    {{ $event->category?->name ?? __('events.event') }}
                                 </span>
                             </div>
 
                             <!-- Event Title -->
-                            <h5 class="card-title fw-bold text-dark mb-2">
-                                <a href="{{ route('public.events.show', $event->slug) }}" class="text-dark text-decoration-none hover-primary">
+                            <h5 class="public-event-card-title text-dark">
+                                <a href="{{ route('public.events.show', $event->slug) }}" class="text-dark text-decoration-none hover-primary" title="{{ $event->name }}">
                                     {{ $event->name }}
                                 </a>
                             </h5>
 
                             <!-- Dates & Venue -->
-                            <div class="small text-muted mb-3 d-flex flex-column gap-1">
-                                <div>
+                            <div class="public-event-meta">
+                                <div class="public-event-meta-item" title="{{ $event->start_date?->format('d M Y') }} — {{ $event->end_date?->format('d M Y') }}">
                                     <i class="bi bi-calendar-event text-primary me-1"></i>
                                     {{ $event->start_date?->format('d M Y') }} — {{ $event->end_date?->format('d M Y') }}
                                 </div>
-                                @if($event->venue)
-                                    <div>
-                                        <i class="bi bi-geo-alt text-danger me-1"></i> {{ $event->venue }}
-                                    </div>
-                                @endif
+                                <div class="public-event-meta-item" title="{{ $event->venue ?: __('events.temple_premises') }}">
+                                    <i class="bi bi-geo-alt text-danger me-1"></i>
+                                    {{ $event->venue ?: __('events.temple_premises') }}
+                                </div>
                             </div>
 
-                            <!-- Short Summary -->
-                            <p class="card-text text-secondary small flex-grow-1 mb-4">
-                                {{ $event->short_description ?: \Illuminate\Support\Str::limit($event->description, 130) }}
+                            <!-- Short Summary / Details (Clamped) -->
+                            <p class="public-event-desc" title="{{ $event->short_description ?: $event->description }}">
+                                {{ $event->short_description ?: ($event->description ? \Illuminate\Support\Str::limit($event->description, 130) : __('events.no_description')) }}
                             </p>
 
-                            <!-- View Details Button -->
-                            <div class="mt-auto pt-2 border-top">
+                            <!-- View Details Button (Pinned to Bottom) -->
+                            <div class="public-event-card-footer">
                                 <a href="{{ route('public.events.show', $event->slug) }}" class="btn {{ $event->status === 'active' || $event->status === 'closing' ? 'temple-btn-maroon' : ($event->status === 'upcoming' ? 'btn-outline-primary' : 'btn-outline-secondary') }} w-100 fw-semibold">
                                     {{ __('portal.public.view_event_details') }} <i class="bi bi-arrow-right ms-1"></i>
                                 </a>

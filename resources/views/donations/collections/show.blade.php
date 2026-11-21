@@ -143,8 +143,8 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="small text-muted mb-0">{{ __('donations.payment_method') }}</label>
-                        <div class="fw-semibold text-dark">{{ __('donations.method_'.$payment->payment_method) }}</div>
+                        <label class="small text-muted mb-1 d-block">{{ __('donations.payment_method') }}</label>
+                        @include('partials.payment-method-badge', ['method' => $payment->payment_method])
                     </div>
 
                     @if($payment->transaction_reference)

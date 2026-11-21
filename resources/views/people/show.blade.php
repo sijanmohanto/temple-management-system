@@ -274,6 +274,78 @@
 
         <!-- Right Side: Family, Remarks & Security Notes -->
         <div class="col-lg-4">
+            <!-- Devotee Portal Account & Credentials Card -->
+            @php
+                $linkedUser = $person->resolveUser();
+            @endphp
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+                    <h5 class="card-title mb-0 fw-bold text-dark">
+                        <i class="bi bi-shield-lock text-danger me-2"></i> {{ __('devotee.portal_account_card_title') }}
+                    </h5>
+                    @if($linkedUser)
+                        <span class="badge bg-success bg-opacity-10 text-success"><i class="bi bi-check-circle me-1"></i> {{ __('devotee.account_active') }}</span>
+                    @else
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary">{{ __('devotee.no_account') }}</span>
+                    @endif
+                </div>
+                <div class="card-body p-4">
+                    @if($linkedUser)
+                        <div class="mb-3">
+                            <span class="text-muted small d-block">{{ __('devotee.login_identifier') }}</span>
+                            <strong class="text-dark font-monospace fs-6">{{ $linkedUser->phone ?: $linkedUser->email }}</strong>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted small d-block">{{ __('devotee.account_status') }}</span>
+                            @if($linkedUser->isActive())
+                                <span class="badge bg-success">{{ __('common.status_active') }}</span>
+                            @else
+                                <span class="badge bg-danger">{{ __('common.status_inactive') }}</span>
+                            @endif
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted small d-block">{{ __('devotee.assigned_roles') }}</span>
+                            @foreach($linkedUser->roles as $role)
+                                <span class="badge bg-primary bg-opacity-10 text-primary me-1">{{ $role->name_en }}</span>
+                            @endforeach
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex flex-column gap-2 mt-3 pt-3 border-top">
+                            @if(Auth::user()->hasPermission('view_devotee_passwords'))
+                                <button type="button" class="btn btn-outline-danger btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#revealPasswordModal">
+                                    <i class="bi bi-eye me-1"></i> {{ __('devotee.reveal_password_btn') }}
+                                </button>
+                            @endif
+
+                            @if(Auth::user()->hasPermission('update_devotee_passwords'))
+                                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#resetPasswordModal">
+                                    <i class="bi bi-key me-1"></i> {{ __('devotee.reset_password_btn') }}
+                                </button>
+                            @endif
+                        </div>
+                    @else
+                        <p class="text-muted small mb-3">
+                            {{ __('devotee.no_account_notice') }}
+                        </p>
+                        @if(Auth::user()->hasPermission('manage_people'))
+                            @if(! empty($person->phone) || ! empty($person->email))
+                                <form method="POST" action="{{ route('people.credentials.provision', $person) }}">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm temple-btn-maroon rounded-pill w-100">
+                                        <i class="bi bi-person-plus me-1"></i> {{ __('devotee.provision_account_btn') }}
+                                    </button>
+                                </form>
+                            @else
+                                <div class="alert alert-warning py-2 px-3 small mb-0">
+                                    <i class="bi bi-info-circle me-1"></i> {{ __('devotee.phone_or_email_required_to_provision') }}
+                                </div>
+                            @endif
+                        @endif
+                    @endif
+                </div>
+            </div>
+
             <!-- Family Card -->
             <div class="card border-0 shadow-sm rounded-4 mb-4">
                 <div class="card-header bg-white border-bottom py-3">
@@ -368,6 +440,81 @@
         </div>
     </div>
 </div>
+
+@if($linkedUser && Auth::user()->hasPermission('view_devotee_passwords'))
+<!-- Reveal Password Modal -->
+<div class="modal fade" id="revealPasswordModal" tabindex="-1" aria-labelledby="revealPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom bg-light">
+                <h5 class="modal-title fw-bold text-dark" id="revealPasswordModalLabel">
+                    <i class="bi bi-shield-lock text-danger me-2"></i> {{ __('devotee.reveal_password_modal_title') }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-3">
+                    {{ __('devotee.reveal_password_audit_notice') }}
+                </p>
+                <div class="mb-3">
+                    <label for="revealReason" class="form-label small fw-semibold text-secondary">{{ __('devotee.inspection_reason') }}</label>
+                    <input type="text" id="revealReason" class="form-control" placeholder="e.g. Assisting devotee with initial login">
+                </div>
+                <div id="revealedPasswordContainer" class="d-none">
+                    <div class="p-3 bg-light rounded-3 text-center border">
+                        <small class="text-muted d-block mb-1">{{ __('devotee.current_password') }}</small>
+                        <h3 class="fw-bold text-danger font-monospace mb-0" id="revealedPasswordText"></h3>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top bg-light">
+                <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">{{ __('common.close') }}</button>
+                <button type="button" class="btn temple-btn-maroon rounded-pill px-3" id="confirmRevealBtn">
+                    <i class="bi bi-eye me-1"></i> {{ __('devotee.reveal_btn') }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
+@if($linkedUser && Auth::user()->hasPermission('update_devotee_passwords'))
+<!-- Reset Password Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form id="resetPasswordForm" method="POST" action="{{ route('people.credentials.reset', $person) }}">
+                @csrf
+                <div class="modal-header border-bottom bg-light">
+                    <h5 class="modal-title fw-bold text-dark" id="resetPasswordModalLabel">
+                        <i class="bi bi-key text-primary me-2"></i> {{ __('devotee.reset_password_modal_title') }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">
+                        {{ __('devotee.reset_password_modal_hint') }}
+                    </p>
+                    <div class="mb-3">
+                        <label for="newDevoteePassword" class="form-label small fw-semibold text-secondary">{{ __('devotee.custom_password_optional') }}</label>
+                        <input type="text" id="newDevoteePassword" name="new_password" class="form-control font-monospace" placeholder="Leave blank to auto-generate secure password">
+                    </div>
+                    <div class="mb-3">
+                        <label for="resetReason" class="form-label small fw-semibold text-secondary">{{ __('devotee.reset_reason') }}</label>
+                        <input type="text" id="resetReason" name="reason" class="form-control" placeholder="e.g. Devotee forgot login password" required>
+                    </div>
+                </div>
+                <div class="modal-footer border-top bg-light">
+                    <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">{{ __('common.cancel') }}</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-3">
+                        <i class="bi bi-check2-circle me-1"></i> {{ __('devotee.reset_btn') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endif
 @endsection
 
 @push('scripts')
@@ -377,6 +524,44 @@
         TempleUI.initDataTable('#personCommitteesTable', {
             pageLength: 5,
             lengthMenu: [[5, 10, 25], [5, 10, 25]]
+        });
+    });
+</script>
+@endif
+
+@if($linkedUser && Auth::user()->hasPermission('view_devotee_passwords'))
+<script>
+    $(document).ready(function() {
+        $('#confirmRevealBtn').on('click', function() {
+            var btn = $(this);
+            var reason = $('#revealReason').val();
+
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Decrypting...');
+
+            $.ajax({
+                url: "{{ route('people.credentials.reveal', $person) }}",
+                type: 'POST',
+                data: {
+                    _token: "{{ csrf_token() }}",
+                    reason: reason
+                },
+                dataType: 'json',
+                success: function(res) {
+                    btn.prop('disabled', false).html('<i class="bi bi-eye me-1"></i> Reveal');
+                    if (res.success) {
+                        $('#revealedPasswordText').text(res.password);
+                        $('#revealedPasswordContainer').removeClass('d-none');
+                        toastr.success('Password decrypted successfully.');
+                    } else {
+                        toastr.error(res.message);
+                    }
+                },
+                error: function(xhr) {
+                    btn.prop('disabled', false).html('<i class="bi bi-eye me-1"></i> Reveal');
+                    var msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Decryption failed.';
+                    toastr.error(msg);
+                }
+            });
         });
     });
 </script>

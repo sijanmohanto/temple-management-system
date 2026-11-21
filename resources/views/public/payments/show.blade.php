@@ -1,4 +1,4 @@
-@extends('layouts.public')
+@extends(auth()->check() ? 'layouts.app' : 'layouts.public')
 
 @section('title', $payment->payment_code . ' — ' . __('portal.public.my_contributions') . ' — ' . __('common.app_name'))
 
@@ -8,8 +8,8 @@
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb mb-0 small bg-white p-2 px-3 rounded-3 shadow-sm border">
             <li class="breadcrumb-item">
-                <a href="{{ route('home') }}" class="text-decoration-none text-muted">
-                    <i class="bi bi-house-door me-1"></i> {{ __('portal.public.home') }}
+                <a href="{{ auth()->check() ? route('devotee.dashboard') : route('home') }}" class="text-decoration-none text-muted">
+                    <i class="bi bi-house-door me-1"></i> {{ auth()->check() ? __('devotee.my_dashboard') : __('portal.public.home') }}
                 </a>
             </li>
             <li class="breadcrumb-item">
@@ -131,7 +131,9 @@
                         </div>
                         <div class="col-sm-6">
                             <label class="text-muted small d-block mb-1">{{ __('portal.public.select_payment_method') }}</label>
-                            <span class="badge bg-light text-dark border px-2 py-1 fs-6">{{ ucwords(str_replace('_', ' ', $payment->payment_method)) }}</span>
+                            <div>
+                                @include('partials.payment-method-badge', ['method' => $payment->payment_method])
+                            </div>
                         </div>
                         <div class="col-sm-6">
                             <label class="text-muted small d-block mb-1">{{ __('portal.public.transaction_reference') }}</label>

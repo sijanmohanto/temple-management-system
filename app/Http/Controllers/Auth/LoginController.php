@@ -44,11 +44,17 @@ class LoginController extends Controller
             app()->setLocale($user->preferred_locale);
         }
 
+        $identifier = $user->phone ?: $user->email;
         AuditLogger::log(
             'auth.login',
-            "User {$user->name} ({$user->email}) logged in successfully.",
+            "User {$user->name} ({$identifier}) logged in successfully.",
             $user
         );
+
+        if ($user->hasRole('devotee') && ! $user->hasAnyRole(['super_admin', 'temple_admin', 'treasurer'])) {
+            return redirect()->intended(route('devotee.dashboard'))
+                ->with('success', __('auth.login_success'));
+        }
 
         return redirect()->intended(route('dashboard'))
             ->with('success', __('auth.login_success'));

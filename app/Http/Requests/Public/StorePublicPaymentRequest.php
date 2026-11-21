@@ -54,10 +54,9 @@ class StorePublicPaymentRequest extends FormRequest
                 return;
             }
 
+            // Validate event collection date boundaries
             $eventSlug = $this->route('slug');
             $event = Event::where('slug', $eventSlug)->first();
-
-            // Validate event collection date boundaries
             if ($event) {
                 $today = now(config('app.timezone'))->startOfDay();
 

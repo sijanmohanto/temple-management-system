@@ -118,9 +118,10 @@
                                             </span>
                                         </div>
                                         <div class="fw-bold text-dark">{{ $p->payer_display_name }}</div>
-                                        <div class="small text-muted">
-                                            <i class="bi bi-calendar3 me-1"></i>{{ $p->payment_date->format('d M Y') }} &bull;
-                                            <i class="bi bi-credit-card me-1"></i>{{ __('donations.method_'.$p->payment_method) }}
+                                        <div class="small text-muted d-flex align-items-center gap-2 mt-1">
+                                            <span><i class="bi bi-calendar3 me-1"></i>{{ $p->payment_date->format('d M Y') }}</span>
+                                            <span>&bull;</span>
+                                            @include('partials.payment-method-badge', ['method' => $p->payment_method])
                                         </div>
                                     </div>
                                     <div class="text-md-end d-flex align-items-center gap-2">

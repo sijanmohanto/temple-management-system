@@ -137,7 +137,7 @@ class CollectionPaymentController extends Controller implements HasMiddleware
             }
             $contextHtml .= '<div class="small text-muted"><i class="bi bi-calendar3 me-1"></i>'.e($payment->payment_date->format('d M Y')).'</div>';
 
-            $methodHtml = '<div class="fw-semibold text-dark"><i class="bi bi-credit-card me-1 text-muted"></i>'.e(__('donations.method_'.$payment->payment_method)).'</div>';
+            $methodHtml = '<div>'.view('partials.payment-method-badge', ['method' => $payment->payment_method])->render().'</div>';
             if ($payment->transaction_reference) {
                 $ref = $canSeeSensitive ? e($payment->transaction_reference) : substr(e($payment->transaction_reference), 0, 4).'****';
                 $methodHtml .= '<div class="small text-muted font-monospace"><i class="bi bi-hash me-1"></i>'.$ref.'</div>';

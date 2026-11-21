@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Log;
@@ -19,6 +21,7 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
+        'person_id',
         'name',
         'email',
         'phone',
@@ -208,12 +211,51 @@ class User extends Authenticatable
     }
 
     /**
+     * Direct relationship to Person.
+     */
+    public function personRelation(): BelongsTo
+    {
+        return $this->belongsTo(Person::class, 'person_id');
+    }
+
+    /**
+     * Devotee encrypted credentials.
+     */
+    public function devoteeCredential(): HasOne
+    {
+        return $this->hasOne(DevoteeCredential::class);
+    }
+
+    /**
+     * Email OTP requests.
+     */
+    public function emailOtps(): HasMany
+    {
+        return $this->hasMany(EmailOtp::class);
+    }
+
+    /**
+     * Check if user is a devotee.
+     */
+    public function isDevotee(): bool
+    {
+        return $this->hasRole('devotee');
+    }
+
+    /**
      * Resolve the linked registered Person profile in the temple directory.
      * Enforces active status, unambiguous candidate matching, and prevents
      * conflicting phone/email matches across different people.
      */
     public function person(): ?Person
     {
+        if ($this->person_id) {
+            $linked = $this->personRelation;
+            if ($linked && $linked->status === 'active') {
+                return $linked;
+            }
+        }
+
         if (empty($this->phone) && empty($this->email)) {
             return null;
         }

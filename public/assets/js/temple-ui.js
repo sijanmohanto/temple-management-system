@@ -283,7 +283,7 @@
 
         // Display validation errors toast if present
         if (window.TempleConfig && window.TempleConfig.validationErrors && window.TempleConfig.validationErrors.length) {
-            var errorList = window.TempleConfig.validationErrors;
+            var errorList = Array.from(new Set(window.TempleConfig.validationErrors));
             var summary = errorList.length === 1 ? errorList[0] : errorList.join('<br>');
             TempleUI.toast.error(summary, window.TempleConfig.i18n ? window.TempleConfig.i18n.validationError : 'Validation Error');
         }

@@ -2,6 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Event;
+use App\Models\EventCategory;
+use App\Models\Person;
+use App\Models\ReceiverAccount;
 use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
@@ -35,6 +39,16 @@ class SidebarMenuHierarchyTest extends TestCase
 
         $this->devotee = User::factory()->create(['status' => 'active']);
         $this->devotee->roles()->attach($devoteeRole);
+
+        $person = Person::create([
+            'person_code' => 'DEV-00999',
+            'name_en' => 'Test Devotee',
+            'phone' => '01700000999',
+            'status' => 'active',
+            'created_by' => $this->superAdmin->id,
+            'updated_by' => $this->superAdmin->id,
+        ]);
+        $this->devotee->update(['person_id' => $person->id]);
     }
 
     public function test_sidebar_renders_parent_menus_with_bootstrap_collapse_attributes(): void
@@ -94,8 +108,9 @@ class SidebarMenuHierarchyTest extends TestCase
 
     public function test_role_based_menu_visibility_enforcement(): void
     {
-        // Devotee should not see Finance, Collections, or Admin menus
-        $responseDevotee = $this->actingAs($this->devotee)->get(route('dashboard'));
+        // Devotee is redirected to devotee dashboard and should not see Finance, Collections, or Admin menus
+        $this->actingAs($this->devotee)->get(route('dashboard'))->assertRedirect(route('devotee.dashboard'));
+        $responseDevotee = $this->actingAs($this->devotee)->get(route('devotee.dashboard'));
         $responseDevotee->assertStatus(200);
         $responseDevotee->assertDontSee('#menuFinanceIncomeExpense', false);
         $responseDevotee->assertDontSee('#menuFinanceExpenses', false);
@@ -118,5 +133,84 @@ class SidebarMenuHierarchyTest extends TestCase
         $response->assertSee('আয় ও ব্যয়');
         $response->assertSee('ব্যয় বিবরণী');
         $response->assertSee('তহবিল স্থানান্তর');
+    }
+
+    public function test_devotee_sidebar_renders_collapsible_menus_and_submenus(): void
+    {
+        $response = $this->actingAs($this->devotee)->get(route('devotee.dashboard'));
+        $response->assertStatus(200);
+
+        // Sidebar Devotee menus
+        $response->assertSee('#menuDevoteeEvents', false);
+        $response->assertSee('#menuDevoteeFinance', false);
+        $response->assertSee('#menuDevoteeComplaints', false);
+
+        // Submenus & links
+        $response->assertSee(route('public.events.index'));
+        $response->assertSee(route('public.previous-events.index'));
+        $response->assertSee(route('devotee.payments.index'));
+        $response->assertSee(route('public.payments.history'));
+        $response->assertSee(route('public.complaints.index'));
+        $response->assertSee(route('public.complaints.create'));
+        $response->assertSee(route('devotee.profile'));
+    }
+
+    public function test_portal_pages_render_inside_app_layout_with_sidebar_for_authenticated_devotee(): void
+    {
+        $category = EventCategory::create([
+            'name_en' => 'Major Festival',
+            'name_bn' => 'প্রধান উৎসব',
+            'slug' => 'major-festival',
+            'created_by' => $this->superAdmin->id,
+            'updated_by' => $this->superAdmin->id,
+        ]);
+
+        $event = Event::create([
+            'event_code' => 'EVT-TEST-2026',
+            'slug' => 'test-festival-2026',
+            'name_en' => 'Test Festival 2026',
+            'name_bn' => 'টেস্ট উৎসব ২০২৬',
+            'event_category_id' => $category->id,
+            'event_year' => 2026,
+            'start_date' => now()->subDay()->toDateString(),
+            'end_date' => now()->addDays(5)->toDateString(),
+            'collection_start_date' => now()->subDay()->toDateString(),
+            'collection_end_date' => now()->addDays(5)->toDateString(),
+            'status' => Event::STATUS_ACTIVE,
+            'publication_status' => Event::PUB_STATUS_PUBLISHED,
+            'created_by' => $this->superAdmin->id,
+            'updated_by' => $this->superAdmin->id,
+        ]);
+
+        ReceiverAccount::create([
+            'account_name' => 'Temple bKash',
+            'account_number' => '01711000000',
+            'account_type' => 'merchant',
+            'payment_method' => 'bkash',
+            'status' => 'active',
+            'is_visible_public' => true,
+            'display_order' => 1,
+            'created_by' => $this->superAdmin->id,
+            'updated_by' => $this->superAdmin->id,
+        ]);
+
+        // Devotee accessing payment form remains in layouts.app with sidebar
+        $devoteePayResponse = $this->actingAs($this->devotee)->get(route('public.events.pay', $event->slug));
+        $devoteePayResponse->assertStatus(200);
+        $devoteePayResponse->assertSee('id="appSidebar"', false);
+        $devoteePayResponse->assertDontSee('public-navbar', false);
+
+        // Devotee accessing previous events remains in layouts.app with sidebar
+        $devoteeArchiveResponse = $this->actingAs($this->devotee)->get(route('public.previous-events.index'));
+        $devoteeArchiveResponse->assertStatus(200);
+        $devoteeArchiveResponse->assertSee('id="appSidebar"', false);
+        $devoteeArchiveResponse->assertDontSee('public-navbar', false);
+
+        // Guest accessing previous events renders layouts.public without sidebar
+        auth()->logout();
+        $guestArchiveResponse = $this->get(route('public.previous-events.index'));
+        $guestArchiveResponse->assertStatus(200);
+        $guestArchiveResponse->assertSee('public-navbar', false);
+        $guestArchiveResponse->assertDontSee('id="appSidebar"', false);
     }
 }

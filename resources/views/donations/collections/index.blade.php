@@ -147,7 +147,9 @@
                                     <div class="small text-muted"><i class="bi bi-calendar3 me-1"></i>{{ $payment->payment_date->format('d M Y') }}</div>
                                 </td>
                                 <td>
-                                    <div class="fw-semibold text-dark"><i class="bi bi-credit-card me-1 text-muted"></i>{{ __('donations.method_'.$payment->payment_method) }}</div>
+                                    <div class="mb-1">
+                                        @include('partials.payment-method-badge', ['method' => $payment->payment_method])
+                                    </div>
                                     @if($payment->transaction_reference)
                                         <div class="small text-muted font-monospace">
                                             <i class="bi bi-hash me-1"></i>{{ Auth::user()->hasPermission('view_sensitive_payment_details') ? $payment->transaction_reference : substr($payment->transaction_reference, 0, 4).'****' }}

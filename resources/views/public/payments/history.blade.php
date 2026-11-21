@@ -1,4 +1,4 @@
-@extends('layouts.public')
+@extends(auth()->check() ? 'layouts.app' : 'layouts.public')
 
 @section('title', __('portal.public.my_contributions') . ' — ' . __('common.app_name'))
 
@@ -8,8 +8,8 @@
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb mb-0 small bg-white p-2 px-3 rounded-3 shadow-sm border">
             <li class="breadcrumb-item">
-                <a href="{{ route('home') }}" class="text-decoration-none text-muted">
-                    <i class="bi bi-house-door me-1"></i> {{ __('portal.public.home') }}
+                <a href="{{ auth()->check() ? route('devotee.dashboard') : route('home') }}" class="text-decoration-none text-muted">
+                    <i class="bi bi-house-door me-1"></i> {{ auth()->check() ? __('devotee.my_dashboard') : __('portal.public.home') }}
                 </a>
             </li>
             <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">
@@ -115,9 +115,7 @@
                                 @endif
                             </td>
                             <td>
-                                <span class="badge bg-light text-dark border">
-                                    {{ strtoupper($payment->payment_method) }}
-                                </span>
+                                @include('partials.payment-method-badge', ['method' => $payment->payment_method])
                                 @if($payment->receiverAccount)
                                     <div class="small text-muted">{{ $payment->receiverAccount->account_name }}</div>
                                 @endif
@@ -205,9 +203,9 @@
                                                         <span class="text-muted">{{ __('events.event') }}:</span>
                                                         <span class="fw-semibold text-dark">{{ $payment->event?->name }}</span>
                                                     </li>
-                                                    <li class="list-group-item d-flex justify-content-between px-0">
+                                                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
                                                         <span class="text-muted">{{ __('portal.public.select_payment_method') }}:</span>
-                                                        <span class="fw-semibold text-dark">{{ strtoupper($payment->payment_method) }}</span>
+                                                        <span>@include('partials.payment-method-badge', ['method' => $payment->payment_method])</span>
                                                     </li>
                                                     @if($payment->receiverAccount)
                                                         <li class="list-group-item d-flex justify-content-between px-0">

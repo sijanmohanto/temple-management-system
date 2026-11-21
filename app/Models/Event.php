@@ -268,6 +268,55 @@ class Event extends Model
     }
 
     /**
+     * Determine if this event is currently eligible and running to accept devotee payments.
+     * Enforces:
+     * 1. Published publication status.
+     * 2. Running lifecycle status (STATUS_ACTIVE only; upcoming, completed, closed, draft rejected).
+     * 3. Current date within collection start and end dates (if configured).
+     */
+    public function isRunningForPayment(): bool
+    {
+        if (! $this->isPublished()) {
+            return false;
+        }
+
+        if ($this->status !== self::STATUS_ACTIVE) {
+            return false;
+        }
+
+        $today = now(config('app.timezone'))->startOfDay();
+
+        if ($this->collection_start_date && $today->lt($this->collection_start_date->copy()->startOfDay())) {
+            return false;
+        }
+
+        if ($this->collection_end_date && $today->gt($this->collection_end_date->copy()->endOfDay())) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Scope for currently eligible running events accepting devotee payments.
+     */
+    public function scopeRunningForPayment(Builder $query): Builder
+    {
+        $today = now(config('app.timezone'))->startOfDay();
+
+        return $query->where('publication_status', self::PUB_STATUS_PUBLISHED)
+            ->where('status', self::STATUS_ACTIVE)
+            ->where(function (Builder $q) use ($today) {
+                $q->whereNull('collection_start_date')
+                    ->orWhere('collection_start_date', '<=', $today);
+            })
+            ->where(function (Builder $q) use ($today) {
+                $q->whereNull('collection_end_date')
+                    ->orWhere('collection_end_date', '>=', $today);
+            });
+    }
+
+    /**
      * Check if event has a collection period configured.
      */
     public function hasCollectionPeriod(): bool
@@ -290,13 +339,60 @@ class Event extends Model
     /**
      * URL for banner image.
      */
-    public function getBannerUrlAttribute(): ?string
+    public function getBannerUrlAttribute(): string
+    {
+        return $this->getFeaturedImageUrlAttribute();
+    }
+
+    /**
+     * Resolve appropriate deity banner image based on event name and category.
+     */
+    public function getFeaturedImageUrlAttribute(): string
     {
         if ($this->banner_image_path) {
             return asset('storage/'.$this->banner_image_path);
         }
 
-        return null;
+        $haystack = mb_strtolower(
+            ($this->name_en ?? '').' '.
+            ($this->name_bn ?? '').' '.
+            ($this->slug ?? '').' '.
+            ($this->category?->name_en ?? '').' '.
+            ($this->category?->name_bn ?? '')
+        );
+
+        // Kali / Shyama / Deepavali / Diwali
+        if (preg_match('/(kali|shyama|deepavali|diwali|mahakali|কালী|শ্যামা|দীপাবলি|দেওয়ালি|মহাকালী)/u', $haystack)) {
+            return asset('assets/images/events/kali-puja.jpg');
+        }
+
+        // Durga Puja / Sharodiya / Durgotsav / Chandi / Basanti
+        if (preg_match('/(durga|sharodiya|durgotsav|chandi|basanti|দুর্গা|শারদীয়|শারদীয়া|দুর্গাপূজা|দুর্গোৎসব|চণ্ডী|বাসন্তী)/u', $haystack)) {
+            return asset('assets/images/events/durga-puja.jpg');
+        }
+
+        // Lord Shiva / Shivaratri / Mahadev / Neel Puja / Bholenath / Rudra
+        if (preg_match('/(shiva|shiv|mahadev|shivaratri|neel|bholenath|rudra|শিব|মহাদেব|শিবরাত্রি|মহাশিবরাত্রি|নীলপূজা|ভোলানাথ|রুদ্র)/u', $haystack)) {
+            return asset('assets/images/events/shiva-ratri.jpg');
+        }
+
+        // Sri Krishna / Janmashtami / Radhakrishna / Jhulan / Raas / Dole / Govinda
+        if (preg_match('/(krishna|janmashtami|radha|jhulan|raas|dole|govinda|কৃষ্ণ|শ্রীকৃষ্ণ|জন্মাষ্টমী|ঝুলন|রাস|রাধাকৃষ্ণ|দোল|গোবিন্দ)/u', $haystack)) {
+            return asset('assets/images/events/krishna-janmashtami.jpg');
+        }
+
+        // Maa Saraswati / Vasant Panchami / Veena
+        if (preg_match('/(saraswati|vasant|basant|panchami|সরস্বতী|সরস্বতীপূজা|বসন্ত পঞ্চমী|বীণাপাণি|বাগদেবী)/u', $haystack)) {
+            return asset('assets/images/events/saraswati-puja.jpg');
+        }
+
+        // Maa Lakshmi / Kojagari
+        if (preg_match('/(lakshmi|laxmi|kojagari|লক্ষ্মী|মা লক্ষ্মী|কোজাগরী|লক্ষ্মীপূজা)/u', $haystack)) {
+            return asset('assets/images/events/lakshmi-puja.jpg');
+        }
+
+        // Default Bengali Temple Sanctum
+        return asset('assets/images/events/temple-default.jpg');
     }
 
     /**

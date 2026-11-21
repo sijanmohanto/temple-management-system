@@ -24,17 +24,34 @@ class StoreEventDocumentRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'event_id' => ['required', 'integer', 'exists:events,id'],
+        $isNewEvent = $this->input('event_mode') === 'new';
+
+        $rules = [
+            'event_mode' => ['nullable', 'string', 'in:existing,new'],
             'title_en' => ['required', 'string', 'max:255'],
             'title_bn' => ['nullable', 'string', 'max:255'],
             'document_type' => ['required', 'string', Rule::in(EventDocument::ALLOWED_TYPES)],
-            'file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
+            'report_category' => ['nullable', 'string', Rule::in(EventDocument::REPORT_CATEGORIES)],
+            'financial_year' => ['nullable', 'integer', 'min:1900', 'max:2100'],
+            'file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,xlsx,xls,csv', 'max:10240'],
             'description_en' => ['nullable', 'string', 'max:2000'],
             'description_bn' => ['nullable', 'string', 'max:2000'],
             'publication_status' => ['nullable', 'string', Rule::in([EventDocument::PUB_STATUS_PUBLISHED, EventDocument::PUB_STATUS_UNPUBLISHED, EventDocument::PUB_STATUS_DRAFT])],
             'publish_now' => ['nullable', 'boolean'],
         ];
+
+        if ($isNewEvent) {
+            $rules['new_event_name_en'] = ['required', 'string', 'max:150'];
+            $rules['new_event_name_bn'] = ['nullable', 'string', 'max:150'];
+            $rules['new_event_category_id'] = ['required', 'integer', 'exists:event_categories,id'];
+            $rules['new_event_year'] = ['required', 'integer', 'min:1900', 'max:2100'];
+            $rules['new_event_venue'] = ['nullable', 'string', 'max:255'];
+            $rules['new_event_description_en'] = ['nullable', 'string', 'max:2000'];
+        } else {
+            $rules['event_id'] = ['required', 'integer', 'exists:events,id'];
+        }
+
+        return $rules;
     }
 
     /**

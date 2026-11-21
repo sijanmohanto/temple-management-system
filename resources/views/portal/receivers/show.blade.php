@@ -47,8 +47,8 @@
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <label class="text-muted small">{{ __('portal.receivers.payment_method') }}</label>
-                            <div class="fw-semibold fs-6">
-                                <span class="badge bg-dark">{{ $receiver->method_name }}</span>
+                            <div class="fw-semibold fs-6 mt-1">
+                                @include('partials.payment-method-badge', ['method' => $receiver->payment_method])
                                 <span class="badge bg-light text-dark border ms-1">{{ $receiver->type_name }}</span>
                             </div>
                         </div>

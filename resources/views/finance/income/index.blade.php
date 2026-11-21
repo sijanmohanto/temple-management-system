@@ -43,7 +43,12 @@
                                 <td>{{ $inc->income_date->format('Y-m-d') }}</td>
                                 <td class="fw-semibold">{{ $inc->title_en }}</td>
                                 <td>{{ $inc->incomeAccount?->name_en }}</td>
-                                <td>{{ $inc->depositAccount?->name_en }} ({{ ucfirst(str_replace('_', ' ', $inc->payment_method)) }})</td>
+                                <td>
+                                    <div class="fw-semibold">{{ $inc->depositAccount?->name_en }}</div>
+                                    <div class="mt-1">
+                                        @include('partials.payment-method-badge', ['method' => $inc->payment_method])
+                                    </div>
+                                </td>
                                 <td>{{ $inc->payer_name ?: '-' }}</td>
                                 <td class="text-end fw-bold text-success">৳{{ number_format($inc->amount, 2) }}</td>
                                 <td class="text-end">

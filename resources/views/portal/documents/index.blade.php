@@ -29,7 +29,7 @@
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label small fw-bold">{{ __('portal.documents.event') }}</label>
                     <select id="filterEvent" class="form-select select2-enable">
                         <option value="">{{ __('portal.all_events') }}</option>
@@ -40,7 +40,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label small fw-bold">{{ __('portal.documents.type') }}</label>
                     <select id="filterType" class="form-select select2-enable">
                         <option value="">{{ __('portal.all_types') }}</option>
@@ -51,6 +51,15 @@
                     </select>
                 </div>
                 <div class="col-md-3">
+                    <label class="form-label small fw-bold">{{ __('portal.documents.report_category') }}</label>
+                    <select id="filterCategory" class="form-select select2-enable">
+                        <option value="">{{ __('portal.all_categories') }}</option>
+                        @foreach(\App\Models\EventDocument::REPORT_CATEGORIES as $cat)
+                            <option value="{{ $cat }}">{{ __('portal.report_categories.' . $cat) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <label class="form-label small fw-bold">{{ __('portal.publication_status') }}</label>
                     <select id="filterStatus" class="form-select">
                         <option value="">{{ __('portal.all_publication_statuses') }}</option>
@@ -103,6 +112,7 @@ $(document).ready(function () {
             data: function (d) {
                 d.event_id = $('#filterEvent').val();
                 d.document_type = $('#filterType').val();
+                d.report_category = $('#filterCategory').val();
                 d.publication_status = $('#filterStatus').val();
             }
         },
@@ -124,13 +134,14 @@ $(document).ready(function () {
         }
     });
 
-    $('#filterEvent, #filterType, #filterStatus').on('change', function () {
+    $('#filterEvent, #filterType, #filterCategory, #filterStatus').on('change', function () {
         table.ajax.reload();
     });
 
     $('#btnResetFilters').on('click', function () {
         $('#filterEvent').val('').trigger('change');
         $('#filterType').val('').trigger('change');
+        $('#filterCategory').val('').trigger('change');
         $('#filterStatus').val('');
         table.ajax.reload();
     });

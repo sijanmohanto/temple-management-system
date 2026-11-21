@@ -8,6 +8,7 @@ use App\Models\Classification;
 use App\Models\Family;
 use App\Models\Person;
 use App\Services\AuditLogger;
+use App\Services\DevoteeCredentialService;
 use App\Services\DuplicateDetectionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -193,8 +194,11 @@ class PersonController extends Controller implements HasMiddleware
     /**
      * Store a newly created person in storage.
      */
-    public function store(StorePersonRequest $request, DuplicateDetectionService $dupService): RedirectResponse
-    {
+    public function store(
+        StorePersonRequest $request,
+        DuplicateDetectionService $dupService,
+        DevoteeCredentialService $credentialService
+    ): RedirectResponse {
         $validated = $request->validated();
 
         // Duplicate detection warning check
@@ -208,7 +212,7 @@ class PersonController extends Controller implements HasMiddleware
             }
         }
 
-        $person = DB::transaction(function () use ($validated, $request) {
+        $person = DB::transaction(function () use ($validated, $request, $credentialService) {
             $personCode = Person::generatePersonCode();
 
             $personData = collect($validated)->except(['classifications', 'confirm_duplicate'])->toArray();
@@ -222,6 +226,11 @@ class PersonController extends Controller implements HasMiddleware
                 foreach ($validated['classifications'] as $classificationId) {
                     $person->assignClassification($classificationId);
                 }
+            }
+
+            // Automatically provision devotee login account if phone number is provided
+            if (! empty($person->phone)) {
+                $credentialService->provisionDevoteeAccount($person, null, $request->user());
             }
 
             AuditLogger::log(

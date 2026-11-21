@@ -81,6 +81,38 @@
                             @enderror
                         </div>
 
+                        {{-- Report Category & Financial Year --}}
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="report_category" class="form-label fw-bold">
+                                    {{ __('portal.documents.report_category') }}
+                                </label>
+                                <select name="report_category" id="report_category" class="form-select @error('report_category') is-invalid @enderror">
+                                    <option value="">-- {{ __('common.select') }} --</option>
+                                    @foreach(\App\Models\EventDocument::REPORT_CATEGORIES as $cat)
+                                        <option value="{{ $cat }}" {{ old('report_category', $document->report_category) === $cat ? 'selected' : '' }}>
+                                            {{ __('portal.report_categories.' . $cat) }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('report_category')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-6">
+                                <label for="financial_year" class="form-label fw-bold">
+                                    {{ __('portal.documents.financial_year') }}
+                                </label>
+                                <input type="number" name="financial_year" id="financial_year"
+                                       class="form-control @error('financial_year') is-invalid @enderror"
+                                       value="{{ old('financial_year', $document->financial_year) }}" min="2000" max="2100"
+                                       placeholder="{{ date('Y') }}">
+                                @error('financial_year')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
                         {{-- Titles (English & Bengali) --}}
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
@@ -132,9 +164,9 @@
                             </label>
                             <input type="file" name="file" id="file"
                                    class="form-control @error('file') is-invalid @enderror"
-                                   accept=".pdf,.jpg,.jpeg,.png">
+                                   accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.csv">
                             <div class="form-text text-muted">
-                                {{ __('portal.documents.replace_file_help') }} (PDF, JPG, PNG; Max: 10MB)
+                                {{ __('portal.documents.replace_file_help') }} (PDF, JPG, PNG, Excel [XLSX, XLS], CSV; Max: 10MB)
                             </div>
                             @error('file')
                                 <div class="invalid-feedback">{{ $message }}</div>

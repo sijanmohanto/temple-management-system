@@ -11,8 +11,8 @@
 **Phase 4 Status**: **Completed, Corrected & Fully Tested** (101 tests, 513 assertions)  
 **Phase 5 Status**: **Completed & Fully Tested** (144 tests, 876 assertions total)  
 **Phase 6 Status**: **FINAL APPROVED — All Increments (1, 2, 3, 4 & 5) Completed, Audited & Fully Verified** (269 tests, 1,608 assertions total)  
-**Public Portal Status**: **Admin Panel, Increments 1, 2, 3, 4, 4.1 Completed & Increment 5 Steps 1, 2, 3 & 4 (Security, Controller, Routes, Admin Verification UI & Payment Reversal Integration) Completed & Fully Tested** (460 tests, 2,706 assertions total)  
-**Next Phase**: Phase 7 (Inventory, Goods Receiving, Asset Registry & Maintenance) — On Standby Awaiting Explicit User Approval
+**Public Portal Status**: **Admin Panel, Increments 1, 2, 3, 4, 4.1, 5, 6, 7 & Increment 8 (Devotee Self-Service Portal, Event Payment System, Themed Event Cards & Payment Method Logo Branding) Completed & Fully Tested** (35 Devotee tests, 128 assertions; 264 Public Portal tests, 1,450 assertions total)  
+**Next Phase**: Phase 7 (Inventory, Goods Receiving, Asset Registry & Maintenance) or Next Portal Increment — On Standby Awaiting Explicit User Approval
 
 ---
 
@@ -1828,3 +1828,130 @@ Result:
     - **High-Contrast Styling Enforced**: Explicitly added `color: #ffffff;` inline and updated `public/assets/css/temple-theme.css` with selector `.temple-emblem[style*="background: var(--temple-gold)"] { color: #ffffff !important; border-color: rgba(255, 255, 255, 0.5) !important; }`.
     - **Cross-Platform Font Stack**: Ensured robust Devanagari font fallbacks (`Hind Siliguri`, `Segoe UI`, `Noto Sans Devanagari`, Arial) for crisp glyph rendering across all operating systems and browsers.
     - **Full Verification**: All Public Portal tests pass (242 tests, 1,331 assertions) and Pint PSR-12 code style passed cleanly.
+
+14. **Increment 7 — Previous Event Accounts & Public Financial Reports**:
+    - **Dual-Source Financial Architecture**:
+      - **Source 1 (System-Generated Financial Summary)**: Authoritative double-entry ledger calculation utilizing `FinancialReportService::getIncomeExpenseStatement` and `EventCollectionReportService::getMetrics`. Displays Total Verified Income, Total Approved Expenses, Net Surplus/Deficit, and Outstanding Pledges alongside categorized income/expense accounts and % shares. Integrates formal Event Settlement details (transferred surplus to General Temple Fund 3010). Graceful unrecorded state for historical periods without software ledger vouchers.
+      - **Source 2 (Audited Statements & Official Documents)**: Admin-uploaded verified statements, statutory audit reports, expense category spreadsheets, and settlement summaries.
+    - **Database Migration & Model Architecture**:
+      - Added `uuid` (`CHAR(36)` unique), `report_category` (indexed string), and `financial_year` (indexed integer) to `event_documents` via migration `2026_11_17_234443_add_report_category_and_uuid_to_event_documents_table`.
+      - Model constants: `CATEGORY_COMPLETE_FINANCIAL_STATEMENT`, `CATEGORY_INCOME_REPORT`, `CATEGORY_EXPENSE_REPORT`, `CATEGORY_EXPENSE_BREAKDOWN`, `CATEGORY_EVENT_SETTLEMENT`, `CATEGORY_OTHER`.
+      - Automatic UUID generation and default `financial_year` hook via `booted()` callback.
+    - **Admin Document Management Enhancement**:
+      - Form Requests (`StoreEventDocumentRequest`, `UpdateEventDocumentRequest`) updated with strict validation for report categories, years, and file types (`pdf,jpg,jpeg,png,webp,xlsx,xls,csv`).
+      - Admin views (`create.blade.php`, `edit.blade.php`, `show.blade.php`, `index.blade.php`) updated with Select2 event selection, category badges, Excel/CSV file icons, and DataTables AJAX filtering.
+    - **Public Previous Events Archive & Show UI**:
+      - Created `PreviousEventArchiveController` with `index`, `show`, `previewDocument`, and `downloadDocument`.
+      - Archive Index (`resources/views/public/previous_events/index.blade.php`): Filterable by keyword search, category, financial year, and report category with published document count badges.
+      - Event Financial Report Details (`resources/views/public/previous_events/show.blade.php`): Responsive dual-tab design, key financial summary cards, categorized income/expense tables, completed settlement card, audited documents list, and inline PDF/Image preview modal.
+    - **Strict IDOR & Security Invariants**:
+      - Public URLs strictly use event `$slug` and document `$uuid` (e.g. `/previous-events/{slug}/documents/{uuid}/preview`), eliminating sequential database integer ID exposure.
+      - Dual publication guard: both event and document must be published and valid; unauthorized or draft access returns 404.
+      - Path traversal guard: prevents `..` sequences and restricts file serving to `private/event_documents/` on `local` disk.
+      - Download responses enforce `X-Content-Type-Options: nosniff`.
+    - **Localization & Navigation Integration**:
+      - Replaced disabled placeholder in `resources/views/layouts/public.blade.php` with active *“Previous Events & Financial Reports”* nav link and added footer link.
+      - 100% bilingual parity between `lang/en/portal.php` and `lang/bn/portal.php`.
+      - Permanent redirect from legacy `/event-accounts` to `/previous-events`.
+    - **Comprehensive Automated Testing & Final Functional Verification**:
+      - Updated `tests/Feature/PublicPortal/PreviousEventArchiveTest.php` with 22 tests (119 assertions), covering:
+        1. Public archive guest access, search, and liturgical/report filtering.
+        2. Double-entry ledger calculation integrity (exclusion of opening balances, asset transfers, and unposted/reversed vouchers).
+        3. Completed fund settlement presentation and friendly unrecorded historical state handling.
+        4. In-browser PDF preview stream and secure spreadsheet downloads (.xlsx, .xls, .csv).
+        5. IDOR prevention (UUID + slug) and path traversal guard.
+        6. **E2E Scenario 1**: Existing historical event upload, publish, and in-browser PDF preview verification.
+        7. **E2E Scenario 2**: Historical event creation on-the-fly (`event_mode: new`) without ledger records, upload of final closing report, and immediate public archive availability.
+        8. **E2E Scenario 3**: Excel report (.xlsx) upload, publish, and authenticated public download with proper attachment headers.
+        9. **E2E Scenario 4**: Unpublish security test verifying immediate public block (HTTP 404 on preview and download) and re-publish access restoration.
+      - **On-the-Fly Historical Event Creation**: Admin upload modal supports adding historical events directly (`event_mode: new`) without any prior ledger entries, pledges, or database records (`status: closed`, `publication_status: published`, sequential code `EVT-HIST-{year}-{random}`).
+      - **Uploaded Document Final Authority**: Uploaded document is treated as the official final closing statement; Tab 1 is default active displaying the embedded PDF viewer (`<iframe>`) and direct Excel download buttons; Tab 2 displays supplementary double-entry ledger records.
+      - **Full Test Suite Status**:
+        - `PreviousEventArchiveTest`: 22 passed, 0 failed (119 assertions).
+        - Total Public Portal Feature Suite (`tests/Feature/PublicPortal`): 264 passed, 0 failed (1,450 assertions).
+        - Core Accounting Regression (`EventDonationAndSettlementTest`, `FinanceAndAccountingTest`): 33 passed, 0 failed (233 assertions).
+      - **100% PSR-12 Code Compliance**: Verified via Laravel Pint (`php vendor/bin/pint`).
+      - Operational guide updated in `PUBLIC_FINANCIAL_REPORTS_GUIDE.md`.
+
+15. **Increment 7 Completion**:
+    - Increment 7 — Previous Event Accounts & Public Financial Reports was 100% completed and approved.
+
+16. **Increment 8 — Devotee Self-Service Portal & Event-wise Payment System**:
+    - **Devotee Account Provisioning & Authentication**:
+      - Automatic user account provisioning when Admin registers a devotee with a phone number in Directory (`PersonController::store` $\rightarrow$ `DevoteeCredentialService::provisionDevoteeAccount`).
+      - Linked `person_id` foreign key (`nullable`, `unique`, `nullOnDelete`) on `users` table.
+      - Made `users.email` nullable with unique index intact to accommodate devotees without email.
+      - Phone number authentication with Bangladesh phone number normalization variants (`01XXXXXXXXX`, `+8801XXXXXXXXX`, `8801XXXXXXXXX`).
+      - Ambiguous phone number guard prevents silent incorrect linking when multiple active devotees share identical numbers.
+      - Devotees authenticate seamlessly using Phone Number + Password (no mandatory first-login password change).
+      - Inactive devotee accounts rejected; unlinked users blocked by `EnsureDevoteeAccountLinked` middleware (`alias: devotee.linked`).
+    - **Dedicated Password Storage Architecture**:
+      - `users.password` holds standard Laravel one-way hash (`Hash::make`).
+      - `devotee_credentials` table stores encrypted copy (`Crypt::encryptString`) linked strictly 1-to-1 to devotee user.
+      - Centralized `DevoteeCredentialService` guarantees atomic synchronization between hash and encrypted copy inside database transactions (`DB::transaction`).
+      - Admin password management: authorized admins (`view_devotee_passwords`) can reveal decrypted passwords with mandatory audit reasoning (`AuditLogger`).
+      - Authorized admins (`update_devotee_passwords`) can reset passwords, updating both storage locations atomically.
+      - Plaintext passwords strictly prohibited from appearing in DataTables, AJAX responses, and audit logs.
+    - **Devotee Dashboard & Financial Summary**:
+      - 4 responsive summary metrics: Total Pledged (across all events), Total Paid (verified payments only), Total Due (remaining obligations), and Pending Verification.
+      - Pending payments strictly excluded from paid calculations and due reductions until formally verified by admin.
+      - Running Event Cards: independently displays each running event with its own Pledge, Paid, Due, and direct "Pay Now" action.
+      - Recent Payments feed with status badges and quick offcanvas link.
+    - **Strict Server-Side Running Event Eligibility**:
+      - Payments accepted strictly for **Running Events** satisfying:
+        1. Status is strictly `active` (`Event::STATUS_ACTIVE`). Upcoming, closing, closed, or draft events reject payments.
+        2. Publication status is `published` (`Event::PUB_STATUS_PUBLISHED`). Unpublished events return 404.
+        3. Current date falls within collection window boundaries (`collection_start_date` and `collection_end_date`).
+      - Implemented `Event::isRunningForPayment(): bool` and `Event::scopeRunningForPayment()`.
+      - Enforced in `PaymentSubmissionController` (`create` redirects with warning, `store` aborts 404/validates).
+    - **Event-Wise Payment Isolation & My Payments Ledger**:
+      - Strict financial isolation: payment for Event A applies solely to Event A and never reduces Event B due.
+      - My Payments DataTables (`/devotee/payments`): server-side AJAX with event, status, method, and date filters. Strictly NO serial `#` column.
+      - Offcanvas payment details modal displaying full transaction timeline, MFS references, and verified receipt links.
+      - IDOR protection: devotees can only access their own payments and receipts.
+      - Double-entry ledger invariant: pending submissions create zero journal entries and zero receipts until verified.
+    - **Devotee Profile Management & Email OTP Security**:
+      - Devotees can view profile and update non-sensitive fields (`present_address`, `permanent_address`, `occupation`, `email`).
+      - Self-service profile updates and password changes strictly require verifying a single-use Email OTP (`EmailOtpService`).
+      - OTP specifications: 6 digits, cryptographically random, hashed in database (`sha256`), 10-minute expiry, single-use, max 5 attempts brute-force limit, 3 requests per 10 minutes rate limit.
+      - Dedicated mailable and template: `DevoteeOtpMail` and `resources/views/emails/devotee_otp.blade.php`.
+      - Password change requires verifying current password + valid OTP, synchronizing hash and encrypted copy atomically.
+      - Devotees without registered email cannot self-update, must contact temple administration.
+    - **Localization & Navigation Integration**:
+      - 100% bilingual parity across `lang/en/devotee.php` and `lang/bn/devotee.php` (55+ keys).
+      - Added login placeholder keys to `lang/en/auth.php` and `lang/bn/auth.php`.
+      - Integrated Devotee Portal links into Admin Sidebar (`sidebar.blade.php`) and Public Navbar (`public.blade.php`).
+    - **Automated Test Suite (100% Passing)**:
+      - `tests/Feature/Devotee/DevoteeAccountAndAuthTest.php`: 9 tests (32 assertions).
+      - `tests/Feature/Devotee/DevoteeCredentialTest.php`: 7 tests (27 assertions).
+      - `tests/Feature/Devotee/DevoteeDashboardAndEligibilityTest.php`: 6 tests (23 assertions).
+      - `tests/Feature/Devotee/DevoteePaymentAndHistoryTest.php`: 5 tests (22 assertions).
+      - `tests/Feature/Devotee/DevoteeProfileAndOtpTest.php`: 8 tests (24 assertions).
+      - **Total Devotee Test Suite**: 35 passed, 0 failed (128 assertions).
+      - **Full Regression Suites**: `AuthenticationTest` (6 passed), `PublicPortal` (264 passed), `EventDonationAndSettlementTest` (15 passed), `FinanceAndAccountingTest` (18 passed).
+    - **100% PSR-12 Code Compliance**: Verified via Laravel Pint (`php vendor/bin/pint`).
+
+    - **Equal Card Height & Deity Banner Imagery Integration**:
+      - Standardized equal card height (`h-100` flex column) across `/events`, `/previous-events`, and `public/home.blade.php`.
+      - Clamped descriptions to max 3 lines (`-webkit-line-clamp: 3`) and standardized title heights (`min-height: 3.1rem`) with action buttons pinned cleanly to the card bottom (`mt-auto`).
+      - Created high-resolution deity banner imagery (`public/assets/images/events/`): Durga Puja, Kali Puja, Krishna Janmashtami, Lakshmi Puja, Saraswati Puja, Shiva Ratri, and a general Temple sanctum fallback.
+      - Implemented `getFeaturedImageUrlAttribute()` and `getBannerUrlAttribute()` on `App\Models\Event` for automatic fallback detection based on event name and category.
+    - **Payment Method Official Logos (Full Logo & Short Logo Integration)**:
+      - Integrated user-stored brand assets from `public/assets/images/methods/`:
+        - `bkash-full-logo.png` & `bkash-short-logo.png`
+        - `nagad-full-logo.png` & `nagad-short-logo.png` (with `nagod-*.png` alias support)
+        - `rocket-full-logo.png` & `rocket-short-logo.png`
+        - `bank.svg` & `cash.svg`
+      - **Where Full Logo is Used**:
+        1. **Payment Method Selection Radio Cards** (`/events/{slug}/pay`): Big, prominent, recognizable full logos inside `.payment-method-card` with customized brand hover and active borders.
+      - **Where Short Logo (Icon) is Used**:
+        1. **Inline Payment Badges & Reports**: `partials.payment-method-badge` and `components.payment-method-badge` with `variant="short"` (square icon next to localized method name).
+        2. **Receiver Account Preview Card**: Short logo badge in header.
+        3. **DataTables, Drawers & Lists**: Public payment history, Devotee dashboard & payments, Admin portal payments, Receiver accounts list & show, Collections register, Official receipts, and Finance income/expense reports.
+      - Support for `variant="full"` or `variant="short"` in `payment-method-badge`.
+      - All 571 tests passing (3,210 assertions) with 100% PSR-12 compliance via Laravel Pint.
+
+17. **STOP Condition Applied**:
+    - Increment 8 — Devotee Self-Service Portal, Event-wise Payment System, Themed Event Cards & Payment Method Logo Branding is 100% COMPLETE and fully verified end-to-end.
+    - STRICT PROHIBITION OBSERVED: Increment 9 or unrelated development has NOT been started.
+    - Awaiting explicit user feedback and approval.

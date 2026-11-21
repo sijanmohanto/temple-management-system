@@ -1,4 +1,4 @@
-@extends('layouts.public')
+@extends(auth()->check() ? 'layouts.app' : 'layouts.public')
 
 @section('title', $event->name . ' (' . $event->event_year . ') — ' . __('common.app_name'))
 
@@ -9,8 +9,8 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0 small bg-white p-2 px-3 rounded-3 shadow-sm border">
                 <li class="breadcrumb-item">
-                    <a href="{{ route('home') }}" class="text-decoration-none text-muted">
-                        <i class="bi bi-house-door me-1"></i> {{ __('portal.public.home') }}
+                    <a href="{{ auth()->check() ? route('devotee.dashboard') : route('home') }}" class="text-decoration-none text-muted">
+                        <i class="bi bi-house-door me-1"></i> {{ auth()->check() ? __('devotee.my_dashboard') : __('portal.public.home') }}
                     </a>
                 </li>
                 <li class="breadcrumb-item">
@@ -31,18 +31,15 @@
 
     <!-- Main Event Showcase Card -->
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-4">
-        <!-- Banner Image -->
-        @if($event->banner_image_path)
-            <img src="{{ asset('storage/' . $event->banner_image_path) }}" alt="{{ $event->name }}" class="w-100" style="max-height: 420px; object-fit: cover;">
-        @else
-            <div class="p-5 text-center text-white" style="background: linear-gradient(135deg, var(--temple-maroon), var(--temple-gold));">
-                <div class="temple-emblem mx-auto mb-3 shadow-sm" style="width: 64px; height: 64px; font-size: 2rem; background: var(--temple-gold); color: #ffffff;">ॐ</div>
-                <h3 class="fw-bold mb-1">{{ $event->category?->name ?? __('events.event') }}</h3>
-                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50 px-3 py-1 fs-6">
+        <!-- Banner Image (Uploaded or Themed Deity Image) -->
+        <div class="position-relative" style="max-height: 400px; overflow: hidden; background: #1e1b18;">
+            <img src="{{ $event->featured_image_url }}" alt="{{ $event->name }}" class="w-100" style="max-height: 400px; object-fit: cover; object-position: center;">
+            <div class="position-absolute top-0 end-0 m-3">
+                <span class="badge bg-dark bg-opacity-75 text-warning border border-warning border-opacity-50 px-3 py-2 fs-6 shadow-sm">
                     {{ $event->event_year }}
                 </span>
             </div>
-        @endif
+        </div>
 
         <div class="card-body p-4 p-md-5">
             <!-- Header Badges & Title -->
@@ -303,11 +300,11 @@
                     <table class="table table-hover align-middle mb-0" id="donorReportTable">
                         <thead class="table-light text-muted small text-uppercase">
                             <tr>
-                                <th scope="col" class="py-2">{{ __('portal.public.table_donor_name') }}</th>
-                                <th scope="col" class="py-2 text-end">{{ __('portal.public.table_pledged') }}</th>
-                                <th scope="col" class="py-2 text-end">{{ __('portal.public.table_paid') }}</th>
-                                <th scope="col" class="py-2" style="width: 220px;">{{ __('portal.public.table_status') }}</th>
-                                <th scope="col" class="py-2 text-center" style="width: 110px;">{{ __('portal.public.table_action') }}</th>
+                                <th scope="col" class="py-3 text-start" style="width: 20%;">{{ __('portal.public.table_donor_name') }}</th>
+                                <th scope="col" class="py-3 text-start" style="width: 20%;">{{ __('portal.public.table_pledged') }}</th>
+                                <th scope="col" class="py-3 text-start" style="width: 20%;">{{ __('portal.public.table_paid') }}</th>
+                                <th scope="col" class="py-3 text-start" style="width: 20%;">{{ __('portal.public.table_status') }}</th>
+                                <th scope="col" class="py-3 text-center" style="width: 20%;">{{ __('portal.public.table_action') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -315,76 +312,136 @@
                                 <tr class="donor-row"
                                     data-status="{{ $row['status'] }}"
                                     data-name="{{ mb_strtolower($row['display_name']) }}"
+                                    data-phone="{{ mb_strtolower($row['phone'] ?? '') }}"
                                     data-code="{{ mb_strtolower($row['code'] ?? '') }}"
                                     data-name-en="{{ mb_strtolower($row['raw_name_en'] ?? '') }}"
                                     data-name-bn="{{ mb_strtolower($row['raw_name_bn'] ?? '') }}">
-                                    <!-- Name -->
-                                    <td class="py-2 fw-medium text-dark">
-                                        @if($row['is_anonymous'])
-                                            <span class="text-muted fst-italic">
-                                                <i class="bi bi-incognito me-1 text-secondary"></i>{{ $row['display_name'] }}
-                                            </span>
-                                        @elseif($row['is_private'])
-                                            <span class="text-muted fst-italic">
-                                                <i class="bi bi-shield-lock me-1 text-secondary"></i>{{ $row['display_name'] }}
-                                            </span>
-                                        @else
-                                            <span>{{ $row['display_name'] }}</span>
-                                        @endif
+                                    <!-- Name & Phone with Devotee Avatar -->
+                                    <td class="py-3 text-start">
+                                        <div class="d-flex align-items-center" style="gap: 16px;">
+                                            <div class="donor-avatar rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 {{ $row['is_anonymous'] || $row['is_private'] ? 'bg-secondary bg-opacity-10 text-secondary' : 'bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20' }}" style="width: 40px; height: 40px;">
+                                                @if($row['is_anonymous'])
+                                                    <i class="bi bi-incognito fs-5"></i>
+                                                @elseif($row['is_private'])
+                                                    <i class="bi bi-shield-lock fs-5"></i>
+                                                @else
+                                                    <i class="bi bi-person-circle fs-5"></i>
+                                                @endif
+                                            </div>
+                                            <div class="overflow-hidden">
+                                                <div class="fw-bold text-dark text-truncate lh-sm" style="font-size: 0.95rem;">
+                                                    @if($row['is_anonymous'] || $row['is_private'])
+                                                        <span class="text-muted fst-italic">
+                                                            {{ $row['display_name'] }}
+                                                        </span>
+                                                    @else
+                                                        <span>{{ $row['display_name'] }}</span>
+                                                    @endif
+                                                </div>
+                                                <div class="small mt-1 text-muted text-truncate">
+                                                    @if(!empty($row['phone']))
+                                                        <span class="d-inline-flex align-items-center text-secondary font-monospace">
+                                                            <i class="bi bi-telephone text-primary me-1"></i>{{ $row['phone'] }}
+                                                        </span>
+                                                    @elseif($row['is_anonymous'] || $row['is_private'])
+                                                        <span class="badge bg-light text-muted border border-secondary border-opacity-25 py-0.5 px-1.5" style="font-size: 0.72rem;">
+                                                            <i class="bi bi-shield-lock me-1"></i>{{ __('portal.public.hidden_for_privacy') }}
+                                                        </span>
+                                                    @else
+                                                        <span class="text-muted font-monospace">—</span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
                                     </td>
 
                                     <!-- Amount / Pledged -->
-                                    <td class="py-2 text-end font-monospace">
+                                    <td class="py-3 text-start font-monospace">
                                         @if($row['pledged_amount'] > 0)
-                                            ৳{{ number_format($row['pledged_amount'], 2) }}
+                                            <div class="fw-bold text-dark fs-6">
+                                                ৳{{ number_format($row['pledged_amount'], 2) }}
+                                            </div>
+                                            <small class="text-muted d-block" style="font-size: 0.72rem; letter-spacing: 0.02em;">{{ __('portal.public.table_pledged') }}</small>
                                         @else
-                                            <span class="text-muted">—</span>
+                                            <span class="badge bg-light text-secondary border border-secondary border-opacity-25 py-1 px-2">
+                                                <i class="bi bi-heart me-1 text-danger"></i>{{ __('portal.public.status_voluntary') }}
+                                            </span>
                                         @endif
                                     </td>
 
                                     <!-- Paid -->
-                                    <td class="py-2 text-end font-monospace fw-semibold text-success">
-                                        ৳{{ number_format($row['verified_paid'], 2) }}
+                                    <td class="py-3 text-start font-monospace">
+                                        <div class="fw-bold text-success fs-6">
+                                            ৳{{ number_format($row['verified_paid'], 2) }}
+                                        </div>
+                                        @if(!empty($row['is_excess']))
+                                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 mt-1" style="font-size: 0.72rem;">
+                                                <i class="bi bi-arrow-up-circle me-1"></i>{{ __('donations.excess') ?? 'Excess' }}
+                                            </span>
+                                        @else
+                                            <small class="text-success d-inline-flex align-items-center mt-0.5" style="font-size: 0.72rem; font-weight: 500;">
+                                                <i class="bi bi-check2-circle me-1"></i>{{ __('portal.public.verified_collection_badge') }}
+                                            </small>
+                                        @endif
                                     </td>
 
-                                    <!-- Status (side-by-side progress bar and percentage) -->
-                                    <td class="py-2">
-                                        <div class="d-flex align-items-center gap-2">
-                                            @if($row['progress'] !== null)
-                                                <div class="progress flex-grow-1" style="height: 8px; min-width: 60px; max-width: 90px; border-radius: 4px;" role="progressbar" aria-valuenow="{{ $row['progress_bar_percentage'] }}" aria-valuemin="0" aria-valuemax="100">
-                                                    <div class="progress-bar {{ $row['status_color'] }}" style="width: {{ $row['progress_bar_percentage'] }}%;"></div>
-                                                </div>
-                                                <span class="small font-monospace fw-semibold {{ $row['status_color'] === 'bg-success' ? 'text-success' : 'text-danger' }}">
-                                                    {{ rtrim(rtrim(number_format($row['progress'], 1), '0'), '.') }}%
-                                                </span>
-                                            @else
-                                                <span class="badge bg-light text-muted border py-1 px-2 font-monospace">
-                                                    {{ __('portal.public.not_applicable') }}
-                                                </span>
-                                            @endif
+                                    <!-- Status (Progress & Badges) -->
+                                    <td class="py-3 text-start">
+                                        <div class="d-flex flex-column gap-1">
+                                            <div class="d-flex align-items-center gap-2">
+                                                @if($row['progress'] !== null)
+                                                    <div class="progress flex-grow-1" style="height: 7px; min-width: 65px; max-width: 95px; border-radius: 999px; background-color: #f1f5f9; box-shadow: inset 0 1px 2px rgba(0,0,0,0.06);" role="progressbar" aria-valuenow="{{ $row['progress_bar_percentage'] }}" aria-valuemin="0" aria-valuemax="100">
+                                                        <div class="progress-bar {{ $row['status_color'] }} rounded-pill" style="width: {{ $row['progress_bar_percentage'] }}%;"></div>
+                                                    </div>
+                                                    <span class="small font-monospace fw-bold {{ $row['status_color'] === 'bg-success' ? 'text-success' : 'text-danger' }}">
+                                                        {{ rtrim(rtrim(number_format($row['progress'], 1), '0'), '.') }}%
+                                                    </span>
+                                                @else
+                                                    <span class="badge bg-light text-muted border py-1 px-2 font-monospace">
+                                                        {{ __('portal.public.not_applicable') }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            <div class="d-flex align-items-center gap-1 mt-1">
+                                                @if($row['status'] === 'paid')
+                                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 py-1 px-2 rounded-pill fw-semibold" style="font-size: 0.74rem;">
+                                                        <i class="bi bi-check-circle-fill me-1"></i>{{ __('portal.public.status_paid') }}
+                                                    </span>
+                                                @elseif($row['status'] === 'partial')
+                                                    <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25 py-1 px-2 rounded-pill fw-semibold" style="font-size: 0.74rem;">
+                                                        <i class="bi bi-hourglass-split me-1 text-warning"></i>{{ __('portal.public.status_partial') }}
+                                                    </span>
+                                                    @if($row['due_amount'] > 0)
+                                                        <small class="text-danger font-monospace fw-semibold" style="font-size: 0.73rem;">
+                                                            (৳{{ number_format($row['due_amount'], 2) }})
+                                                        </small>
+                                                    @endif
+                                                @elseif($row['status'] === 'due')
+                                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 py-1 px-2 rounded-pill fw-semibold" style="font-size: 0.74rem;">
+                                                        <i class="bi bi-exclamation-circle-fill me-1"></i>{{ __('portal.public.status_due') }}
+                                                    </span>
+                                                @else
+                                                    <span class="badge bg-info bg-opacity-10 text-primary border border-info border-opacity-25 py-1 px-2 rounded-pill fw-semibold" style="font-size: 0.74rem;">
+                                                        <i class="bi bi-heart-fill me-1 text-danger"></i>{{ __('portal.public.status_voluntary') }}
+                                                    </span>
+                                                @endif
+                                            </div>
                                         </div>
                                     </td>
 
-                                    <!-- Action -->
-                                    <td class="py-2 text-center">
-                                        <div class="btn-group btn-group-sm" role="group">
-                                            <button type="button" 
-                                                    class="btn btn-outline-primary py-0 px-2 btn-donor-details" 
-                                                    data-code="{{ $row['code'] }}" 
-                                                    data-bs-toggle="offcanvas" 
-                                                    data-bs-target="#donorDetailsOffcanvas" 
-                                                    title="{{ __('portal.public.view_details') }}">
-                                                <i class="bi bi-eye"></i>
-                                            </button>
-                                            <button type="button" 
-                                                    class="btn btn-outline-warning py-0 px-2 btn-donor-complain" 
-                                                    data-code="{{ $row['code'] }}" 
-                                                    data-name="{{ $row['display_name'] }}" 
-                                                    data-bs-toggle="modal" 
-                                                    data-bs-target="#donorComplaintModal" 
-                                                    title="{{ __('portal.public.complain') }}">
-                                                <i class="bi bi-flag"></i>
-                                            </button>
+                                    <!-- Action (Center-Aligned) -->
+                                    <td class="py-3 text-center">
+                                        <div class="d-flex justify-content-center align-items-center">
+                                            <a href="{{ auth()->check() ? route('devotee.payments.index') : route('login') }}" 
+                                               class="btn btn-sm btn-outline-primary rounded-3 btn-donor-action d-inline-flex align-items-center justify-content-center shadow-xs" 
+                                               style="width: 38px; height: 38px; transition: all 0.2s ease-in-out;"
+                                               data-bs-toggle="tooltip" 
+                                               data-bs-placement="top"
+                                               title="{{ __('portal.public.login') }}"
+                                               data-bs-title="{{ __('portal.public.login') }}"
+                                               aria-label="{{ __('portal.public.login') }}">
+                                                <i class="bi bi-box-arrow-in-right fs-5"></i>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>
@@ -512,14 +569,64 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // 1. Select2 Remote Search & Status Filter
+    // 1. DataTables Integration on #donorReportTable
+    const $donorTableEl = $('#donorReportTable');
+    let donorTable = null;
+
+    if ($.fn.DataTable && $donorTableEl.length) {
+        // If single empty colspan row exists, clear it so DataTables calculates column count correctly
+        var $tbodyRows = $donorTableEl.find('tbody tr');
+        if ($tbodyRows.length === 1 && $tbodyRows.first().find('td[colspan]').length) {
+            $donorTableEl.find('tbody').empty();
+        }
+
+        donorTable = $donorTableEl.DataTable({
+            responsive: true,
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "{{ __('common.all') }}"]],
+            paging: true,
+            lengthChange: true,
+            searching: true,
+            ordering: true,
+            info: true,
+            autoWidth: false,
+            order: [], // Preserve server-provided order
+            language: (window.TempleConfig && window.TempleConfig.datatablesLanguage) 
+                ? window.TempleConfig.datatablesLanguage 
+                : {},
+            columnDefs: [
+                { targets: [0, 1, 2, 3], className: 'text-start' },
+                { targets: [4], className: 'text-center', orderable: false, searchable: false }
+            ]
+        });
+
+        // Custom DataTables filter for Status dropdown
+        $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+            if (!donorTable || settings.nTable.id !== 'donorReportTable') {
+                return true;
+            }
+            var filterStatus = $('#donorStatusFilter').val();
+            if (!filterStatus || filterStatus === 'all') {
+                return true;
+            }
+            var rowNode = donorTable.row(dataIndex).node();
+            var rowStatus = $(rowNode).attr('data-status');
+            return rowStatus === filterStatus;
+        });
+
+        $('#donorStatusFilter').on('change', function() {
+            donorTable.draw();
+        });
+    }
+
+    // 2. Select2 Remote Search & Status Filter
     const $donorSearch = $('#donorSearchInput');
     const statusFilter = document.getElementById('donorStatusFilter');
     const rows = document.querySelectorAll('.donor-row');
     let selectedDonorCode = '';
     let liveSearchQuery = '';
 
-    function filterTable() {
+    function filterTableDomFallback() {
         const query = (liveSearchQuery || '').toLowerCase().trim();
         const selectedCode = (selectedDonorCode || '').toLowerCase().trim();
         const status = statusFilter ? statusFilter.value : 'all';
@@ -599,25 +706,47 @@ document.addEventListener('DOMContentLoaded', function () {
 
         $donorSearch.on('select2:select', function (e) {
             const data = e.params.data;
-            selectedDonorCode = data.code || data.id || '';
-            liveSearchQuery = '';
-            filterTable();
+            const searchVal = data.name || data.text || '';
+            if (donorTable) {
+                donorTable.search(searchVal).draw();
+            } else {
+                selectedDonorCode = data.code || data.id || '';
+                liveSearchQuery = '';
+                filterTableDomFallback();
+            }
         });
 
         $donorSearch.on('select2:clear', function () {
-            selectedDonorCode = '';
-            liveSearchQuery = '';
-            filterTable();
+            if (donorTable) {
+                donorTable.search('').draw();
+            } else {
+                selectedDonorCode = '';
+                liveSearchQuery = '';
+                filterTableDomFallback();
+            }
         });
 
         $(document).on('input', '.select2-container--open .select2-search__field', function () {
-            liveSearchQuery = $(this).val();
-            filterTable();
+            const val = $(this).val();
+            if (donorTable) {
+                donorTable.search(val).draw();
+            } else {
+                liveSearchQuery = val;
+                filterTableDomFallback();
+            }
         });
     }
 
-    if (statusFilter) {
-        statusFilter.addEventListener('change', filterTable);
+    if (statusFilter && !donorTable) {
+        statusFilter.addEventListener('change', filterTableDomFallback);
+    }
+
+    // Initialize Tooltips
+    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
     }
 
     // 2. Offcanvas View Details AJAX

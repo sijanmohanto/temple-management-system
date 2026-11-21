@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\PublicPortal\StoreEventDocumentRequest;
 use App\Http\Requests\PublicPortal\UpdateEventDocumentRequest;
 use App\Models\Event;
+use App\Models\EventCategory;
 use App\Models\EventDocument;
 use App\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
@@ -14,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -45,6 +47,14 @@ class EventDocumentController extends Controller implements HasMiddleware
 
             if ($request->filled('document_type')) {
                 $query->where('document_type', $request->input('document_type'));
+            }
+
+            if ($request->filled('report_category')) {
+                $query->where('report_category', $request->input('report_category'));
+            }
+
+            if ($request->filled('financial_year')) {
+                $query->where('financial_year', $request->integer('financial_year'));
             }
 
             if ($request->filled('publication_status')) {
@@ -95,7 +105,7 @@ class EventDocumentController extends Controller implements HasMiddleware
                 return [
                     'document_title' => $this->formatTitleColumn($doc),
                     'event_name' => $this->formatEventColumn($doc),
-                    'document_type' => $this->formatTypeBadge($doc->document_type),
+                    'document_type' => $this->formatTypeBadge($doc),
                     'file_info' => $this->formatFileInfoColumn($doc),
                     'publication_status' => $this->formatPublicationBadge($doc->publication_status),
                     'published_at' => $doc->published_at ? $doc->published_at->format('d M Y, h:i A') : '<span class="text-muted">—</span>',
@@ -123,9 +133,10 @@ class EventDocumentController extends Controller implements HasMiddleware
     public function create(Request $request): View
     {
         $events = Event::with('category')->orderBy('name_en')->get();
+        $categories = EventCategory::active()->orderBy('name_en')->get();
         $preselectedEventId = $request->integer('event_id') ?: null;
 
-        return view('portal.documents.create', compact('events', 'preselectedEventId'));
+        return view('portal.documents.create', compact('events', 'categories', 'preselectedEventId'));
     }
 
     /**
@@ -135,6 +146,49 @@ class EventDocumentController extends Controller implements HasMiddleware
     {
         $validated = $request->validated();
         $file = $request->file('file');
+
+        // Check if admin is creating a historical event on the fly
+        if ($request->input('event_mode') === 'new') {
+            $year = (int) $validated['new_event_year'];
+            $baseSlug = Str::slug($validated['new_event_name_en'].'-'.$year);
+            if (empty($baseSlug)) {
+                $baseSlug = 'event-'.time();
+            }
+            $slug = $baseSlug;
+            $counter = 1;
+            while (Event::where('slug', $slug)->exists()) {
+                $slug = $baseSlug.'-'.$counter++;
+            }
+
+            $eventCode = 'EVT-HIST-'.$year.'-'.strtoupper(Str::random(4));
+            while (Event::where('event_code', $eventCode)->exists()) {
+                $eventCode = 'EVT-HIST-'.$year.'-'.strtoupper(Str::random(4));
+            }
+
+            $newEvent = Event::create([
+                'event_code' => $eventCode,
+                'name_en' => $validated['new_event_name_en'],
+                'name_bn' => $validated['new_event_name_bn'] ?? null,
+                'event_category_id' => $validated['new_event_category_id'],
+                'event_year' => $year,
+                'slug' => $slug,
+                'venue' => $validated['new_event_venue'] ?? null,
+                'description_en' => $validated['new_event_description_en'] ?? null,
+                'start_date' => "{$year}-01-01",
+                'end_date' => "{$year}-12-31",
+                'status' => Event::STATUS_CLOSED,
+                'publication_status' => Event::PUB_STATUS_PUBLISHED,
+                'published_at' => now(),
+                'published_by' => $request->user()->id,
+                'created_by' => $request->user()->id,
+            ]);
+
+            $eventId = $newEvent->id;
+            $financialYear = $validated['financial_year'] ?? $year;
+        } else {
+            $eventId = $validated['event_id'];
+            $financialYear = $validated['financial_year'] ?? null;
+        }
 
         // Store file safely in private local storage with randomized name
         $path = $file->store('private/event_documents', 'local');
@@ -147,10 +201,12 @@ class EventDocumentController extends Controller implements HasMiddleware
         }
 
         $document = EventDocument::create([
-            'event_id' => $validated['event_id'],
+            'event_id' => $eventId,
             'title_en' => $validated['title_en'],
             'title_bn' => $validated['title_bn'] ?? null,
             'document_type' => $validated['document_type'],
+            'report_category' => $validated['report_category'] ?? null,
+            'financial_year' => $financialYear,
             'file_path' => $path,
             'file_name' => $file->getClientOriginalName(),
             'file_size' => $file->getSize(),
@@ -206,6 +262,8 @@ class EventDocumentController extends Controller implements HasMiddleware
             'title_en' => $validated['title_en'],
             'title_bn' => $validated['title_bn'] ?? null,
             'document_type' => $validated['document_type'],
+            'report_category' => $validated['report_category'] ?? null,
+            'financial_year' => $validated['financial_year'] ?? null,
             'description_en' => $validated['description_en'] ?? null,
             'description_bn' => $validated['description_bn'] ?? null,
         ];
@@ -221,20 +279,22 @@ class EventDocumentController extends Controller implements HasMiddleware
             }
         }
 
-        // Replace file if new file provided
+        // Replace file safely if new file provided
         if ($request->hasFile('file')) {
             $newFile = $request->file('file');
+            $oldPath = $document->file_path;
 
-            // Delete old file if present
-            if ($document->file_path && Storage::disk('local')->exists($document->file_path)) {
-                Storage::disk('local')->delete($document->file_path);
-            }
-
+            // Store new file first
             $newPath = $newFile->store('private/event_documents', 'local');
             $data['file_path'] = $newPath;
             $data['file_name'] = $newFile->getClientOriginalName();
             $data['file_size'] = $newFile->getSize();
             $data['mime_type'] = $newFile->getClientMimeType() ?: 'application/octet-stream';
+
+            // Delete old file only after new file is stored successfully
+            if ($oldPath && $oldPath !== $newPath && Storage::disk('local')->exists($oldPath)) {
+                Storage::disk('local')->delete($oldPath);
+            }
         }
 
         $document->update($data);
@@ -366,7 +426,8 @@ class EventDocumentController extends Controller implements HasMiddleware
         $ext = strtolower(pathinfo($doc->file_name, PATHINFO_EXTENSION));
         $icon = match ($ext) {
             'pdf' => '<i class="bi bi-file-earmark-pdf text-danger fs-5 me-2"></i>',
-            'jpg', 'jpeg', 'png' => '<i class="bi bi-file-earmark-image text-primary fs-5 me-2"></i>',
+            'xlsx', 'xls', 'csv' => '<i class="bi bi-file-earmark-excel text-success fs-5 me-2"></i>',
+            'jpg', 'jpeg', 'png', 'webp' => '<i class="bi bi-file-earmark-image text-primary fs-5 me-2"></i>',
             default => '<i class="bi bi-file-earmark-text text-secondary fs-5 me-2"></i>',
         };
 
@@ -398,8 +459,9 @@ class EventDocumentController extends Controller implements HasMiddleware
             .'<div class="small text-muted"><code class="text-secondary">'.$eventCode.'</code></div></div>';
     }
 
-    protected function formatTypeBadge(string $type): string
+    protected function formatTypeBadge(EventDocument $doc): string
     {
+        $type = $doc->document_type;
         $badgeClass = match ($type) {
             EventDocument::TYPE_FINANCIAL_REPORT => 'bg-success',
             EventDocument::TYPE_AUDIT_REPORT => 'bg-primary',
@@ -413,7 +475,17 @@ class EventDocumentController extends Controller implements HasMiddleware
             $label = ucwords(str_replace('_', ' ', $type));
         }
 
-        return '<span class="badge '.$badgeClass.'">'.e($label).'</span>';
+        $html = '<span class="badge '.$badgeClass.'">'.e($label).'</span>';
+
+        if ($doc->report_category) {
+            $html .= '<div class="mt-1"><span class="badge bg-light text-secondary border small">'.e($doc->report_category_name).'</span></div>';
+        }
+
+        if ($doc->financial_year) {
+            $html .= '<div class="small text-muted mt-1"><i class="bi bi-calendar-event me-1"></i>'.e($doc->financial_year).'</div>';
+        }
+
+        return $html;
     }
 
     protected function formatFileInfoColumn(EventDocument $doc): string

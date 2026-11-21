@@ -4,12 +4,15 @@ return [
     'failed' => 'These credentials do not match our records.',
     'password' => 'The provided password is incorrect.',
     'throttle' => 'Too many login attempts. Please try again in :seconds seconds.',
+    'login' => 'Login',
 
     // Login Form
     'login_title' => 'Sign In to Temple Portal',
     'login_subtitle' => 'Authorized access for temple committee, administration, and devotees',
     'email_label' => 'Email Address',
     'email_placeholder' => 'Enter your email',
+    'login_identifier_label' => 'Phone Number or Email Address',
+    'login_identifier_placeholder' => 'e.g. 017XXXXXXXX or admin@temple.local',
     'password_label' => 'Password',
     'password_placeholder' => 'Enter your password',
     'remember_me' => 'Remember Me on this device',

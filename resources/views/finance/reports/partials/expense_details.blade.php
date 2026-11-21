@@ -28,11 +28,9 @@
                 </div>
                 <div class="col-sm-6">
                     <span class="text-muted d-block">{{ __('finance.payment_method') }}:</span>
-                    <strong class="text-capitalize">
-                        {{ __('donations.method_' . $expense->payment_method) !== 'donations.method_' . $expense->payment_method 
-                            ? __('donations.method_' . $expense->payment_method) 
-                            : (__('finance.method_' . $expense->payment_method) !== 'finance.method_' . $expense->payment_method ? __('finance.method_' . $expense->payment_method) : ucfirst(str_replace('_', ' ', $expense->payment_method))) }}
-                    </strong>
+                    <div class="mt-1">
+                        @include('partials.payment-method-badge', ['method' => $expense->payment_method])
+                    </div>
                 </div>
                 <div class="col-sm-6">
                     <span class="text-muted d-block">{{ __('finance.invoice_number') }}:</span>

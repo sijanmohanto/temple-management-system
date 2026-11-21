@@ -759,6 +759,9 @@ class IncomeExpenseReportService
             default => '<span class="badge bg-light text-dark border me-1">'.e(ucwords(str_replace('_', ' ', $payment->collection_type))).'</span>',
         };
         $purpose = '<div>'.$purposeLabel.'<span class="font-monospace small text-muted">'.e($payment->payment_code).'</span></div>';
+        if ($payment->payment_method) {
+            $purpose .= '<div class="mt-1">'.view('partials.payment-method-badge', ['method' => $payment->payment_method])->render().'</div>';
+        }
         if ($payment->payment_notes) {
             $purpose .= '<div class="small text-muted text-truncate" style="max-width: 220px;" title="'.e($payment->payment_notes).'">'.e($payment->payment_notes).'</div>';
         }
@@ -814,6 +817,9 @@ class IncomeExpenseReportService
         // Purpose
         $purposeLabel = '<span class="badge bg-secondary-subtle text-secondary border me-1">'.__('finance.misc_income').'</span>';
         $purpose = '<div>'.$purposeLabel.'<span class="font-monospace small text-muted">'.e($manual->income_number).'</span></div>';
+        if ($manual->payment_method) {
+            $purpose .= '<div class="mt-1">'.view('partials.payment-method-badge', ['method' => $manual->payment_method])->render().'</div>';
+        }
         $title = app()->getLocale() === 'bn' && $manual->title_bn ? $manual->title_bn : $manual->title_en;
         if ($title || $manual->notes) {
             $desc = $title ?: $manual->notes;
@@ -877,6 +883,9 @@ class IncomeExpenseReportService
         }
         $purpose .= '<span class="font-monospace small text-muted">'.e($expense->expense_number).'</span>';
         $purpose .= '</div>';
+        if ($expense->payment_method) {
+            $purpose .= '<div class="mt-1">'.view('partials.payment-method-badge', ['method' => $expense->payment_method])->render().'</div>';
+        }
         if ($title) {
             $purpose .= '<div class="small text-muted text-truncate" style="max-width: 220px;" title="'.e($title).'">'.e($title).'</div>';
         }

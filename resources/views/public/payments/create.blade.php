@@ -1,4 +1,4 @@
-@extends('layouts.public')
+@extends(auth()->check() ? 'layouts.app' : 'layouts.public')
 
 @section('title', __('portal.public.submit_payment') . ' — ' . $event->name . ' — ' . __('common.app_name'))
 
@@ -8,8 +8,8 @@
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb mb-0 small bg-white p-2 px-3 rounded-3 shadow-sm border">
             <li class="breadcrumb-item">
-                <a href="{{ route('home') }}" class="text-decoration-none text-muted">
-                    <i class="bi bi-house-door me-1"></i> {{ __('portal.public.home') }}
+                <a href="{{ auth()->check() ? route('devotee.dashboard') : route('home') }}" class="text-decoration-none text-muted">
+                    <i class="bi bi-house-door me-1"></i> {{ auth()->check() ? __('devotee.my_dashboard') : __('portal.public.home') }}
                 </a>
             </li>
             <li class="breadcrumb-item">
@@ -43,8 +43,8 @@
                     </p>
                 </div>
                 <div>
-                    <a href="{{ route('public.events.show', $event->slug) }}" class="btn btn-outline-light btn-sm">
-                        <i class="bi bi-arrow-left me-1"></i> {{ __('portal.public.back_to_events') }}
+                    <a href="{{ auth()->check() ? route('devotee.dashboard') : route('public.events.show', $event->slug) }}" class="btn btn-outline-light btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i> {{ auth()->check() ? __('devotee.back_to_dashboard') : __('portal.public.back_to_events') }}
                     </a>
                 </div>
             </div>
@@ -177,19 +177,37 @@
                             <div class="row g-2">
                                 @php
                                     $methods = [
-                                        'bkash' => ['name' => 'bKash', 'icon' => 'bi-phone', 'color' => '#e2136e'],
-                                        'nagad' => ['name' => 'Nagad', 'icon' => 'bi-phone-fill', 'color' => '#f7941d'],
-                                        'rocket' => ['name' => 'Rocket', 'icon' => 'bi-send', 'color' => '#8c3494'],
-                                        'bank_transfer' => ['name' => __('portal.payment_methods.bank_transfer'), 'icon' => 'bi-bank', 'color' => '#0d6efd'],
+                                        'bkash' => [
+                                            'name' => 'bKash',
+                                            'full_logo' => asset('assets/images/methods/bkash-full-logo.png'),
+                                            'short_logo' => asset('assets/images/methods/bkash-short-logo.png')
+                                        ],
+                                        'nagad' => [
+                                            'name' => 'Nagad',
+                                            'full_logo' => asset('assets/images/methods/nagad-full-logo.png'),
+                                            'short_logo' => asset('assets/images/methods/nagad-short-logo.png')
+                                        ],
+                                        'rocket' => [
+                                            'name' => 'Rocket',
+                                            'full_logo' => asset('assets/images/methods/rocket-full-logo.png'),
+                                            'short_logo' => asset('assets/images/methods/rocket-short-logo.png')
+                                        ],
+                                        'bank_transfer' => [
+                                            'name' => __('portal.payment_methods.bank_transfer'),
+                                            'full_logo' => asset('assets/images/methods/bank.svg'),
+                                            'short_logo' => asset('assets/images/methods/bank.svg')
+                                        ],
                                     ];
                                     $selectedMethod = old('payment_method', 'bkash');
                                 @endphp
                                 @foreach($methods as $methodKey => $meta)
                                     <div class="col-6 col-sm-3">
                                         <input type="radio" class="btn-check payment-method-radio" name="payment_method" id="method_{{ $methodKey }}" value="{{ $methodKey }}" {{ $selectedMethod === $methodKey ? 'checked' : '' }} autocomplete="off">
-                                        <label class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center gap-1 rounded-3 h-100" for="method_{{ $methodKey }}">
-                                            <i class="bi {{ $meta['icon'] }} fs-4" style="color: {{ $meta['color'] }};"></i>
-                                            <span class="fw-semibold small">{{ $meta['name'] }}</span>
+                                        <label class="payment-method-card w-100" for="method_{{ $methodKey }}">
+                                            <div class="method-icon-box">
+                                                <img src="{{ $meta['full_logo'] }}" alt="{{ $meta['name'] }}" loading="lazy">
+                                            </div>
+                                            <span class="method-title">{{ $meta['name'] }}</span>
                                         </label>
                                     </div>
                                 @endforeach
@@ -350,7 +368,10 @@
                             <!-- Account Header Info -->
                             <div class="p-3 bg-light rounded-3 border mb-3">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <span class="badge bg-primary text-white" id="infoMethodBadge">bKash</span>
+                                    <span class="payment-method-badge method-bkash" id="infoMethodBadgeContainer">
+                                        <img id="infoMethodLogo" src="{{ asset('assets/images/methods/bkash-short-logo.png') }}" alt="bKash" class="method-logo">
+                                        <span id="infoMethodText">bKash</span>
+                                    </span>
                                     <span class="badge bg-secondary-subtle text-secondary border" id="infoTypeBadge">Merchant</span>
                                 </div>
                                 <h6 class="fw-bold text-dark mb-1" id="infoAccountName">—</h6>
@@ -507,7 +528,27 @@ $(document).ready(function() {
         const instructions = selectedOption.data('instructions') || '';
         const qr = selectedOption.data('qr') || '';
 
-        $infoMethodBadge.text(method.toUpperCase());
+        const methodLogos = {
+            bkash: "{{ asset('assets/images/methods/bkash-short-logo.png') }}",
+            nagad: "{{ asset('assets/images/methods/nagad-short-logo.png') }}",
+            rocket: "{{ asset('assets/images/methods/rocket-short-logo.png') }}",
+            bank_transfer: "{{ asset('assets/images/methods/bank.svg') }}",
+            cash: "{{ asset('assets/images/methods/cash.svg') }}"
+        };
+        const methodLabels = {
+            bkash: "bKash",
+            nagad: "Nagad",
+            rocket: "Rocket",
+            bank_transfer: "{{ __('portal.payment_methods.bank_transfer') }}",
+            cash: "{{ __('donations.method_cash') ?? 'Cash' }}"
+        };
+
+        const logoSrc = methodLogos[method] || methodLogos['cash'];
+        const labelText = methodLabels[method] || method.toUpperCase();
+
+        $('#infoMethodLogo').attr('src', logoSrc).attr('alt', labelText);
+        $('#infoMethodText').text(labelText);
+        $('#infoMethodBadgeContainer').attr('class', 'payment-method-badge method-' + method);
         $infoTypeBadge.text(type);
         $infoAccountName.text(name);
         $infoAccountNumber.text(number);

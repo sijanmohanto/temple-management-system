@@ -1,6 +1,6 @@
 <aside class="app-sidebar" id="appSidebar">
     <div class="sidebar-header">
-        <a href="{{ route('dashboard') }}" class="sidebar-brand">
+        <a href="{{ (Auth::user()->hasRole('devotee') && !Auth::user()->hasAnyRole(['super_admin', 'temple_admin', 'treasurer'])) ? route('devotee.dashboard') : route('dashboard') }}" class="sidebar-brand">
             <span class="temple-emblem">ॐ</span>
             <div>
                 <div class="lh-1">{{ __('common.app_name') }}</div>
@@ -11,10 +11,116 @@
 
     <div class="sidebar-menu" id="appSidebarMenu">
         <!-- Main Dashboard -->
-        <a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-            <i class="bi bi-speedometer2"></i>
-            <span>{{ __('nav.dashboard') }}</span>
-        </a>
+        @if(!Auth::user()->hasRole('devotee') || Auth::user()->hasAnyRole(['super_admin', 'temple_admin', 'treasurer']))
+            <a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                <i class="bi bi-speedometer2"></i>
+                <span>{{ __('nav.dashboard') }}</span>
+            </a>
+        @endif
+
+        <!-- Devotee Self-Service Portal -->
+        @if(Auth::user()->person || Auth::user()->hasRole('devotee'))
+            <div class="sidebar-heading">{{ __('devotee.portal_title') }}</div>
+
+            <!-- Devotee Dashboard -->
+            <a href="{{ route('devotee.dashboard') }}" class="sidebar-link {{ request()->routeIs('devotee.dashboard') ? 'active' : '' }}">
+                <i class="bi bi-speedometer2"></i>
+                <span>{{ __('devotee.my_dashboard') }}</span>
+            </a>
+
+            <!-- Puja & Events (Menu & Submenu) -->
+            @php
+                $isDevoteeEventsActive = request()->routeIs('public.events.*') || request()->routeIs('public.previous-events.*');
+                $activeEventForPayment = \App\Models\Event::runningForPayment()->first(['id', 'slug']);
+                $payEventUrl = $activeEventForPayment ? route('public.events.pay', $activeEventForPayment->slug) : route('public.events.index');
+            @endphp
+            <a class="sidebar-link sidebar-parent {{ $isDevoteeEventsActive ? 'active-parent' : '' }}"
+               data-bs-toggle="collapse"
+               href="#menuDevoteeEvents"
+               role="button"
+               aria-expanded="{{ $isDevoteeEventsActive ? 'true' : 'false' }}"
+               aria-controls="menuDevoteeEvents">
+                <i class="bi bi-calendar-event"></i>
+                <span>{{ __('devotee.events_and_puja') }}</span>
+                <i class="bi bi-chevron-down ms-auto sidebar-chevron"></i>
+            </a>
+            <div class="collapse {{ $isDevoteeEventsActive ? 'show' : '' }}" id="menuDevoteeEvents">
+                <div class="sidebar-submenu">
+                    <a href="{{ route('public.events.index') }}" class="sidebar-sublink {{ request()->routeIs('public.events.index') || request()->routeIs('public.events.show') ? 'active' : '' }}">
+                        <i class="bi bi-calendar4-week"></i>
+                        <span>{{ __('devotee.running_events_menu') }}</span>
+                    </a>
+                    <a href="{{ $payEventUrl }}" class="sidebar-sublink {{ request()->routeIs('public.events.pay*') ? 'active' : '' }}">
+                        <i class="bi bi-cash-coin"></i>
+                        <span>{{ __('devotee.submit_payment_action') }}</span>
+                    </a>
+                    <a href="{{ route('public.previous-events.index') }}" class="sidebar-sublink {{ request()->routeIs('public.previous-events.*') ? 'active' : '' }}">
+                        <i class="bi bi-file-earmark-bar-graph"></i>
+                        <span>{{ __('devotee.previous_events_reports') }}</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Contributions & Finances (Menu & Submenu) -->
+            @php
+                $isDevoteeFinanceActive = request()->routeIs('devotee.payments.*') || (request()->routeIs('public.payments.*') && !request()->routeIs('public.events.pay*'));
+            @endphp
+            <a class="sidebar-link sidebar-parent {{ $isDevoteeFinanceActive ? 'active-parent' : '' }}"
+               data-bs-toggle="collapse"
+               href="#menuDevoteeFinance"
+               role="button"
+               aria-expanded="{{ $isDevoteeFinanceActive ? 'true' : 'false' }}"
+               aria-controls="menuDevoteeFinance">
+                <i class="bi bi-wallet2"></i>
+                <span>{{ __('devotee.my_finances') }}</span>
+                <i class="bi bi-chevron-down ms-auto sidebar-chevron"></i>
+            </a>
+            <div class="collapse {{ $isDevoteeFinanceActive ? 'show' : '' }}" id="menuDevoteeFinance">
+                <div class="sidebar-submenu">
+                    <a href="{{ route('devotee.payments.index') }}" class="sidebar-sublink {{ request()->routeIs('devotee.payments.*') ? 'active' : '' }}">
+                        <i class="bi bi-clock-history"></i>
+                        <span>{{ __('devotee.payment_history') }}</span>
+                    </a>
+                    <a href="{{ route('public.payments.history') }}" class="sidebar-sublink {{ request()->routeIs('public.payments.*') ? 'active' : '' }}">
+                        <i class="bi bi-receipt"></i>
+                        <span>{{ __('devotee.public_contributions_view') }}</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Complaints & Feedback (Menu & Submenu) -->
+            @php
+                $isDevoteeComplaintsActive = request()->routeIs('public.complaints.*');
+            @endphp
+            <a class="sidebar-link sidebar-parent {{ $isDevoteeComplaintsActive ? 'active-parent' : '' }}"
+               data-bs-toggle="collapse"
+               href="#menuDevoteeComplaints"
+               role="button"
+               aria-expanded="{{ $isDevoteeComplaintsActive ? 'true' : 'false' }}"
+               aria-controls="menuDevoteeComplaints">
+                <i class="bi bi-chat-left-dots"></i>
+                <span>{{ __('devotee.complaints_and_feedback') }}</span>
+                <i class="bi bi-chevron-down ms-auto sidebar-chevron"></i>
+            </a>
+            <div class="collapse {{ $isDevoteeComplaintsActive ? 'show' : '' }}" id="menuDevoteeComplaints">
+                <div class="sidebar-submenu">
+                    <a href="{{ route('public.complaints.index') }}" class="sidebar-sublink {{ request()->routeIs('public.complaints.index') || request()->routeIs('public.complaints.show') ? 'active' : '' }}">
+                        <i class="bi bi-list-check"></i>
+                        <span>{{ __('devotee.my_complaints') }}</span>
+                    </a>
+                    <a href="{{ route('public.complaints.create') }}" class="sidebar-sublink {{ request()->routeIs('public.complaints.create') ? 'active' : '' }}">
+                        <i class="bi bi-pencil-square"></i>
+                        <span>{{ __('devotee.new_complaint') }}</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Profile Settings -->
+            <a href="{{ route('devotee.profile') }}" class="sidebar-link {{ request()->routeIs('devotee.profile*') ? 'active' : '' }}">
+                <i class="bi bi-person-gear"></i>
+                <span>{{ __('devotee.profile_settings') }}</span>
+            </a>
+        @endif
 
         <!-- Module 1: People & Devotees -->
         @if(Auth::user()->hasPermission('view_people'))

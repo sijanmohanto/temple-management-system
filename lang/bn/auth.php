@@ -4,12 +4,15 @@ return [
     'failed' => 'প্রদত্ত তথ্য আমাদের রেকর্ডের সাথে মিলছে না।',
     'password' => 'প্রদত্ত পাসওয়ার্ড সঠিক নয়।',
     'throttle' => 'অতিরিক্ত লগইন চেষ্টার কারণে সাময়িকভাবে স্থগিত করা হয়েছে। অনুগ্রহ করে :seconds সেকেন্ড পরে আবার চেষ্টা করুন।',
+    'login' => 'লগইন',
 
     // Login Form
     'login_title' => 'মন্দির পোর্টালে প্রবেশ করুন',
     'login_subtitle' => 'মন্দির পরিচালনা পরিষদ, কর্মী ও ভক্তদের অনুমোদিত প্রবেশদ্বার',
     'email_label' => 'ইমেইল ঠিকানা',
     'email_placeholder' => 'আপনার ইমেইল লিখুন',
+    'login_identifier_label' => 'ফোন নম্বর অথবা ইমেইল ঠিকানা',
+    'login_identifier_placeholder' => 'যেমন: 017XXXXXXXX অথবা admin@temple.local',
     'password_label' => 'পাসওয়ার্ড',
     'password_placeholder' => 'পাসওয়ার্ড লিখুন',
     'remember_me' => 'এই ডিভাইসে মনে রাখুন',

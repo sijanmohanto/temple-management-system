@@ -188,8 +188,12 @@
                     @endif
                 </div>
                 <div class="col-4 text-end">
-                    <span class="text-muted small d-block">{{ __('donations.payment_method') }}:</span>
-                    <strong class="text-dark">{{ __('donations.method_'.$receipt->payment?->payment_method) }}</strong>
+                    <span class="text-muted small d-block mb-1">{{ __('donations.payment_method') }}:</span>
+                    @if($receipt->payment?->payment_method)
+                        @include('partials.payment-method-badge', ['method' => $receipt->payment->payment_method])
+                    @else
+                        <strong class="text-dark">—</strong>
+                    @endif
                     @if($receipt->payment?->is_direct_cash_entry)
                         <div class="small text-muted">({{ __('donations.direct_cash_entry') }})</div>
                     @endif

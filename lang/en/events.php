@@ -40,6 +40,8 @@ return [
     'event_year' => 'Event Edition Year',
     'event_year_help' => 'The liturgical/calendar year for this event edition.',
     'venue' => 'Venue / Location',
+    'temple_premises' => 'Temple Premises',
+    'no_description' => 'Annual sacred festival and religious observances.',
     'date' => 'Date',
     'dates' => 'Dates',
     'event_duration' => 'Event Duration',

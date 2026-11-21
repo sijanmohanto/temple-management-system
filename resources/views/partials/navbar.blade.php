@@ -50,7 +50,7 @@
                         </div>
                     </li>
                     <li>
-                        <a class="dropdown-item py-2" href="{{ route('profile.edit') }}">
+                        <a class="dropdown-item py-2" href="{{ (Auth::user()->hasRole('devotee') && !Auth::user()->hasAnyRole(['super_admin', 'temple_admin', 'treasurer'])) ? route('devotee.profile') : route('profile.edit') }}">
                             <i class="bi bi-person-gear me-2 text-primary"></i> {{ __('nav.my_profile') }}
                         </a>
                     </li>
