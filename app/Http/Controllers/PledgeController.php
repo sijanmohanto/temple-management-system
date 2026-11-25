@@ -50,7 +50,7 @@ class PledgeController extends Controller implements HasMiddleware
         }
 
         $pledges = Pledge::query()
-            ->with(['event', 'person', 'family', 'allocations.payment'])
+            ->with(['event', 'person', 'family.primaryContact', 'allocations.payment'])
             ->filter($filters)
             ->latest('pledged_on')
             ->paginate(15)
@@ -76,7 +76,7 @@ class PledgeController extends Controller implements HasMiddleware
         $length = $request->integer('length', 15);
         $searchValue = trim($request->input('search.value', ''));
 
-        $query = Pledge::query()->with(['event', 'person', 'family', 'allocations.payment']);
+        $query = Pledge::query()->with(['event', 'person', 'family.primaryContact', 'allocations.payment']);
         $totalRecords = Pledge::count();
 
         unset($filters['search']);
@@ -91,9 +91,8 @@ class PledgeController extends Controller implements HasMiddleware
         $orderColumnIndex = $request->has('order.0.column') ? (int) $request->input('order.0.column') : null;
         $orderDir = strtolower((string) $request->input('order.0.dir', 'desc')) === 'asc' ? 'asc' : 'desc';
         $columnMap = [
-            0 => 'pledge_code',
-            3 => 'pledged_amount',
-            6 => 'status',
+            2 => 'pledged_amount',
+            5 => 'status',
         ];
 
         if ($orderColumnIndex !== null && isset($columnMap[$orderColumnIndex])) {
@@ -107,13 +106,12 @@ class PledgeController extends Controller implements HasMiddleware
         $canCollect = $request->user()?->hasPermission('record_collections') ?? false;
 
         $data = $records->map(function (Pledge $pledge) use ($canManage, $canCollect) {
-            $codeHtml = '<span class="badge bg-light text-dark border font-monospace">'.e($pledge->pledge_code).'</span>'
-                .'<div class="small text-muted mt-1">'.e($pledge->pledged_on->format('d M Y')).'</div>';
-
-            $ownerHtml = '<div class="fw-bold text-dark">'.e($pledge->owner_name).'</div>';
-            if ($pledge->person && $pledge->person->phone) {
-                $ownerHtml .= '<small class="text-muted"><i class="bi bi-telephone me-1"></i>'.e($pledge->person->phone).'</small>';
+            $ownerAvatar = '<img src="'.e($pledge->owner_avatar_url).'" alt="'.e($pledge->owner_name).'" class="rounded-circle object-fit-cover shadow-sm border flex-shrink-0" style="width: 38px; height: 38px; min-width: 38px;">';
+            $ownerDetails = '<div class="fw-bold text-dark">'.e($pledge->owner_name).'</div>';
+            if ($pledge->owner_phone) {
+                $ownerDetails .= '<small class="text-muted"><i class="bi bi-telephone me-1"></i>'.e($pledge->owner_phone).'</small>';
             }
+            $ownerHtml = '<div class="d-flex align-items-center gap-2">'.$ownerAvatar.'<div>'.$ownerDetails.'</div></div>';
 
             $eventHtml = '<div class="fw-semibold text-dark">'.e($pledge->event?->name ?? '—').'</div>'
                 .'<span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.72rem;">'
@@ -123,7 +121,8 @@ class PledgeController extends Controller implements HasMiddleware
             }
 
             $pledgedAmountHtml = '<div class="fw-bold text-dark">৳'.number_format((float) $pledge->pledged_amount, 2).'</div>';
-            $paidAmountHtml = '<div class="text-success fw-semibold">৳'.number_format($pledge->verified_paid_amount, 2).'</div>';
+            $paidAmountHtml = '<div class="text-success fw-semibold">৳'.number_format($pledge->verified_paid_amount, 2).'</div>'
+                .'<div class="small text-muted"><i class="bi bi-calendar3 me-1"></i>'.e($pledge->pledged_on->format('d M Y')).'</div>';
             $outstandingHtml = '<div class="fw-bold '.($pledge->outstanding_amount > 0 ? 'text-danger' : 'text-muted').'">৳'.number_format($pledge->outstanding_amount, 2).'</div>';
 
             $statusBadge = match ($pledge->status) {
@@ -136,21 +135,20 @@ class PledgeController extends Controller implements HasMiddleware
 
             $statusHtml = '<span class="badge '.$statusBadge.' px-2 py-1"><i class="bi bi-circle-fill me-1" style="font-size: 0.45rem;"></i>'.e(__('donations.status_'.$pledge->status)).'</span>';
 
-            $actionsHtml = '<div class="btn-group btn-group-sm text-end">'
-                .'<a href="'.route('pledges.show', $pledge).'" class="btn btn-outline-primary" title="'.e(__('common.view')).'"><i class="bi bi-eye"></i></a>';
+            $actionsHtml = '<div class="d-inline-flex gap-1 justify-content-end">'
+                .'<a href="'.route('pledges.show', $pledge).'" class="table-action-btn table-action-btn-view" title="'.e(__('common.view')).'"><i class="bi bi-eye"></i></a>';
 
             if ($canManage && $pledge->status !== Pledge::STATUS_CANCELLED && $pledge->status !== Pledge::STATUS_PAID) {
-                $actionsHtml .= '<a href="'.route('pledges.edit', $pledge).'" class="btn btn-outline-secondary" title="'.e(__('common.edit')).'"><i class="bi bi-pencil"></i></a>';
+                $actionsHtml .= '<a href="'.route('pledges.edit', $pledge).'" class="table-action-btn table-action-btn-edit" title="'.e(__('common.edit')).'"><i class="bi bi-pencil"></i></a>';
             }
 
             if ($canCollect && $pledge->outstanding_amount > 0 && $pledge->status !== Pledge::STATUS_CANCELLED) {
-                $actionsHtml .= '<a href="'.route('collections.create', ['pledge_id' => $pledge->id]).'" class="btn btn-outline-success" title="'.e(__('donations.collect_payment')).'"><i class="bi bi-cash"></i></a>';
+                $actionsHtml .= '<a href="'.route('collections.create', ['pledge_id' => $pledge->id]).'" class="table-action-btn table-action-btn-toggle-reactivate" title="'.e(__('donations.collect_payment')).'"><i class="bi bi-cash"></i></a>';
             }
 
             $actionsHtml .= '</div>';
 
             return [
-                $codeHtml,
                 $ownerHtml,
                 $eventHtml,
                 $pledgedAmountHtml,

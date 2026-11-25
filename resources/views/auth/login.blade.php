@@ -73,7 +73,9 @@
 
                     <!-- Submit Button -->
                     <div class="d-grid mb-3">
-                        <button type="submit" class="btn btn-lg temple-btn-maroon py-2 fw-bold">
+                        <button type="submit"
+                                class="btn btn-lg temple-btn-maroon py-2 fw-bold rounded-3 shadow-sm text-white"
+                                style="background: linear-gradient(135deg, #75141c, #560e15) !important; border: 1px solid #560e15 !important; color: #ffffff !important; box-shadow: 0 4px 14px rgba(117, 20, 28, 0.35);">
                             <i class="bi bi-box-arrow-in-right me-2"></i> {{ __('auth.sign_in_btn') }}
                         </button>
                     </div>

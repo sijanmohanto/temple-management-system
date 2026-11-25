@@ -58,7 +58,7 @@ class JournalEntryController extends Controller
             $orderColIdx = (int) $request->input('order.0.column', 0);
             $orderDir = $request->input('order.0.dir', 'desc');
 
-            $columns = ['journal_number', 'entry_date', 'description', 'source_type', 'total_debit', 'status', 'created_at'];
+            $columns = ['entry_date', 'description', 'source_type', 'total_debit', 'total_credit', 'status'];
             $orderCol = $columns[$orderColIdx] ?? 'entry_date';
 
             $entries = $query->orderBy($orderCol, $orderDir)
@@ -67,12 +67,26 @@ class JournalEntryController extends Controller
                 ->get();
 
             $data = $entries->map(function ($entry) {
+                $sourceBase = class_basename($entry->source_type);
+                $sourceLabel = match ($sourceBase) {
+                    'CollectionPayment', 'collection_payment' => __('donations.collections'),
+                    'Expense', 'expense' => __('finance.expenses'),
+                    'FundTransfer', 'fund_transfer' => __('finance.transfers'),
+                    'ManualIncome', 'manual_income' => __('finance.income'),
+                    'VendorPayment', 'vendor_payment' => __('procurement.vendor_payment'),
+                    'VendorBill', 'vendor_bill' => __('procurement.vendor_bills'),
+                    'EventSettlement', 'event_settlement' => __('events.financial_settlement'),
+                    'OpeningBalance', 'opening_balance' => __('finance.opening_balances'),
+                    'reversal', 'Reversal' => __('finance.reversed'),
+                    default => ucfirst(str_replace('_', ' ', $sourceBase)),
+                };
+
                 return [
                     'id' => $entry->id,
                     'journal_number' => $entry->journal_number,
                     'entry_date' => $entry->entry_date->toDateString(),
                     'description' => $entry->description,
-                    'source_type' => ucfirst(str_replace('_', ' ', $entry->source_type)),
+                    'source_type' => $sourceLabel,
                     'event_title' => $entry->event?->title_en,
                     'total_debit' => number_format($entry->total_debit, 2),
                     'total_credit' => number_format($entry->total_credit, 2),

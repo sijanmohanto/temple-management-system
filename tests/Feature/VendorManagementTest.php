@@ -384,6 +384,8 @@ class VendorManagementTest extends TestCase
         $this->assertArrayNotHasKey('id', $firstRow);
         $this->assertStringContainsString('VND-0001', $firstRow['vendor_code']);
         $this->assertStringContainsString('Choudhury Brass Emporium', $firstRow['name']);
+        $this->assertStringContainsString('data-bs-toggle="dropdown"', $firstRow['actions']);
+        $this->assertStringContainsString('bi-three-dots-vertical', $firstRow['actions']);
     }
 
     public function test_bengali_locale_renders_vendor_views_without_errors(): void

@@ -55,7 +55,7 @@
                     <div class="row g-3" id="personSelectContainer">
                         <div class="col-md-8">
                             <label class="form-label fw-semibold required">{{ __('people.person') }}</label>
-                            <select name="person_id" id="personSelect" class="form-select select2" data-ajax--url="{{ route('people.search') }}" data-placeholder="Search devotee by name, code or phone...">
+                            <select name="person_id" id="personSelect" class="form-select select2" data-ajax--url="{{ route('people.search') }}" data-placeholder="Search devotee by name or phone...">
                                 @if(old('person_id') || $selectedPerson)
                                     @php
                                         $p = $selectedPerson ?? \App\Models\Person::find(old('person_id'));

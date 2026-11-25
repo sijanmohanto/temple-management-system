@@ -228,7 +228,7 @@
                         <div class="row g-3" id="personPayerRow">
                             <div class="col-md-8">
                                 <label class="form-label fw-semibold">{{ __('people.person') }}</label>
-                                <select name="payer_person_id" id="payerPersonSelect" class="form-select select2" data-ajax--url="{{ route('people.search') }}" data-placeholder="Search devotee by name, code or phone...">
+                                <select name="payer_person_id" id="payerPersonSelect" class="form-select select2" data-ajax--url="{{ route('people.search') }}" data-placeholder="Search devotee by name or phone...">
                                     @if(old('payer_person_id') || $selectedPerson)
                                         @php
                                             $per = $selectedPerson ?? \App\Models\Person::find(old('payer_person_id'));

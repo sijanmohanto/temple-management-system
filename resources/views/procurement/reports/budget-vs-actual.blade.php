@@ -3,7 +3,7 @@
 @section('title', __('procurement.budget_vs_actual'))
 
 @section('content')
-<div class="container-fluid px-4 py-3">
+<div class="container-fluid px-0">
     <!-- Header -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
         <div>
@@ -13,22 +13,22 @@
             <p class="text-muted small mb-0">{{ __('procurement.variance_analysis') }} &bull; {{ __('procurement.increment_status') }}</p>
         </div>
         <div class="d-flex gap-2">
-            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print()">
+            <button type="button" class="btn btn-outline-dark rounded-pill px-3 shadow-sm" onclick="window.print()">
                 <i class="bi bi-printer me-1"></i> {{ __('procurement.print_report') }}
             </button>
-            <a href="{{ route('procurement.budgets.index') }}" class="btn btn-outline-primary btn-sm">
+            <a href="{{ route('procurement.budgets.index') }}" class="btn btn-outline-dark rounded-pill px-3 shadow-sm">
                 <i class="bi bi-list-columns-reverse me-1"></i> {{ __('procurement.budget_list') }}
             </a>
         </div>
     </div>
 
     <!-- Budget Selection Filter Card -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body p-3">
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-3 p-md-4">
             <form action="{{ route('procurement.reports.budget-vs-actual') }}" method="GET" class="row g-2 align-items-end">
-                <div class="col-md-8">
-                    <label class="form-label small fw-bold mb-1">{{ __('procurement.select_budget') }}</label>
-                    <select name="budget_id" class="form-select form-select-sm select2-basic" onchange="this.form.submit()">
+                <div class="col-md-9">
+                    <label class="form-label small fw-semibold text-muted mb-1">{{ __('procurement.select_budget') }}</label>
+                    <select name="budget_id" class="form-select select2-basic" onchange="this.form.submit()">
                         @foreach($approvedBudgets as $b)
                             <option value="{{ $b->id }}" {{ $selectedBudget && $selectedBudget->id === $b->id ? 'selected' : '' }}>
                                 {{ $b->title }} ({{ $b->type_label }} &bull; {{ $b->event?->title_en ?? $b->fiscal_year }}) &bull; ৳{{ number_format((float) $b->total_amount, 2) }}
@@ -36,9 +36,9 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-4 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
-                        <i class="bi bi-arrow-repeat me-1"></i> {{ __('common.filter') }}
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 flex-grow-1 shadow-sm">
+                        <i class="bi bi-filter me-1"></i> {{ __('common.filter') }}
                     </button>
                 </div>
             </form>
@@ -49,16 +49,16 @@
         <!-- Summary Cards -->
         <div class="row g-3 mb-4">
             <div class="col-12 col-md-3">
-                <div class="card border-0 shadow-sm border-start border-4 border-primary h-100">
-                    <div class="card-body">
+                <div class="card border-0 shadow-sm rounded-4 border-start border-4 border-primary h-100">
+                    <div class="card-body p-3 p-md-4">
                         <div class="text-muted small fw-bold text-uppercase">{{ __('procurement.approved_budget_total') }}</div>
                         <div class="h3 mb-0 fw-bold text-primary">{{ $reportData['summary']['total_budget_formatted'] }}</div>
                     </div>
                 </div>
             </div>
             <div class="col-12 col-md-3">
-                <div class="card border-0 shadow-sm border-start border-4 border-danger h-100">
-                    <div class="card-body">
+                <div class="card border-0 shadow-sm rounded-4 border-start border-4 border-danger h-100">
+                    <div class="card-body p-3 p-md-4">
                         <div class="text-muted small fw-bold text-uppercase">{{ __('procurement.actual_expenses') }}</div>
                         <div class="h3 mb-0 fw-bold text-danger">{{ $reportData['summary']['total_actual_formatted'] }}</div>
                         <small class="text-muted">{{ __('finance.approved') }} {{ __('finance.expenses') }}</small>
@@ -66,8 +66,8 @@
                 </div>
             </div>
             <div class="col-12 col-md-3">
-                <div class="card border-0 shadow-sm border-start border-4 {{ $reportData['summary']['is_over_budget'] ? 'border-danger' : 'border-success' }} h-100">
-                    <div class="card-body">
+                <div class="card border-0 shadow-sm rounded-4 border-start border-4 {{ $reportData['summary']['is_over_budget'] ? 'border-danger' : 'border-success' }} h-100">
+                    <div class="card-body p-3 p-md-4">
                         <div class="text-muted small fw-bold text-uppercase">
                             {{ $reportData['summary']['is_over_budget'] ? __('procurement.over_budget') : __('procurement.remaining_budget') }}
                         </div>
@@ -79,8 +79,8 @@
                 </div>
             </div>
             <div class="col-12 col-md-3">
-                <div class="card border-0 shadow-sm border-start border-4 border-warning h-100">
-                    <div class="card-body">
+                <div class="card border-0 shadow-sm rounded-4 border-start border-4 border-warning h-100">
+                    <div class="card-body p-3 p-md-4">
                         <div class="text-muted small fw-bold text-uppercase">{{ __('procurement.pending_expenses') }}</div>
                         <div class="h3 mb-0 fw-bold text-warning">{{ $reportData['summary']['total_pending_formatted'] }}</div>
                         <small class="text-muted">{{ __('finance.pending_approval') }}</small>
@@ -90,8 +90,8 @@
         </div>
 
         <!-- Variance Table Card -->
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-header bg-white py-3 border-bottom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
                 <div>
                     <h6 class="mb-0 fw-bold text-dark">
                         <i class="bi bi-table me-2 text-primary"></i>{{ __('procurement.variance_analysis') }}
@@ -108,34 +108,35 @@
                     <span class="small fw-bold {{ $reportData['summary']['is_over_budget'] ? 'text-danger' : 'text-primary' }}">{{ $reportData['summary']['overall_utilization_pct'] }}%</span>
                 </div>
             </div>
-            <div class="card-body p-0">
+            <div class="card-body p-3 p-md-4">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+                    <table class="table table-hover align-middle mb-0 w-100" id="budgetVsActualTable">
                         <thead class="table-light">
                             <tr>
-                                <th>{{ __('finance.chart_of_accounts') }}</th>
-                                <th class="text-end">{{ __('procurement.allocated_amount') }}</th>
-                                <th class="text-end">{{ __('procurement.actual_expenses') }}</th>
-                                <th class="text-end">{{ __('procurement.pending_expenses') }}</th>
-                                <th class="text-end">{{ __('procurement.remaining_budget') }}</th>
-                                <th class="text-end">{{ __('procurement.over_budget') }}</th>
-                                <th class="text-center" style="width: 20%;">{{ __('procurement.utilization_percentage') }}</th>
+                                <th class="ps-3">{{ __('procurement.account_head_short') }}</th>
+                                <th class="text-end">{{ __('procurement.allocated_budget_short') }}</th>
+                                <th class="text-end">{{ __('procurement.actual_expenses_short') }}</th>
+                                <th class="text-end">{{ __('procurement.pending_expenses_short') }}</th>
+                                <th class="text-end">{{ __('procurement.remaining_budget_short') }}</th>
+                                <th class="text-end">{{ __('procurement.over_budget_short') }}</th>
+                                <th class="text-center pe-3" style="width: 20%;">{{ __('procurement.utilization_short') }}</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($reportData['items'] as $row)
                                 <tr class="{{ $row['is_unbudgeted'] ? 'table-warning' : '' }}">
-                                    <td>
+                                    <td class="ps-3">
                                         <div class="fw-bold">{{ $row['account_name'] }}</div>
+                                        <span class="d-none">{{ $row['account_code'] }}</span>
                                     </td>
-                                    <td class="text-end fw-bold text-primary">{{ $row['allocated_formatted'] }}</td>
-                                    <td class="text-end fw-bold text-danger">{{ $row['actual_formatted'] }}</td>
-                                    <td class="text-end text-warning">{{ $row['pending_formatted'] }}</td>
-                                    <td class="text-end fw-bold text-success">{{ $row['remaining_formatted'] }}</td>
-                                    <td class="text-end fw-bold {{ $row['is_over_budget'] ? 'text-danger' : 'text-muted' }}">
+                                    <td class="text-end fw-bold text-primary" data-order="{{ $row['allocated'] }}">{{ $row['allocated_formatted'] }}</td>
+                                    <td class="text-end fw-bold text-danger" data-order="{{ $row['actual'] }}">{{ $row['actual_formatted'] }}</td>
+                                    <td class="text-end text-warning" data-order="{{ $row['pending'] }}">{{ $row['pending_formatted'] }}</td>
+                                    <td class="text-end fw-bold text-success" data-order="{{ $row['remaining'] }}">{{ $row['remaining_formatted'] }}</td>
+                                    <td class="text-end fw-bold {{ $row['is_over_budget'] ? 'text-danger' : 'text-muted' }}" data-order="{{ $row['over_budget'] }}">
                                         {{ $row['is_over_budget'] ? '+' . $row['over_budget_formatted'] : '-' }}
                                     </td>
-                                    <td>
+                                    <td class="pe-3" data-order="{{ $row['utilization_pct'] }}">
                                         <div class="d-flex align-items-center gap-2">
                                             <div class="progress flex-grow-1" style="height: 6px;">
                                                 <div class="progress-bar {{ $row['is_over_budget'] ? 'bg-danger' : 'bg-primary' }}" style="width: {{ min(100, $row['utilization_pct']) }}%;"></div>
@@ -146,15 +147,15 @@
                                 </tr>
                             @endforeach
                         </tbody>
-                        <tfoot class="table-light">
+                        <tfoot class="table-light fw-bold fs-6">
                             <tr>
-                                <th class="fw-bold">{{ __('common.total') }}:</th>
-                                <th class="text-end fw-bold text-primary">{{ $reportData['summary']['total_budget_formatted'] }}</th>
-                                <th class="text-end fw-bold text-danger">{{ $reportData['summary']['total_actual_formatted'] }}</th>
-                                <th class="text-end fw-bold text-warning">{{ $reportData['summary']['total_pending_formatted'] }}</th>
-                                <th class="text-end fw-bold text-success">{{ $reportData['summary']['total_remaining_formatted'] }}</th>
-                                <th class="text-end fw-bold text-danger">{{ $reportData['summary']['is_over_budget'] ? '+' . $reportData['summary']['total_over_budget_formatted'] : '-' }}</th>
-                                <th class="text-center fw-bold">{{ $reportData['summary']['overall_utilization_pct'] }}%</th>
+                                <td class="ps-3">{{ __('common.total') }}:</td>
+                                <td class="text-end text-primary">{{ $reportData['summary']['total_budget_formatted'] }}</td>
+                                <td class="text-end text-danger">{{ $reportData['summary']['total_actual_formatted'] }}</td>
+                                <td class="text-end text-warning">{{ $reportData['summary']['total_pending_formatted'] }}</td>
+                                <td class="text-end text-success">{{ $reportData['summary']['total_remaining_formatted'] }}</td>
+                                <td class="text-end text-danger">{{ $reportData['summary']['is_over_budget'] ? '+' . $reportData['summary']['total_over_budget_formatted'] : '-' }}</td>
+                                <td class="text-center pe-3">{{ $reportData['summary']['overall_utilization_pct'] }}%</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -162,12 +163,12 @@
             </div>
         </div>
     @else
-        <div class="alert alert-info py-4 text-center">
+        <div class="alert alert-info py-4 text-center rounded-4 shadow-sm">
             <i class="bi bi-info-circle fs-3 d-block mb-2"></i>
             {{ __('procurement.no_budgets_found') }}
             <div class="mt-2">
                 @if(Auth::user()->hasPermission('manage_budgets'))
-                    <a href="{{ route('procurement.budgets.create') }}" class="btn btn-primary btn-sm">
+                    <a href="{{ route('procurement.budgets.create') }}" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">
                         <i class="bi bi-plus-circle me-1"></i> {{ __('procurement.create_budget') }}
                     </a>
                 @endif
@@ -186,6 +187,21 @@ $(document).ready(function() {
             width: '100%'
         });
     }
+
+    TempleUI.initDataTable('#budgetVsActualTable', {
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+        order: [],
+        columns: [
+            { orderable: true, className: 'ps-3' },
+            { orderable: true, className: 'text-end' },
+            { orderable: true, className: 'text-end' },
+            { orderable: true, className: 'text-end' },
+            { orderable: true, className: 'text-end' },
+            { orderable: true, className: 'text-end' },
+            { orderable: true, className: 'pe-3' }
+        ]
+    });
 });
 </script>
 @endpush

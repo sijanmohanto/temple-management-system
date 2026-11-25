@@ -117,11 +117,17 @@
                                                 {{ __('donations.type_'.$p->collection_type) }}
                                             </span>
                                         </div>
-                                        <div class="fw-bold text-dark">{{ $p->payer_display_name }}</div>
-                                        <div class="small text-muted d-flex align-items-center gap-2 mt-1">
-                                            <span><i class="bi bi-calendar3 me-1"></i>{{ $p->payment_date->format('d M Y') }}</span>
-                                            <span>&bull;</span>
-                                            @include('partials.payment-method-badge', ['method' => $p->payment_method])
+                                        <div class="d-flex align-items-center gap-3">
+                                            <img src="{{ $p->payer_avatar_url }}" alt="{{ $p->payer_display_name }}"
+                                                 class="rounded-circle object-fit-cover shadow-sm border flex-shrink-0" style="width: 38px; height: 38px; min-width: 38px;">
+                                            <div>
+                                                <div class="fw-bold text-dark">{{ $p->payer_display_name }}</div>
+                                                <div class="small text-muted d-flex align-items-center gap-2 mt-1">
+                                                    <span><i class="bi bi-calendar3 me-1"></i>{{ $p->payment_date->format('d M Y') }}</span>
+                                                    <span>&bull;</span>
+                                                    @include('partials.payment-method-badge', ['method' => $p->payment_method])
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="text-md-end d-flex align-items-center gap-2">

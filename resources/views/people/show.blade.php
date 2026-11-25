@@ -10,10 +10,7 @@
         <div class="card-body p-4 position-relative">
             <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="avatar-circle rounded-circle bg-white text-dark d-flex align-items-center justify-content-center fw-bold shadow-sm"
-                         style="width: 64px; height: 64px; font-size: 1.5rem; background-color: var(--temple-saffron-light) !important; color: var(--temple-maroon) !important;">
-                        {{ mb_substr($person->name_en, 0, 1) }}
-                    </div>
+                    <img src="{{ $person->avatar_url }}" alt="{{ $person->name_en }}" class="rounded-circle shadow-sm object-fit-cover border border-2 border-white bg-white" style="width: 68px; height: 68px; min-width: 68px;">
                     <div>
                         <div class="d-flex align-items-center gap-2 flex-wrap">
                             @if($person->isActive())
@@ -217,7 +214,7 @@
                         <i class="bi bi-award text-primary me-2"></i> {{ __('people.committee_history') }}
                     </h5>
                 </div>
-                <div class="card-body p-0">
+                <div class="card-body p-3">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0 w-100" id="personCommitteesTable">
                             <thead class="table-light">
@@ -515,7 +512,156 @@
     </div>
 </div>
 @endif
+
+@if(session('devotee_credential_modal'))
+    @php
+        $modalCreds = session('devotee_credential_modal');
+    @endphp
+    <!-- Devotee Login Credentials Created Modal (Auto-pops up on success) -->
+    <div class="modal fade" id="newDevoteeCredentialModal" tabindex="-1" aria-labelledby="newDevoteeCredentialModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <!-- Modal Header -->
+                <div class="modal-header text-white border-0 py-3" style="background: linear-gradient(135deg, var(--temple-maroon), var(--temple-maroon-dark));">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="rounded-circle bg-white text-danger d-flex align-items-center justify-content-center shadow-sm" style="width: 40px; height: 40px; font-size: 1.3rem;">
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold mb-0 text-white" id="newDevoteeCredentialModalLabel">
+                                {{ __('people.credential_modal_title') }}
+                            </h5>
+                            <small class="text-white-50">{{ __('people.credential_modal_subtitle') }}</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <!-- Status Banner -->
+                    @if($modalCreds['email_sent'])
+                        <div class="alert alert-success d-flex align-items-center gap-2 py-2 px-3 rounded-3 mb-3 border-success border-opacity-25 bg-success bg-opacity-10 text-success">
+                            <i class="bi bi-check-circle-fill fs-5"></i>
+                            <div class="small fw-semibold">
+                                {{ __('people.welcome_email_sent', ['email' => $modalCreds['sent_to_email'] ?? $modalCreds['email']]) }}
+                            </div>
+                        </div>
+                    @else
+                        <div class="alert alert-light border d-flex align-items-center gap-2 py-2 px-3 rounded-3 mb-3 text-secondary">
+                            <i class="bi bi-info-circle-fill fs-5 text-primary"></i>
+                            <div class="small">
+                                {{ __('people.welcome_email_not_sent') }}
+                            </div>
+                        </div>
+                    @endif
+
+                    <!-- Credential Card -->
+                    <div class="card border rounded-3 bg-light p-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+                            <span class="text-muted small fw-semibold">{{ __('people.person') }}</span>
+                            <span class="fw-bold text-dark">{{ $modalCreds['name'] }} @if(!empty($modalCreds['name_bn'])) ({{ $modalCreds['name_bn'] }}) @endif</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+                            <span class="text-muted small fw-semibold">{{ __('people.person_code') }}</span>
+                            <span class="badge bg-secondary font-monospace">{{ $modalCreds['person_code'] }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+                            <span class="text-muted small fw-semibold">{{ __('people.login_identifier') }}</span>
+                            <span class="fw-bold font-monospace text-primary fs-6">{{ $modalCreds['login_id'] }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+                            <span class="text-muted small fw-semibold">{{ __('people.temporary_password') }}</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span id="modalPasswordDisplay" class="font-monospace fw-bold px-2 py-1 bg-white border rounded text-danger" style="letter-spacing: 1px;">
+                                    {{ $modalCreds['plain_password'] }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted small fw-semibold">{{ __('people.portal_login_url') }}</span>
+                            <a href="{{ $modalCreds['login_url'] }}" target="_blank" class="small text-truncate text-decoration-none fw-semibold" style="max-width: 220px;">
+                                {{ $modalCreds['login_url'] }}
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Hidden text for copying -->
+                    <textarea id="credentialCopyText" class="d-none">🏛️ {{ config('app.name') }} - Devotee Portal
+👤 Devotee: {{ $modalCreds['name'] }}
+🆔 Code: {{ $modalCreds['person_code'] }}
+📱 Login ID: {{ $modalCreds['login_id'] }}
+🔑 Password: {{ $modalCreds['plain_password'] }}
+🌐 Portal URL: {{ $modalCreds['login_url'] }}</textarea>
+
+                    <p class="text-muted small text-center mb-0">
+                        <i class="bi bi-shield-exclamation text-warning me-1"></i>
+                        {{ __('people.welcome_mail_change_pass_advice') }}
+                    </p>
+                </div>
+
+                <!-- Modal Footer with prominent copy button -->
+                <div class="modal-footer border-top bg-light p-3 d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">
+                        {{ __('people.close_modal') }}
+                    </button>
+                    <button type="button" id="btnCopyDevoteeCredentials" class="btn btn-primary rounded-pill px-4 shadow-sm"
+                            style="background-color: var(--temple-maroon); border-color: var(--temple-maroon);">
+                        <i class="bi bi-clipboard-check me-1"></i> <span id="copyBtnLabel">{{ __('people.copy_credentials') }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
 @endsection
+
+@push('scripts')
+@if(session('devotee_credential_modal'))
+<script>
+    $(document).ready(function() {
+        const modalEl = document.getElementById('newDevoteeCredentialModal');
+        if (modalEl) {
+            const credModal = new bootstrap.Modal(modalEl);
+            credModal.show();
+        }
+
+        $('#btnCopyDevoteeCredentials').on('click', function() {
+            const textToCopy = $('#credentialCopyText').val();
+            const btn = $(this);
+            const originalHtml = btn.html();
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy).then(showCopied, fallbackCopy);
+            } else {
+                fallbackCopy();
+            }
+
+            function fallbackCopy() {
+                const textArea = document.createElement('textarea');
+                textArea.value = textToCopy;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showCopied();
+                } catch (err) {
+                    alert('Copy failed, please copy manually.');
+                }
+                document.body.removeChild(textArea);
+            }
+
+            function showCopied() {
+                btn.removeClass('btn-primary').addClass('btn-success').html('<i class="bi bi-check2-all me-1"></i> {{ __("people.copied_to_clipboard") }}');
+                setTimeout(function() {
+                    btn.removeClass('btn-success').addClass('btn-primary').html(originalHtml);
+                }, 2500);
+            }
+        });
+    });
+</script>
+@endif
 
 @push('scripts')
 @if($person->committeeMemberships->count() > 0)

@@ -82,8 +82,7 @@
                 <table class="table table-hover align-middle mb-0 w-100" id="eventsDataTable">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-3">{{ __('events.event_code') }}</th>
-                            <th>{{ __('events.name') }}</th>
+                            <th class="ps-3">{{ __('events.name') }}</th>
                             <th>{{ __('events.event_dates') }}</th>
                             <th>{{ __('events.collection_period') }}</th>
                             <th>{{ __('events.status') }}</th>
@@ -94,11 +93,6 @@
                         @foreach($events as $event)
                             <tr>
                                 <td class="ps-3">
-                                    <span class="badge bg-light text-dark border font-monospace">
-                                        {{ $event->event_code }}
-                                    </span>
-                                </td>
-                                <td>
                                     <div class="fw-bold text-dark">{{ $event->name }}</div>
                                     @if($event->name_bn && app()->getLocale() !== 'bn')
                                         <small class="text-muted">{{ $event->name_bn }}</small>
@@ -156,12 +150,12 @@
                                     @endif
                                 </td>
                                 <td class="text-end pe-3">
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="{{ route('events.show', $event) }}" class="btn btn-outline-primary" title="{{ __('common.view') }}">
+                                    <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                                        <a href="{{ route('events.show', $event) }}" class="table-action-btn table-action-btn-view" title="{{ __('common.view') }}">
                                             <i class="bi bi-eye"></i>
                                         </a>
                                         @if(Auth::user()->hasPermission('manage_events') && ! $event->isClosed())
-                                            <a href="{{ route('events.edit', $event) }}" class="btn btn-outline-secondary" title="{{ __('common.edit') }}">
+                                            <a href="{{ route('events.edit', $event) }}" class="table-action-btn table-action-btn-edit" title="{{ __('common.edit') }}">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                         @endif
@@ -203,12 +197,11 @@
                 }
             },
             columns: [
-                { data: 0, name: 'event_code' },
-                { data: 1, name: 'name_en' },
-                { data: 2, name: 'start_date' },
-                { data: 3, name: 'collection_start_date', orderable: false },
-                { data: 4, name: 'status' },
-                { data: 5, name: 'actions', orderable: false, className: 'text-end pe-3' }
+                { data: 0, name: 'name_en', className: 'ps-3' },
+                { data: 1, name: 'start_date' },
+                { data: 2, name: 'collection_start_date', orderable: false },
+                { data: 3, name: 'status' },
+                { data: 4, name: 'actions', orderable: false, className: 'text-end pe-3' }
             ]
         });
 

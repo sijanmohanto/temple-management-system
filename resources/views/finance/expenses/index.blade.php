@@ -55,21 +55,19 @@
     </div>
 
     <!-- Expenses DataTable -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="card-body p-3 p-md-4">
             <div class="table-responsive">
-                <table class="table table-hover align-middle w-100" id="expensesTable">
+                <table class="table table-hover align-middle mb-0 w-100" id="expensesTable">
                     <thead class="table-light">
                         <tr>
-                            <th>{{ __('finance.expense_number') }}</th>
-                            <th>{{ __('finance.entry_date') }}</th>
-                            <th>{{ __('common.title') }}</th>
-                            <th>{{ __('finance.expense_category') }}</th>
-                            <th>{{ __('finance.paid_from') }}</th>
-                            <th>{{ __('finance.payee_vendor') }}</th>
-                            <th class="text-end">{{ __('common.amount') }}</th>
-                            <th class="text-center">{{ __('finance.status') }}</th>
-                            <th class="text-end">{{ __('common.actions') }}</th>
+                            <th class="ps-3">{{ __('common.title') }}</th>
+                            <th>{{ __('finance.expense_category_short') }}</th>
+                            <th>{{ __('finance.paid_from_short') }}</th>
+                            <th>{{ __('finance.payee_vendor_short') }}</th>
+                            <th class="text-end">{{ __('common.amount_short') }}</th>
+                            <th class="text-center">{{ __('common.status') }}</th>
+                            <th class="text-end pe-3">{{ __('common.actions') }}</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -198,28 +196,49 @@ $(document).ready(function() {
         },
         columns: [
             { 
-                data: 'expense_number', 
-                name: 'expense_number',
-                render: function(data, type, row) {
-                    return '<a href="' + row.view_url + '" class="fw-bold font-monospace text-decoration-none">' + data + '</a>';
-                }
-            },
-            { data: 'expense_date', name: 'expense_date' },
-            { 
                 data: 'title', 
                 name: 'title_en',
-                render: function(data) {
-                    return '<div class="text-truncate fw-semibold" style="max-width: 200px;" title="' + data + '">' + data + '</div>';
+                className: 'ps-3',
+                render: function(data, type, row) {
+                    var titleText = row.display_title || data || '—';
+                    var html = '<a href="' + row.view_url + '" class="text-decoration-none fw-semibold text-dark hover-primary">' + titleText + '</a>';
+                    if (row.event_name) {
+                        html += '<div class="mt-1"><span class="badge bg-light text-secondary border font-xs"><i class="bi bi-calendar-event me-1"></i>' + row.event_name + '</span></div>';
+                    }
+                    html += '<span class="d-none">' + row.expense_number + '</span>';
+                    return html;
                 }
             },
-            { data: 'category', name: 'expense_account_id' },
-            { data: 'paid_from', name: 'payment_account_id' },
-            { data: 'vendor', name: 'vendor_name' },
+            { 
+                data: 'category', 
+                name: 'expense_account_id',
+                render: function(data) {
+                    return '<span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">' + (data || '—') + '</span>';
+                }
+            },
+            { 
+                data: 'paid_from', 
+                name: 'payment_account_id',
+                render: function(data) {
+                    return '<span class="fw-semibold text-dark">' + (data || '—') + '</span>';
+                }
+            },
+            { 
+                data: 'vendor', 
+                name: 'vendor_name',
+                render: function(data) {
+                    return data && data !== '-' ? '<span class="text-dark">' + data + '</span>' : '<span class="text-muted">—</span>';
+                }
+            },
             { 
                 data: 'amount', 
                 name: 'amount', 
-                className: 'text-end fw-bold text-danger',
-                render: function(data) { return '৳' + data; }
+                className: 'text-end fw-bold',
+                render: function(data, type, row) { 
+                    var displayDate = row.expense_date_formatted || row.expense_date || '';
+                    return '<div class="text-danger fs-6 fw-bold mb-0">৳' + data + '</div>' +
+                           '<div class="small text-muted fw-normal text-nowrap mt-1"><i class="bi bi-calendar3 me-1"></i>' + displayDate + '</div>';
+                }
             },
             { 
                 data: 'status', 
@@ -227,13 +246,13 @@ $(document).ready(function() {
                 className: 'text-center',
                 render: function(data) {
                     if (data === 'approved') {
-                        return '<span class="badge bg-success">{{ __("finance.approved") }}</span>';
+                        return '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25"><i class="bi bi-check-circle me-1"></i>{{ __("finance.approved") }}</span>';
                     } else if (data === 'pending' || data === 'pending_approval') {
-                        return '<span class="badge bg-warning text-dark">{{ __("finance.pending") }}</span>';
+                        return '<span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25"><i class="bi bi-clock me-1"></i>{{ __("finance.pending") }}</span>';
                     } else if (data === 'rejected') {
-                        return '<span class="badge bg-danger">{{ __("finance.rejected") }}</span>';
+                        return '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25"><i class="bi bi-x-circle me-1"></i>{{ __("finance.rejected") }}</span>';
                     } else if (data === 'reversed') {
-                        return '<span class="badge bg-secondary">{{ __("finance.reversed") }}</span>';
+                        return '<span class="badge bg-secondary bg-opacity-10 text-secondary border"><i class="bi bi-arrow-counterclockwise me-1"></i>{{ __("finance.reversed") }}</span>';
                     }
                     return '<span class="badge bg-secondary">' + data + '</span>';
                 }
@@ -245,20 +264,20 @@ $(document).ready(function() {
                 searchable: false, 
                 className: 'text-end text-nowrap pe-3',
                 render: function(data, type, row) {
-                    let html = '<div class="btn-group btn-group-sm">';
+                    let html = '<div class="d-inline-flex gap-1 justify-content-end">';
                     
-                    html += '<a href="' + row.view_url + '" class="btn btn-outline-primary" title="{{ __("common.view") }}"><i class="bi bi-eye"></i></a>';
+                    html += '<a href="' + row.view_url + '" class="table-action-btn table-action-btn-view" title="{{ __("common.view") }}"><i class="bi bi-eye"></i></a>';
                     
                     if (row.is_pending) {
                         if (row.can_manage) {
-                            html += '<a href="' + row.edit_url + '" class="btn btn-outline-secondary" title="{{ __("common.edit") }}"><i class="bi bi-pencil"></i></a>';
+                            html += '<a href="' + row.edit_url + '" class="table-action-btn table-action-btn-edit" title="{{ __("common.edit") }}"><i class="bi bi-pencil"></i></a>';
                         }
                         if (row.can_approve) {
-                            html += '<button type="button" class="btn btn-outline-success btn-approve-expense" data-id="' + row.id + '" data-number="' + row.expense_number + '" data-amount="' + row.amount + '" data-url="' + row.approve_url + '" title="{{ __("finance.approve_expense") }}"><i class="bi bi-check-lg"></i></button>';
-                            html += '<button type="button" class="btn btn-outline-danger btn-reject-expense" data-id="' + row.id + '" data-number="' + row.expense_number + '" data-url="' + row.reject_url + '" title="{{ __("finance.reject_expense") }}"><i class="bi bi-x-lg"></i></button>';
+                            html += '<button type="button" class="table-action-btn table-action-btn-toggle-reactivate btn-approve-expense" data-id="' + row.id + '" data-number="' + row.expense_number + '" data-amount="' + row.amount + '" data-url="' + row.approve_url + '" title="{{ __("finance.approve_expense") }}"><i class="bi bi-check-lg"></i></button>';
+                            html += '<button type="button" class="table-action-btn table-action-btn-delete btn-reject-expense" data-id="' + row.id + '" data-number="' + row.expense_number + '" data-url="' + row.reject_url + '" title="{{ __("finance.reject_expense") }}"><i class="bi bi-x-lg"></i></button>';
                         }
                     } else if (row.is_approved && row.can_reverse) {
-                        html += '<button type="button" class="btn btn-outline-danger btn-reverse-expense" data-id="' + row.id + '" data-number="' + row.expense_number + '" data-url="' + row.reverse_url + '" title="{{ __("finance.reverse_entry") }}"><i class="bi bi-arrow-counterclockwise"></i></button>';
+                        html += '<button type="button" class="table-action-btn table-action-btn-delete btn-reverse-expense" data-id="' + row.id + '" data-number="' + row.expense_number + '" data-url="' + row.reverse_url + '" title="{{ __("finance.reverse_entry") }}"><i class="bi bi-arrow-counterclockwise"></i></button>';
                     }
                     
                     html += '</div>';
@@ -266,7 +285,7 @@ $(document).ready(function() {
                 }
             }
         ],
-        order: [[1, 'desc']]
+        order: [[4, 'desc']]
     });
 
     $('#filterStatus, #filterEvent, #filterStartDate, #filterEndDate').on('change', function() {

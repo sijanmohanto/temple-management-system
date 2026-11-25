@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="{{ asset('assets/vendor/datatables/dataTables.bootstrap5.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/vendor/datatables/responsive.bootstrap5.min.css') }}">
     <!-- Custom Temple Theme -->
-    <link rel="stylesheet" href="{{ asset('assets/css/temple-theme.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/temple-theme.css') }}?v={{ file_exists(public_path('assets/css/temple-theme.css')) ? filemtime(public_path('assets/css/temple-theme.css')) : '1.0' }}">
 
     <style>
         .public-navbar {

@@ -86,6 +86,23 @@ class SidebarMenuHierarchyTest extends TestCase
         $response->assertSee(route('finance.reports.expenses'));
     }
 
+    public function test_income_expense_statement_activates_financial_reports_menu_and_not_income_expense_group(): void
+    {
+        $response = $this->actingAs($this->superAdmin)->get(route('finance.reports.income-expense'));
+        $response->assertStatus(200);
+
+        // Financial Statements group should be active and expanded
+        $response->assertSee('href="#menuFinancialReports"', false);
+        $response->assertSee('class="collapse show" id="menuFinancialReports"', false);
+
+        // Income-expense sublink should have active class
+        $response->assertSee(route('finance.reports.income-expense').'" class="sidebar-sublink active"', false);
+
+        // Income & Expense group should NOT be expanded
+        $response->assertSee('class="collapse " id="menuFinanceIncomeExpense"', false);
+        $response->assertDontSee(route('finance.reports.income').'" class="sidebar-sublink active"', false);
+    }
+
     public function test_expense_listing_page_expands_expenses_parent_menu(): void
     {
         $response = $this->actingAs($this->superAdmin)->get(route('finance.expenses.index'));
@@ -212,5 +229,85 @@ class SidebarMenuHierarchyTest extends TestCase
         $guestArchiveResponse->assertStatus(200);
         $guestArchiveResponse->assertSee('public-navbar', false);
         $guestArchiveResponse->assertDontSee('id="appSidebar"', false);
+    }
+
+    public function test_budget_vs_actual_page_expands_budgets_menu_and_not_procurement_reports(): void
+    {
+        $response = $this->actingAs($this->superAdmin)->get(route('procurement.reports.budget-vs-actual'));
+        $response->assertStatus(200);
+
+        // Budget Planning group should be active and expanded
+        $response->assertSee('href="#menuProcurementBudgets"', false);
+        $response->assertSee('class="collapse show" id="menuProcurementBudgets"', false);
+
+        // Procurement Reports group should NOT be expanded
+        $response->assertSee('class="collapse " id="menuProcurementReports"', false);
+
+        // Budget vs actual link should only appear once as active under budgets
+        $response->assertSee(route('procurement.reports.budget-vs-actual').'" class="sidebar-sublink active"', false);
+        $response->assertDontSee('#repBudgetVsActual', false);
+    }
+
+    public function test_procurement_reports_expand_menu_and_render_correct_labels(): void
+    {
+        // 1. Requisitions report
+        $resReq = $this->actingAs($this->superAdmin)->get(route('procurement.reports.requests'));
+        $resReq->assertStatus(200);
+        $resReq->assertSee('class="collapse show" id="menuProcurementReports"', false);
+        $resReq->assertSee(route('procurement.reports.requests').'" class="sidebar-sublink active"', false);
+
+        // 2. Orders report
+        $resOrd = $this->actingAs($this->superAdmin)->get(route('procurement.reports.orders'));
+        $resOrd->assertStatus(200);
+        $resOrd->assertSee('class="collapse show" id="menuProcurementReports"', false);
+        $resOrd->assertSee(route('procurement.reports.orders').'" class="sidebar-sublink active"', false);
+
+        // 3. Outstanding bills report
+        $resBills = $this->actingAs($this->superAdmin)->get(route('procurement.reports.outstanding-bills'));
+        $resBills->assertStatus(200);
+        $resBills->assertSee('class="collapse show" id="menuProcurementReports"', false);
+        $resBills->assertSee(route('procurement.reports.outstanding-bills').'" class="sidebar-sublink active"', false);
+
+        // 4. Bengali label verification (must be 'ক্রয় সংক্রান্ত প্রতিবেদন', NOT 'সংগ্রহ সংক্রান্ত প্রতিবেদন')
+        app()->setLocale('bn');
+        $resBn = $this->actingAs($this->superAdmin)->get(route('procurement.reports.requests'));
+        $resBn->assertStatus(200);
+        $resBn->assertSee('ক্রয় সংক্রান্ত প্রতিবেদন');
+        $resBn->assertDontSee('সংগ্রহ সংক্রান্ত প্রতিবেদন');
+        app()->setLocale('en');
+    }
+
+    public function test_budget_create_sublink_visibility_is_guarded_by_manage_budgets_permission(): void
+    {
+        // 1. Super admin has manage_budgets and sees create link
+        $resAdmin = $this->actingAs($this->superAdmin)->get(route('dashboard'));
+        $resAdmin->assertStatus(200);
+        $resAdmin->assertSee(route('procurement.budgets.create'));
+
+        // 2. User with only view_budgets should see budget list but NOT create link
+        $viewerRole = Role::create([
+            'slug' => 'budget_viewer_only',
+            'name_en' => 'Budget Viewer Only',
+            'name_bn' => 'বাজেট দর্শক',
+        ]);
+        $viewBudgetsPerm = \App\Models\Permission::where('slug', 'view_budgets')->first();
+        $viewerRole->permissions()->attach($viewBudgetsPerm);
+
+        $viewerUser = User::factory()->create(['status' => 'active']);
+        $viewerUser->roles()->attach($viewerRole);
+
+        $resViewer = $this->actingAs($viewerUser)->get(route('dashboard'));
+        $resViewer->assertStatus(200);
+        $resViewer->assertSee(route('procurement.budgets.index'));
+        $resViewer->assertDontSee(route('procurement.budgets.create'));
+
+        // 3. Executive Committee member has manage_budgets and sees create link
+        $committeeRole = Role::where('slug', 'committee_member')->first();
+        $committeeUser = User::factory()->create(['status' => 'active']);
+        $committeeUser->roles()->attach($committeeRole);
+
+        $resCommittee = $this->actingAs($committeeUser)->get(route('dashboard'));
+        $resCommittee->assertStatus(200);
+        $resCommittee->assertSee(route('procurement.budgets.create'));
     }
 }

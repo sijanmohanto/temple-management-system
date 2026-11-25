@@ -109,11 +109,10 @@
                 <table class="table table-hover align-middle mb-0 w-100" id="paymentsDataTable">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-3">{{ __('donations.payment_code') }}</th>
-                            <th>{{ __('donations.payer') }}</th>
-                            <th>{{ __('donations.type') }}</th>
-                            <th>{{ __('donations.payment_method') }}</th>
-                            <th>{{ __('donations.amount') }}</th>
+                            <th class="ps-3">{{ __('donations.payer_short') }}</th>
+                            <th>{{ __('donations.type_short') }}</th>
+                            <th>{{ __('donations.payment_method_short') }}</th>
+                            <th>{{ __('donations.amount_short') }}</th>
                             <th>{{ __('common.status') }}</th>
                             <th class="text-end pe-3">{{ __('common.actions') }}</th>
                         </tr>
@@ -122,20 +121,24 @@
                         @foreach($payments as $payment)
                             <tr>
                                 <td class="ps-3">
-                                    <span class="badge bg-light text-dark border font-monospace">{{ $payment->payment_code }}</span>
-                                    @if($payment->receipt)
-                                        <div class="mt-1">
-                                            <a href="{{ route('receipts.show', $payment->receipt) }}" class="badge {{ $payment->receipt->isValid() ? 'bg-success bg-opacity-10 text-success border border-success border-opacity-25' : 'bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25' }} text-decoration-none">
-                                                <i class="bi bi-receipt me-1"></i>{{ $payment->receipt->receipt_number }}
-                                            </a>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="{{ $payment->payer_avatar_url }}" alt="{{ $payment->payer_display_name }}"
+                                             class="rounded-circle object-fit-cover shadow-sm border flex-shrink-0" style="width: 38px; height: 38px; min-width: 38px;">
+                                        <div>
+                                            <div class="d-flex align-items-center gap-1 flex-wrap mb-1">
+                                                <span class="badge bg-light text-dark border font-monospace">{{ $payment->payment_code }}</span>
+                                                @if($payment->receipt)
+                                                    <a href="{{ route('receipts.show', $payment->receipt) }}" class="badge {{ $payment->receipt->isValid() ? 'bg-success bg-opacity-10 text-success border border-success border-opacity-25' : 'bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25' }} text-decoration-none">
+                                                        <i class="bi bi-receipt me-1"></i>{{ $payment->receipt->receipt_number }}
+                                                    </a>
+                                                @endif
+                                            </div>
+                                            <div class="fw-bold text-dark">{{ $payment->payer_display_name }}</div>
+                                            @if($payment->payer_display_phone)
+                                                <small class="text-muted"><i class="bi bi-telephone me-1"></i>{{ $payment->payer_display_phone }}</small>
+                                            @endif
                                         </div>
-                                    @endif
-                                </td>
-                                <td>
-                                    <div class="fw-bold text-dark">{{ $payment->payer_display_name }}</div>
-                                    @if($payment->payerPerson && $payment->payerPerson->phone)
-                                        <small class="text-muted"><i class="bi bi-telephone me-1"></i>{{ $payment->payerPerson->phone }}</small>
-                                    @endif
+                                    </div>
                                 </td>
                                 <td>
                                     <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 mb-1" style="font-size: 0.72rem;">
@@ -174,17 +177,17 @@
                                     </span>
                                 </td>
                                 <td class="text-end pe-3">
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="{{ route('collections.show', $payment) }}" class="btn btn-outline-primary" title="{{ __('common.view') }}">
+                                    <div class="d-inline-flex gap-1 justify-content-end">
+                                        <a href="{{ route('collections.show', $payment) }}" class="table-action-btn table-action-btn-view" title="{{ __('common.view') }}">
                                             <i class="bi bi-eye"></i>
                                         </a>
                                         @if($payment->isPending() && Auth::user()->hasPermission('verify_collections'))
-                                            <a href="{{ route('collections.show', $payment) }}" class="btn btn-outline-success" title="{{ __('donations.verify_payment') }}">
+                                            <a href="{{ route('collections.show', $payment) }}" class="table-action-btn table-action-btn-toggle-reactivate" title="{{ __('donations.verify_payment') }}">
                                                 <i class="bi bi-check2-circle"></i>
                                             </a>
                                         @endif
                                         @if($payment->receipt && $payment->receipt->isValid() && Auth::user()->hasPermission('print_receipts'))
-                                            <a href="{{ route('receipts.print', $payment->receipt) }}" target="_blank" class="btn btn-outline-secondary" title="{{ __('donations.print_receipt') }}">
+                                            <a href="{{ route('receipts.print', $payment->receipt) }}" target="_blank" class="table-action-btn table-action-btn-edit" title="{{ __('donations.print_receipt') }}">
                                                 <i class="bi bi-printer"></i>
                                             </a>
                                         @endif
@@ -227,13 +230,12 @@
                 }
             },
             columns: [
-                { data: 0, name: 'payment_code' },
-                { data: 1, name: 'payer' },
-                { data: 2, name: 'payment_date' },
-                { data: 3, name: 'method', orderable: false },
-                { data: 4, name: 'amount' },
-                { data: 5, name: 'status' },
-                { data: 6, name: 'actions', orderable: false, className: 'text-end pe-3' }
+                { data: 0, name: 'payer', className: 'ps-3' },
+                { data: 1, name: 'payment_date' },
+                { data: 2, name: 'method', orderable: false },
+                { data: 3, name: 'amount' },
+                { data: 4, name: 'status' },
+                { data: 5, name: 'actions', orderable: false, className: 'text-end pe-3' }
             ]
         });
 

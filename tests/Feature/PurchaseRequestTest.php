@@ -488,6 +488,8 @@ class PurchaseRequestTest extends TestCase
         $this->assertArrayNotHasKey('sl', $firstRow);
         $this->assertArrayNotHasKey('id', $firstRow);
         $this->assertStringContainsString('PRQ-2026-0001', $firstRow['request_number']);
+        $this->assertStringContainsString('data-bs-toggle="dropdown"', $firstRow['actions']);
+        $this->assertStringContainsString('bi-three-dots-vertical', $firstRow['actions']);
     }
 
     public function test_bengali_locale_renders_purchase_request_views_without_errors(): void

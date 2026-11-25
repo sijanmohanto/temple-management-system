@@ -96,55 +96,55 @@ class DevoteePaymentController extends Controller
             ->get();
 
         $data = $records->map(function (CollectionPayment $payment) {
-            $codeHtml = '<span class="badge bg-light text-dark border font-monospace fw-semibold">'.e($payment->payment_code).'</span>';
-            if ($payment->transaction_reference) {
-                $codeHtml .= '<br><small class="text-muted font-monospace"><i class="bi bi-hash"></i>'.e($payment->transaction_reference).'</small>';
-            }
+            // Column 0: Event Title + Clickable Payment Code below
+            $eventName = '<div class="fw-bold text-dark">'.($payment->event ? e($payment->event->name) : '—').'</div>';
+            $eventName .= '<div class="small mt-1"><a href="javascript:void(0)" class="view-details-btn font-monospace fw-bold text-primary text-decoration-none" data-code="'.e($payment->payment_code).'" title="'.__('common.view').'">'.e($payment->payment_code).'</a></div>';
 
-            $eventName = $payment->event ? e($payment->event->name) : '<span class="text-muted">—</span>';
-
-            // Payment allocation type
-            $typeText = __('portal.public.type_pledge');
+            // Column 1: Payment allocation type
             $firstAlloc = $payment->allocations->first();
-            if ($firstAlloc) {
-                if ($firstAlloc->target_type === PaymentAllocation::TARGET_VOLUNTARY_EVENT) {
-                    $typeText = __('portal.public.type_voluntary_event');
-                } elseif ($firstAlloc->target_type === PaymentAllocation::TARGET_VOLUNTARY_GENERAL) {
-                    $typeText = __('portal.public.type_voluntary_general');
-                }
-            }
-            $typeHtml = '<span class="badge bg-secondary bg-opacity-10 text-secondary">'.$typeText.'</span>';
+            $typeText = match ($firstAlloc?->target_type) {
+                PaymentAllocation::TARGET_VOLUNTARY_EVENT => __('donations.event_donation'),
+                PaymentAllocation::TARGET_VOLUNTARY_GENERAL => __('donations.general_donation'),
+                default => __('donations.pledge'),
+            };
+            $typeHtml = '<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">'.$typeText.'</span>';
 
-            $amountHtml = '<div class="fw-bold text-dark">৳'.number_format((float) $payment->amount, 2).'</div>';
+            // Column 2: Amount
+            $amountHtml = '<div class="fw-bold text-dark text-end">৳'.number_format((float) $payment->amount, 2).'</div>';
 
+            // Column 3: Payment Method with Transaction Reference below
             $methodBadge = view('partials.payment-method-badge', ['method' => $payment->payment_method])->render();
+            if ($payment->transaction_reference) {
+                $methodBadge .= '<div class="small text-muted font-monospace mt-1"><i class="bi bi-hash"></i>'.e($payment->transaction_reference).'</div>';
+            }
 
-            $dateHtml = '<div class="small">'.($payment->payment_date ? $payment->payment_date->format('d M Y') : '—').'</div>';
+            // Column 4: Date
+            $dateHtml = '<div class="small text-muted font-monospace">'.($payment->payment_date ? $payment->payment_date->format('d M Y') : '—').'</div>';
 
+            // Column 5: Status Badge
             $statusBadge = match ($payment->status) {
-                CollectionPayment::STATUS_VERIFIED => '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>'.__('portal.public.status_verified').'</span>',
-                CollectionPayment::STATUS_PENDING => '<span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>'.__('portal.public.status_pending').'</span>',
-                CollectionPayment::STATUS_REJECTED => '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>'.__('portal.public.status_rejected').'</span>',
-                CollectionPayment::STATUS_REVERSED => '<span class="badge bg-dark"><i class="bi bi-arrow-counterclockwise me-1"></i>'.__('portal.public.status_reversed').'</span>',
+                CollectionPayment::STATUS_VERIFIED => '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25"><i class="bi bi-check-circle me-1"></i>'.__('common.status_verified').'</span>',
+                CollectionPayment::STATUS_PENDING => '<span class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning border-opacity-25"><i class="bi bi-clock me-1"></i>'.__('common.status_pending').'</span>',
+                CollectionPayment::STATUS_REJECTED => '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25"><i class="bi bi-x-circle me-1"></i>'.__('common.status_rejected').'</span>',
+                CollectionPayment::STATUS_REVERSED => '<span class="badge bg-dark bg-opacity-10 text-dark border border-dark border-opacity-25"><i class="bi bi-arrow-counterclockwise me-1"></i>'.__('donations.status_reversed').'</span>',
                 default => '<span class="badge bg-secondary">'.e($payment->status).'</span>',
             };
 
-            // Actions
-            $actions = '<div class="d-flex gap-1">';
-            $actions .= '<button type="button" class="btn btn-sm btn-outline-primary view-details-btn" data-code="'.e($payment->payment_code).'" title="'.__('common.view').'">';
+            // Column 6: Actions
+            $actions = '<div class="d-inline-flex gap-1 justify-content-end">';
+            $actions .= '<button type="button" class="table-action-btn table-action-btn-view view-details-btn" data-code="'.e($payment->payment_code).'" title="'.__('common.view').'">';
             $actions .= '<i class="bi bi-eye"></i></button>';
 
             if ($payment->isVerified() && $payment->receipt && ! $payment->receipt->isVoided()) {
-                $actions .= '<a href="'.route('public.payments.receipt', $payment->receipt->receipt_number).'" target="_blank" class="btn btn-sm btn-outline-success" title="'.__('portal.public.view_receipt').'">';
+                $actions .= '<a href="'.route('public.payments.receipt', $payment->receipt->receipt_number).'" target="_blank" class="table-action-btn table-action-btn-edit text-success" title="'.__('donations.receipt').'">';
                 $actions .= '<i class="bi bi-receipt"></i></a>';
 
-                $actions .= '<a href="'.route('public.payments.receipt.download', $payment->receipt->receipt_number).'" class="btn btn-sm btn-outline-secondary" title="'.__('portal.public.download_receipt').'">';
+                $actions .= '<a href="'.route('public.payments.receipt.download', $payment->receipt->receipt_number).'" class="table-action-btn table-action-btn-edit text-primary" title="'.__('common.download').'">';
                 $actions .= '<i class="bi bi-download"></i></a>';
             }
             $actions .= '</div>';
 
             return [
-                $codeHtml,
                 $eventName,
                 $typeHtml,
                 $amountHtml,

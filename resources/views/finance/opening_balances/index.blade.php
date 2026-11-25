@@ -31,8 +31,8 @@
     <div class="row g-4">
         <!-- Entry Form -->
         <div class="col-lg-5">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white py-3 border-0">
                     <h5 class="mb-0 fw-bold">{{ __('finance.setup_opening_balance') }}</h5>
                 </div>
                 <div class="card-body p-4">
@@ -103,37 +103,49 @@
 
         <!-- Recorded Opening Balances List -->
         <div class="col-lg-7">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white py-3 border-0">
                     <h5 class="mb-0 fw-bold">{{ __('finance.recorded_opening_entries') }}</h5>
                 </div>
-                <div class="card-body p-0">
+                <div class="card-body p-3">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+                        <table class="table table-hover align-middle mb-0 w-100" id="openingBalancesTable">
                             <thead class="table-light">
                                 <tr>
-                                    <th>{{ __('finance.journal_number') }}</th>
-                                    <th>{{ __('finance.entry_date') }}</th>
+                                    <th class="ps-3">{{ __('finance.entry_date_short') }}</th>
                                     <th>{{ __('finance.account') }}</th>
-                                    <th class="text-end">{{ __('common.amount') }}</th>
-                                    <th class="text-center">{{ __('finance.status') }}</th>
-                                    <th class="text-end">{{ __('common.actions') }}</th>
+                                    <th class="text-end">{{ __('common.amount_short') }}</th>
+                                    <th class="text-center">{{ __('common.status') }}</th>
+                                    <th class="text-end pe-3">{{ __('common.actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($openingEntries as $entry)
+                                @foreach($openingEntries as $entry)
                                     @php
                                         $targetLine = $entry->lines->firstWhere('account.code', '!=', '3020');
                                     @endphp
                                     <tr>
-                                        <td class="fw-bold font-monospace">{{ $entry->journal_number }}</td>
-                                        <td>{{ $entry->entry_date->format('Y-m-d') }}</td>
+                                        <td class="ps-3 text-nowrap font-monospace text-muted small">
+                                            {{ $entry->entry_date->format('Y-m-d') }}
+                                        </td>
                                         <td>
                                             @if($targetLine)
-                                                <span class="fw-semibold">{{ $targetLine->account?->name_en }}</span>
-                                                <div class="text-muted small">{{ $targetLine->account?->code }} ({{ ucfirst($targetLine->entry_type) }})</div>
+                                                <div class="d-flex flex-column">
+                                                    <span class="fw-semibold text-dark">{{ $targetLine->account?->name_en }}</span>
+                                                    <div class="small d-flex align-items-center gap-1 mt-1">
+                                                        <a href="{{ route('finance.journals.show', $entry) }}" class="fw-bold font-monospace text-primary text-decoration-none">
+                                                            {{ $entry->journal_number }}
+                                                        </a>
+                                                        <span class="text-muted">· {{ $targetLine->account?->code }} ({{ ucfirst($targetLine->entry_type) }})</span>
+                                                    </div>
+                                                </div>
                                             @else
-                                                {{ $entry->description }}
+                                                <div class="d-flex flex-column">
+                                                    <a href="{{ route('finance.journals.show', $entry) }}" class="fw-bold font-monospace text-primary text-decoration-none">
+                                                        {{ $entry->journal_number }}
+                                                    </a>
+                                                    <div class="text-muted small mt-1">{{ $entry->description }}</div>
+                                                </div>
                                             @endif
                                         </td>
                                         <td class="text-end fw-bold text-dark">
@@ -141,24 +153,20 @@
                                         </td>
                                         <td class="text-center">
                                             @if($entry->status === 'posted')
-                                                <span class="badge bg-success">{{ __('finance.posted') }}</span>
+                                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">{{ __('finance.posted') }}</span>
                                             @elseif($entry->status === 'reversed')
-                                                <span class="badge bg-danger">{{ __('finance.reversed') }}</span>
+                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">{{ __('finance.reversed') }}</span>
+                                            @else
+                                                <span class="badge bg-secondary bg-opacity-10 text-secondary border">{{ $entry->status }}</span>
                                             @endif
                                         </td>
-                                        <td class="text-end">
-                                            <a href="{{ route('finance.journals.show', $entry) }}" class="btn btn-sm btn-outline-primary" title="{{ __('common.view') }}">
+                                        <td class="text-end pe-3">
+                                            <a href="{{ route('finance.journals.show', $entry) }}" class="table-action-btn table-action-btn-view" title="{{ __('common.view') }}">
                                                 <i class="bi bi-eye"></i>
                                             </a>
                                         </td>
                                     </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="6" class="text-center py-4 text-muted">
-                                            {{ __('common.no_records_found') }}
-                                        </td>
-                                    </tr>
-                                @endforelse
+                                @endforeach
                             </tbody>
                         </table>
                     </div>
@@ -175,6 +183,19 @@ $(document).ready(function() {
     $('.select2-basic').select2({
         theme: 'bootstrap-5',
         width: '100%'
+    });
+
+    TempleUI.initDataTable('#openingBalancesTable', {
+        pageLength: 10,
+        lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+        order: [[0, 'desc']],
+        columns: [
+            { orderable: true, className: 'ps-3 text-nowrap font-monospace text-muted small' },
+            { orderable: true },
+            { orderable: true, className: 'text-end fw-bold text-dark' },
+            { orderable: true, className: 'text-center' },
+            { orderable: false, searchable: false, className: 'text-end pe-3' }
+        ]
     });
 });
 </script>

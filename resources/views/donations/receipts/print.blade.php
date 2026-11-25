@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="{{ asset('assets/vendor/bootstrap/bootstrap.min.css') }}">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="{{ asset('assets/vendor/bootstrap/bootstrap-icons.min.css') }}">
+    <!-- Custom Temple Theme -->
+    <link rel="stylesheet" href="{{ asset('assets/css/temple-theme.css') }}">
 
     <style>
         body {
@@ -17,6 +19,73 @@
             color: #212529;
             margin: 0;
             padding: 20px;
+        }
+
+        /* Payment Method Badge constraints in print */
+        .payment-method-badge {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 0.45rem !important;
+            padding: 0.25rem 0.65rem !important;
+            border-radius: 2rem !important;
+            font-size: 0.8rem !important;
+            font-weight: 600 !important;
+            line-height: 1.25 !important;
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            vertical-align: middle !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .payment-method-badge .method-logo {
+            width: 20px !important;
+            height: 20px !important;
+            max-width: 20px !important;
+            max-height: 20px !important;
+            object-fit: contain !important;
+            flex-shrink: 0 !important;
+            display: inline-block !important;
+            vertical-align: middle !important;
+        }
+
+        .payment-method-badge.badge-full .method-logo {
+            width: auto !important;
+            height: 22px !important;
+            max-width: 80px !important;
+            max-height: 22px !important;
+            object-fit: contain !important;
+        }
+
+        .payment-method-badge.method-bkash {
+            background-color: #fff1f6 !important;
+            border-color: #fbcfe8 !important;
+            color: #be185d !important;
+        }
+
+        .payment-method-badge.method-nagad,
+        .payment-method-badge.method-nagod {
+            background-color: #fff7ed !important;
+            border-color: #fed7aa !important;
+            color: #c2410c !important;
+        }
+
+        .payment-method-badge.method-rocket {
+            background-color: #faf5ff !important;
+            border-color: #e9d5ff !important;
+            color: #7e22ce !important;
+        }
+
+        .payment-method-badge.method-bank_transfer {
+            background-color: #eff6ff !important;
+            border-color: #bfdbfe !important;
+            color: #1d4ed8 !important;
+        }
+
+        .payment-method-badge.method-cash {
+            background-color: #f0fdf4 !important;
+            border-color: #bbf7d0 !important;
+            color: #15803d !important;
         }
 
         .receipt-card {

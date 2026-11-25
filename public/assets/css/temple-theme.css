@@ -270,18 +270,36 @@ body {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
-.temple-btn-maroon {
-    background-color: var(--temple-maroon);
-    border-color: var(--temple-maroon);
-    color: #ffffff;
-    font-weight: 500;
+.temple-btn-maroon,
+.btn-temple-maroon,
+.btn.temple-btn-maroon {
+    --bs-btn-color: #ffffff;
+    --bs-btn-bg: #75141c;
+    --bs-btn-border-color: #75141c;
+    --bs-btn-hover-color: #ffffff;
+    --bs-btn-hover-bg: #560e15;
+    --bs-btn-hover-border-color: #560e15;
+    --bs-btn-focus-shadow-rgb: 117, 20, 28;
+    --bs-btn-active-color: #ffffff;
+    --bs-btn-active-bg: #560e15;
+    --bs-btn-active-border-color: #560e15;
+    background-color: #75141c !important;
+    border-color: #75141c !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
 }
 
 .temple-btn-maroon:hover,
-.temple-btn-maroon:focus {
-    background-color: var(--temple-maroon-dark);
-    border-color: var(--temple-maroon-dark);
-    color: #ffffff;
+.temple-btn-maroon:focus,
+.btn-temple-maroon:hover,
+.btn-temple-maroon:focus,
+.btn.temple-btn-maroon:hover,
+.btn.temple-btn-maroon:focus {
+    background-color: #560e15 !important;
+    border-color: #560e15 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(117, 20, 28, 0.4);
 }
 
 .temple-btn-saffron {
@@ -544,6 +562,16 @@ div.dataTables_wrapper div.dataTables_paginate ul.pagination .page-link {
 /* --------------------------------------------------------------------------
  * Global DataTables Controls (Length, Search, Pagination & Spacing)
  * -------------------------------------------------------------------------- */
+.card-body.p-0:has(.dataTables_wrapper),
+.card-body.p-0:has(.dataTable) {
+    padding: 1rem !important;
+}
+
+.card > .table-responsive:has(.dataTables_wrapper),
+.card > .table-responsive:has(.dataTable) {
+    padding: 1rem !important;
+}
+
 div.dataTables_wrapper div.dataTables_length {
     margin-bottom: 0.75rem;
 }
@@ -745,6 +773,8 @@ div.dataTables_wrapper div.dataTables_length select:focus {
 .payment-method-badge .method-logo {
     width: 20px;
     height: 20px;
+    max-width: 20px;
+    max-height: 20px;
     object-fit: contain;
     flex-shrink: 0;
 }
@@ -756,7 +786,8 @@ div.dataTables_wrapper div.dataTables_length select:focus {
 .payment-method-badge.badge-full .method-logo {
     width: auto;
     height: 24px;
-    max-width: 75px;
+    max-width: 85px;
+    max-height: 24px;
     object-fit: contain;
     flex-shrink: 0;
 }
@@ -767,7 +798,8 @@ div.dataTables_wrapper div.dataTables_length select:focus {
     color: #be185d;
 }
 
-.payment-method-badge.method-nagad {
+.payment-method-badge.method-nagad,
+.payment-method-badge.method-nagod {
     background-color: #fff7ed;
     border-color: #fed7aa;
     color: #c2410c;
@@ -965,5 +997,100 @@ div.dataTables_wrapper div.dataTables_length select:focus {
 #donorReportTable_wrapper .dataTables_paginate {
     padding-top: 0.85rem;
 }
+
+/* Modern Unified Table Action Buttons */
+.table-action-btn {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    text-decoration: none;
+    transition: all 0.2s ease-in-out;
+    font-size: 0.85rem;
+    line-height: 1;
+}
+.table-action-btn-view {
+    background-color: #eff6ff;
+    color: #2563eb;
+    border-color: #dbeafe;
+}
+.table-action-btn-view:hover {
+    background-color: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+}
+.table-action-btn-edit {
+    background-color: #f8fafc;
+    color: #475569;
+    border-color: #e2e8f0;
+}
+.table-action-btn-edit:hover {
+    background-color: #475569;
+    color: #ffffff;
+    border-color: #475569;
+}
+.table-action-btn-delete,
+.table-action-btn-toggle-deactivate {
+    background-color: #fff1f2;
+    color: #e11d48;
+    border-color: #ffe4e6;
+}
+.table-action-btn-delete:hover,
+.table-action-btn-toggle-deactivate:hover {
+    background-color: #e11d48;
+    color: #ffffff;
+    border-color: #e11d48;
+}
+.table-action-btn-toggle-reactivate {
+    background-color: #f0fdf4;
+    color: #16a34a;
+    border-color: #dcfce7;
+}
+.table-action-btn-toggle-reactivate:hover {
+    background-color: #16a34a;
+    color: #ffffff;
+    border-color: #16a34a;
+}
+
+/* Table Dropdown Menu & Viewport Breakout */
+.table-responsive .dropdown-menu {
+    z-index: 1060;
+}
+
+/* --------------------------------------------------------------------------
+ * Month / Year Picker Styles
+ * -------------------------------------------------------------------------- */
+.month-picker-dropdown {
+    min-width: 290px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.month-picker-btn {
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 0.45rem 0.2rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background-color: #f8fafc;
+    color: #1e293b;
+    transition: all 0.15s ease-in-out;
+}
+
+.month-picker-btn:hover {
+    background-color: rgba(139, 0, 0, 0.08);
+    border-color: var(--temple-maroon);
+    color: var(--temple-maroon);
+}
+
+.month-picker-btn.active {
+    background-color: var(--temple-maroon) !important;
+    border-color: var(--temple-maroon) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 6px rgba(139, 0, 0, 0.25);
+}
+
 
 

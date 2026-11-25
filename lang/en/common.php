@@ -12,6 +12,7 @@ return [
     // General Actions
     'save' => 'Save',
     'save_changes' => 'Save Changes',
+    'save_as_draft' => 'Save as Draft',
     'cancel' => 'Cancel',
     'edit' => 'Edit',
     'delete' => 'Delete',
@@ -30,9 +31,12 @@ return [
     'name' => 'Name',
     'select' => 'Select',
     'amount' => 'Amount',
+    'amount_short' => 'Amount (৳)',
     'notes' => 'Notes',
     'description' => 'Description',
     'date' => 'Date',
+    'date_from' => 'From Date',
+    'date_to' => 'To Date',
     'category' => 'Category',
     'total' => 'Total',
     'optional' => 'Optional',
@@ -104,6 +108,8 @@ return [
     'reject' => 'Reject',
     'active' => 'Active',
     'inactive' => 'Inactive',
+    'unauthorized' => 'This action is unauthorized.',
+    'unauthorized_access' => 'You do not have permission to access this section.',
 
     // Footer
     'copyright' => 'All rights reserved.',

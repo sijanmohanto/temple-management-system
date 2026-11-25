@@ -234,19 +234,22 @@ class BudgetController extends Controller
         $recordsTotal = Budget::count();
         $recordsFiltered = (clone $query)->count();
 
-        // 7 columns: 0=code, 1=title, 2=type, 3=scope, 4=total, 5=status, 6=actions
-        $orderColIdx = (int) $request->input('order.0.column', 0);
-        $orderDir = strtolower((string) $request->input('order.0.dir', 'desc')) === 'asc' ? 'asc' : 'desc';
-
-        $orderCol = match ($orderColIdx) {
-            0 => 'budget_code',
-            1 => 'title_en',
-            2 => 'budget_type',
-            3 => 'fiscal_year',
-            4 => 'total_amount',
-            5 => 'status',
-            default => 'id',
-        };
+        // 6 columns: 0=title, 1=type, 2=scope, 3=total, 4=status, 5=actions
+        $orderColIdx = $request->input('order.0.column');
+        if ($orderColIdx !== null) {
+            $orderDir = strtolower((string) $request->input('order.0.dir', 'desc')) === 'asc' ? 'asc' : 'desc';
+            $orderCol = match ((int) $orderColIdx) {
+                0 => 'title_en',
+                1 => 'budget_type',
+                2 => 'fiscal_year',
+                3 => 'total_amount',
+                4 => 'status',
+                default => 'id',
+            };
+        } else {
+            $orderCol = 'id';
+            $orderDir = 'desc';
+        }
 
         $start = (int) $request->input('start', 0);
         $length = (int) $request->input('length', 15);
@@ -279,7 +282,7 @@ class BudgetController extends Controller
 
             $data[] = [
                 'budget_code' => '<a href="'.route('procurement.budgets.show', $b).'" class="fw-bold font-monospace text-primary text-decoration-none">'.e($b->budget_code).'</a>',
-                'title' => '<div class="fw-semibold">'.e($b->title).'</div><small class="text-muted">'.$b->items->count().' '.__('procurement.items').'</small>',
+                'title' => '<a href="'.route('procurement.budgets.show', $b).'" class="text-decoration-none text-dark fw-semibold">'.e($b->title).'</a><small class="text-muted d-block">'.$b->items->count().' '.__('procurement.items').'</small><span class="d-none">'.e($b->budget_code).'</span>',
                 'budget_type' => '<span class="badge bg-light text-dark border">'.e($b->type_label).'</span>',
                 'scope_period' => '<span class="fw-medium">'.e($scopeText).'</span>',
                 'total_amount' => '৳'.number_format((float) $b->total_amount, 2),

@@ -291,6 +291,46 @@ class CollectionPayment extends Model
         return 'Anonymous / General Devotee';
     }
 
+    /**
+     * Resolved avatar URL of the payer.
+     */
+    public function getPayerAvatarUrlAttribute(): string
+    {
+        if ($this->payerPerson) {
+            return $this->payerPerson->avatar_url;
+        }
+
+        if ($this->payerFamily && $this->payerFamily->primaryContact) {
+            return $this->payerFamily->primaryContact->avatar_url;
+        }
+
+        return asset('assets/images/avatars/avatar-default.svg');
+    }
+
+    /**
+     * Resolved display phone of the payer.
+     */
+    public function getPayerDisplayPhoneAttribute(): ?string
+    {
+        if ($this->payerPerson && $this->payerPerson->phone) {
+            return $this->payerPerson->phone;
+        }
+
+        if ($this->public_donor_phone) {
+            return $this->public_donor_phone;
+        }
+
+        if ($this->payer_phone_override) {
+            return $this->payer_phone_override;
+        }
+
+        if ($this->payerFamily && $this->payerFamily->primaryContact?->phone) {
+            return $this->payerFamily->primaryContact->phone;
+        }
+
+        return null;
+    }
+
     public function isVerified(): bool
     {
         return $this->status === self::STATUS_VERIFIED;

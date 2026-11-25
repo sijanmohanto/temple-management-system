@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePersonRequest;
 use App\Http\Requests\UpdatePersonRequest;
+use App\Mail\DevoteeProfileUpdatedMail;
+use App\Mail\DevoteeWelcomeMail;
 use App\Models\Classification;
 use App\Models\Family;
 use App\Models\Person;
@@ -16,6 +18,9 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class PersonController extends Controller implements HasMiddleware
@@ -85,10 +90,9 @@ class PersonController extends Controller implements HasMiddleware
         $orderColumnIndex = $request->has('order.0.column') ? (int) $request->input('order.0.column') : null;
         $orderDir = strtolower((string) $request->input('order.0.dir', 'desc')) === 'asc' ? 'asc' : 'desc';
         $columnMap = [
-            0 => 'person_code',
-            1 => 'name_en',
-            2 => 'phone',
-            5 => 'status',
+            0 => 'name_en',
+            1 => 'phone',
+            4 => 'status',
         ];
 
         if ($orderColumnIndex !== null && isset($columnMap[$orderColumnIndex])) {
@@ -101,15 +105,17 @@ class PersonController extends Controller implements HasMiddleware
         $canManage = $request->user()?->hasPermission('manage_people') ?? false;
 
         $data = $records->map(function ($person) use ($canManage) {
-            $codeHtml = '<span class="badge bg-light text-dark border font-monospace">'.e($person->person_code).'</span>';
+            $avatarHtml = '<img src="'.e($person->avatar_url).'" alt="'.e($person->name_en).'" class="rounded-circle object-fit-cover shadow-sm border" style="width: 40px; height: 40px; min-width: 40px;">';
 
-            $nameHtml = '<div class="fw-bold text-dark">'.e($person->name_en).'</div>';
+            $nameDetails = '<div class="fw-bold text-dark">'.e($person->name_en).'</div>';
             if ($person->name_bn) {
-                $nameHtml .= '<small class="text-muted">'.e($person->name_bn).'</small>';
+                $nameDetails .= '<small class="text-muted d-block" style="font-size: 0.78rem;">'.e($person->name_bn).'</small>';
             }
             if ($person->gotra) {
-                $nameHtml .= '<div><span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.72rem;">'.e($person->gotra).'</span></div>';
+                $nameDetails .= '<div class="mt-1"><span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.7rem;">'.e($person->gotra).'</span></div>';
             }
+
+            $nameHtml = '<div class="d-flex align-items-center gap-3">'.$avatarHtml.'<div>'.$nameDetails.'</div></div>';
 
             $phoneHtml = '<div>'.e($person->phone ?? '—').'</div>';
             if ($person->email) {
@@ -145,24 +151,23 @@ class PersonController extends Controller implements HasMiddleware
                 ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1"><i class="bi bi-check-circle me-1"></i> '.__('common.status_active').'</span>'
                 : '<span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1"><i class="bi bi-slash-circle me-1"></i> '.__('common.status_inactive').'</span>';
 
-            $actionsHtml = '<div class="btn-group btn-group-sm text-end">'
-                .'<a href="'.route('people.show', $person).'" class="btn btn-outline-primary" title="'.__('common.view').'"><i class="bi bi-eye"></i></a>';
+            $actionsHtml = '<div class="d-inline-flex align-items-center justify-content-end gap-1">'
+                .'<a href="'.route('people.show', $person).'" class="table-action-btn table-action-btn-view" title="'.__('common.view').'"><i class="bi bi-eye"></i></a>';
 
             if ($canManage) {
                 $toggleConfirm = $person->isActive() ? __('people.deactivate_confirm') : __('people.reactivate_confirm');
                 $toggleTitle = $person->isActive() ? __('people.deactivate') : __('people.reactivate');
-                $toggleClass = $person->isActive() ? 'btn-outline-warning' : 'btn-outline-success';
+                $toggleClass = $person->isActive() ? 'table-action-btn-toggle-deactivate' : 'table-action-btn-toggle-reactivate';
 
-                $actionsHtml .= '<a href="'.route('people.edit', $person).'" class="btn btn-outline-secondary" title="'.__('common.edit').'"><i class="bi bi-pencil"></i></a>'
-                    .'<form method="POST" action="'.route('people.toggle-status', $person).'" class="d-inline" onsubmit="return confirm(\''.e($toggleConfirm).'\')">'
+                $actionsHtml .= '<a href="'.route('people.edit', $person).'" class="table-action-btn table-action-btn-edit" title="'.__('common.edit').'"><i class="bi bi-pencil"></i></a>'
+                    .'<form method="POST" action="'.route('people.toggle-status', $person).'" class="d-inline m-0 p-0" onsubmit="return confirm(\''.e($toggleConfirm).'\')">'
                     .csrf_field()
-                    .'<button type="submit" class="btn '.$toggleClass.'" title="'.e($toggleTitle).'"><i class="bi bi-power"></i></button>'
+                    .'<button type="submit" class="table-action-btn '.$toggleClass.'" title="'.e($toggleTitle).'"><i class="bi bi-power"></i></button>'
                     .'</form>';
             }
             $actionsHtml .= '</div>';
 
             return [
-                $codeHtml,
                 $nameHtml,
                 $phoneHtml,
                 $classHtml,
@@ -212,11 +217,22 @@ class PersonController extends Controller implements HasMiddleware
             }
         }
 
-        $person = DB::transaction(function () use ($validated, $request, $credentialService) {
+        $photoPath = null;
+        if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
+            $photoPath = $request->file('photo')->store('people/photos', 'public');
+        }
+
+        $plainPassword = $credentialService->generateSecurePassword(10);
+        $userAccount = null;
+
+        $person = DB::transaction(function () use ($validated, $request, $credentialService, $photoPath, $plainPassword, &$userAccount) {
             $personCode = Person::generatePersonCode();
 
-            $personData = collect($validated)->except(['classifications', 'confirm_duplicate'])->toArray();
+            $personData = collect($validated)->except(['classifications', 'confirm_duplicate', 'photo', 'send_credentials_email'])->toArray();
             $personData['person_code'] = $personCode;
+            if ($photoPath) {
+                $personData['photo_path'] = $photoPath;
+            }
             $personData['created_by'] = $request->user()->id;
             $personData['updated_by'] = $request->user()->id;
 
@@ -228,9 +244,9 @@ class PersonController extends Controller implements HasMiddleware
                 }
             }
 
-            // Automatically provision devotee login account if phone number is provided
-            if (! empty($person->phone)) {
-                $credentialService->provisionDevoteeAccount($person, null, $request->user());
+            // Automatically provision devotee login account if phone number or email is provided
+            if (! empty($person->phone) || ! empty($person->email)) {
+                $userAccount = $credentialService->provisionDevoteeAccount($person, $plainPassword, $request->user());
             }
 
             AuditLogger::log(
@@ -243,8 +259,44 @@ class PersonController extends Controller implements HasMiddleware
             return $person;
         });
 
+        // Send welcome email if enabled and devotee email is provided
+        $emailSent = false;
+        if ($request->boolean('send_credentials_email') && ! empty($person->email) && $userAccount) {
+            try {
+                Mail::to($person->email)->send(
+                    new DevoteeWelcomeMail(
+                        $person,
+                        $person->phone ?: $person->email,
+                        $plainPassword,
+                        route('login')
+                    )
+                );
+                $emailSent = true;
+            } catch (\Throwable $e) {
+                Log::warning("Failed to dispatch devotee welcome mail for person #{$person->id}: {$e->getMessage()}");
+            }
+        }
+
+        $modalData = null;
+        if ($userAccount) {
+            $modalData = [
+                'person_id' => $person->id,
+                'name' => $person->name_en,
+                'name_bn' => $person->name_bn,
+                'person_code' => $person->person_code,
+                'phone' => $person->phone,
+                'email' => $person->email,
+                'login_id' => $person->phone ?: $person->email,
+                'plain_password' => $plainPassword,
+                'login_url' => route('login'),
+                'email_sent' => $emailSent,
+                'sent_to_email' => $person->email,
+            ];
+        }
+
         return redirect()->route('people.show', $person)
-            ->with('success', __('people.created_successfully'));
+            ->with('success', __('people.created_successfully'))
+            ->with('devotee_credential_modal', $modalData);
     }
 
     /**
@@ -292,8 +344,20 @@ class PersonController extends Controller implements HasMiddleware
         $validated = $request->validated();
 
         DB::transaction(function () use ($person, $validated, $request) {
-            $personData = collect($validated)->except(['classifications'])->toArray();
+            $personData = collect($validated)->except(['classifications', 'photo', 'remove_photo', 'send_update_email'])->toArray();
             $personData['updated_by'] = $request->user()->id;
+
+            if ($request->boolean('remove_photo')) {
+                if ($person->photo_path && Storage::disk('public')->exists($person->photo_path)) {
+                    Storage::disk('public')->delete($person->photo_path);
+                }
+                $personData['photo_path'] = null;
+            } elseif ($request->hasFile('photo') && $request->file('photo')->isValid()) {
+                if ($person->photo_path && Storage::disk('public')->exists($person->photo_path)) {
+                    Storage::disk('public')->delete($person->photo_path);
+                }
+                $personData['photo_path'] = $request->file('photo')->store('people/photos', 'public');
+            }
 
             $person->update($personData);
 
@@ -314,8 +378,23 @@ class PersonController extends Controller implements HasMiddleware
             );
         });
 
+        // Dispatch profile updated email if requested and email exists
+        $emailSent = false;
+        if ($request->boolean('send_update_email') && ! empty($person->email)) {
+            try {
+                Mail::to($person->email)->send(
+                    new DevoteeProfileUpdatedMail($person, route('login'))
+                );
+                $emailSent = true;
+            } catch (\Throwable $e) {
+                Log::warning("Failed to dispatch devotee profile updated mail for person #{$person->id}: {$e->getMessage()}");
+            }
+        }
+
+        $successMsg = $emailSent ? __('people.updated_with_email_success') : __('people.updated_successfully');
+
         return redirect()->route('people.show', $person)
-            ->with('success', __('people.updated_successfully'));
+            ->with('success', $successMsg);
     }
 
     /**
@@ -361,7 +440,7 @@ class PersonController extends Controller implements HasMiddleware
 
             return [
                 'id' => $person->id,
-                'text' => "{$name}{$phone} ({$person->person_code})",
+                'text' => "{$name}{$phone}",
                 'name' => $name,
                 'phone' => $person->phone,
                 'person_code' => $person->person_code,

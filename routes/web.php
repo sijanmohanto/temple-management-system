@@ -30,6 +30,7 @@ use App\Http\Controllers\PersonController;
 use App\Http\Controllers\PledgeController;
 use App\Http\Controllers\Procurement\BudgetController;
 use App\Http\Controllers\Procurement\BudgetReportController;
+use App\Http\Controllers\Procurement\ProcurementReportController;
 use App\Http\Controllers\Procurement\PurchaseOrderController;
 use App\Http\Controllers\Procurement\PurchaseRequestController;
 use App\Http\Controllers\Procurement\VendorBillController;
@@ -397,6 +398,24 @@ Route::middleware('auth')->group(function () {
         // Reports
         Route::prefix('reports')->name('reports.')->group(function () {
             Route::get('/budget-vs-actual', [BudgetReportController::class, 'budgetVsActual'])->name('budget-vs-actual');
+
+            // Purchase Requisitions Report
+            Route::get('/requests', [ProcurementReportController::class, 'purchaseRequests'])->name('requests');
+            Route::get('/requests/export', [ProcurementReportController::class, 'exportPurchaseRequests'])->name('requests.export');
+            Route::get('/requests/print', [ProcurementReportController::class, 'printPurchaseRequests'])->name('requests.print');
+            Route::get('/requests/{purchaseRequest}/details', [ProcurementReportController::class, 'purchaseRequestDetails'])->name('requests.details');
+
+            // Purchase Orders Report
+            Route::get('/orders', [ProcurementReportController::class, 'purchaseOrders'])->name('orders');
+            Route::get('/orders/export', [ProcurementReportController::class, 'exportPurchaseOrders'])->name('orders.export');
+            Route::get('/orders/print', [ProcurementReportController::class, 'printPurchaseOrders'])->name('orders.print');
+            Route::get('/orders/{purchaseOrder}/details', [ProcurementReportController::class, 'purchaseOrderDetails'])->name('orders.details');
+
+            // Outstanding Vendor Bills Report
+            Route::get('/outstanding-bills', [ProcurementReportController::class, 'outstandingBills'])->name('outstanding-bills');
+            Route::get('/outstanding-bills/export', [ProcurementReportController::class, 'exportOutstandingBills'])->name('outstanding-bills.export');
+            Route::get('/outstanding-bills/print', [ProcurementReportController::class, 'printOutstandingBills'])->name('outstanding-bills.print');
+            Route::get('/outstanding-bills/{vendorBill}/details', [ProcurementReportController::class, 'outstandingBillDetails'])->name('outstanding-bills.details');
         });
     });
 

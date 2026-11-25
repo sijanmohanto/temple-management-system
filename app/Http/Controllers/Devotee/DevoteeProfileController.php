@@ -64,6 +64,7 @@ class DevoteeProfileController extends Controller
                 'success' => true,
                 'message' => __('devotee.otp_sent_to_email', ['email' => $maskedEmail]),
                 'masked_email' => $maskedEmail,
+                'email' => $otp->email,
             ]);
         } catch (Exception $e) {
             return response()->json([

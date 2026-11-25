@@ -253,7 +253,7 @@ class PaymentSubmissionController extends Controller
             $query->where('status', $request->status);
         }
 
-        $payments = $query->orderByDesc('id')->paginate(10)->withQueryString();
+        $payments = $query->orderByDesc('id')->get();
         $events = Event::published()
             ->whereNotIn('status', [Event::STATUS_DRAFT])
             ->orderBy('name_en')

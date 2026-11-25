@@ -34,7 +34,7 @@ class ReceiptController extends Controller implements HasMiddleware
         $searchString = trim((string) $searchString);
 
         $query = Receipt::query()
-            ->with(['payment.payerPerson', 'payment.payerFamily', 'payment.event', 'issuer']);
+            ->with(['payment.payerPerson', 'payment.payerFamily.primaryContact', 'payment.event', 'issuer']);
 
         if (! empty($searchString)) {
             $query->where(function ($q) use ($searchString) {
@@ -66,17 +66,27 @@ class ReceiptController extends Controller implements HasMiddleware
                     ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25"><i class="bi bi-check-circle me-1"></i>'.e(__('donations.receipt_status_valid')).'</span>'
                     : '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25"><i class="bi bi-slash-circle me-1"></i>'.e(__('donations.receipt_status_voided')).'</span>';
 
-                $actions = '<div class="btn-group btn-group-sm text-end">'
-                    .'<a href="'.route('receipts.show', $receipt).'" class="btn btn-outline-primary" title="'.e(__('common.view')).'"><i class="bi bi-eye"></i></a>'
-                    .'<a href="'.route('receipts.print', $receipt).'" target="_blank" class="btn btn-outline-secondary" title="'.e(__('donations.print_receipt')).'"><i class="bi bi-printer"></i></a>'
-                    .'</div>';
+                $actions = '<div class="d-inline-flex gap-1 justify-content-end">'
+                    .'<a href="'.route('receipts.show', $receipt).'" class="table-action-btn table-action-btn-view" title="'.e(__('common.view')).'"><i class="bi bi-eye"></i></a>';
+                if (auth()->user()?->hasPermission('print_receipts')) {
+                    $actions .= '<a href="'.route('receipts.print', $receipt).'" target="_blank" class="table-action-btn table-action-btn-edit" title="'.e(__('donations.print_receipt')).'"><i class="bi bi-printer"></i></a>';
+                }
+                $actions .= '</div>';
+
+                $payerAvatarUrl = $receipt->payment?->payer_avatar_url ?? asset('assets/images/avatars/avatar-default.svg');
+                $payerDisplayName = $receipt->payment?->payer_display_name ?? '—';
+                $payerAvatar = '<img src="'.e($payerAvatarUrl).'" alt="'.e($payerDisplayName).'" class="rounded-circle object-fit-cover shadow-sm border flex-shrink-0" style="width: 38px; height: 38px; min-width: 38px;">';
+                $payerDetails = '<div class="fw-bold text-dark">'.e($payerDisplayName).'</div>';
+                if ($receipt->payment?->payer_display_phone) {
+                    $payerDetails .= '<small class="text-muted"><i class="bi bi-telephone me-1"></i>'.e($receipt->payment->payer_display_phone).'</small>';
+                }
+                $payerHtml = '<div class="d-flex align-items-center gap-2">'.$payerAvatar.'<div>'.$payerDetails.'</div></div>';
 
                 return [
-                    '<span class="badge bg-light text-dark border font-monospace">'.e($receipt->receipt_number).'</span>',
-                    '<div class="fw-bold text-dark">'.e($receipt->payment->payer_display_name).'</div>',
+                    $payerHtml,
                     '<span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">'
-                        .e(__('donations.type_'.$receipt->payment->collection_type)).'</span>',
-                    '<div class="fw-bold text-dark">৳'.number_format((float) $receipt->payment->amount, 2).'</div>',
+                        .e(__('donations.type_'.$receipt->payment?->collection_type)).'</span>',
+                    '<div class="fw-bold text-dark">৳'.number_format((float) $receipt->payment?->amount, 2).'</div>',
                     '<div class="small text-muted">'.e($receipt->issued_at->format('d M Y, h:i A')).'</div>',
                     $statusBadge,
                     $actions,

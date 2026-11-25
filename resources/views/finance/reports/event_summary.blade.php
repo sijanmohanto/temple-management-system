@@ -42,7 +42,7 @@
 
     <!-- Summaries Cards / Table -->
     <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body p-0">
+        <div class="card-body p-3">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0" id="eventSummaryReportTable">
                     <thead class="table-light">

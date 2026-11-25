@@ -81,7 +81,7 @@ class ManualIncomeController extends Controller
         $incomes = ManualIncome::with(['incomeAccount', 'depositAccount', 'event', 'creator', 'journalEntry'])
             ->orderBy('income_date', 'desc')
             ->orderBy('id', 'desc')
-            ->paginate(25);
+            ->get();
 
         return view('finance.income.index', compact('incomes'));
     }

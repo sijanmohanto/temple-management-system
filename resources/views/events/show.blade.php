@@ -330,13 +330,13 @@
                         <table class="table table-hover align-middle mb-0 w-100" id="donorComparisonTable">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="ps-3">{{ __('donations.payer') }}</th>
-                                    <th>{{ __('donations.type') }}</th>
-                                    <th class="text-end">{{ __('events.total_pledged') }} (৳)</th>
-                                    <th class="text-end">{{ __('events.verified_pledge_collections') }} (৳)</th>
-                                    <th class="text-end">{{ __('events.event_excess_contributions') }} (৳)</th>
-                                    <th class="text-end">{{ __('events.outstanding_pledges') }} (৳)</th>
-                                    <th>{{ __('donations.status') }}</th>
+                                    <th class="ps-3">{{ __('events.donor_short') }}</th>
+                                    <th>{{ __('events.type_short') }}</th>
+                                    <th class="text-end">{{ __('events.pledged_short') }}</th>
+                                    <th class="text-end">{{ __('events.collected_short') }}</th>
+                                    <th class="text-end">{{ __('events.excess_short') }}</th>
+                                    <th class="text-end">{{ __('events.due_short') }}</th>
+                                    <th>{{ __('common.status') }}</th>
                                     <th class="text-end pe-3">{{ __('common.actions') }}</th>
                                 </tr>
                             </thead>
@@ -396,18 +396,18 @@
                                             @endif
                                         </td>
                                         <td class="text-end pe-3">
-                                            <div class="btn-group btn-group-sm">
+                                            <div class="d-inline-flex gap-1 justify-content-end">
                                                 @if($row['is_pledge'])
-                                                    <a href="{{ route('pledges.show', $row['pledge_id']) }}" class="btn btn-outline-secondary" title="{{ __('common.view') }}">
+                                                    <a href="{{ route('pledges.show', $row['pledge_id']) }}" class="table-action-btn table-action-btn-view" title="{{ __('common.view') }}">
                                                         <i class="bi bi-eye"></i>
                                                     </a>
                                                     @if($row['outstanding_amount'] > 0 && ! $event->isLocked())
-                                                        <a href="{{ route('collections.create', ['pledge_id' => $row['pledge_id']]) }}" class="btn btn-outline-success" title="{{ __('donations.collect_payment') }}">
+                                                        <a href="{{ route('collections.create', ['pledge_id' => $row['pledge_id']]) }}" class="table-action-btn table-action-btn-edit text-success" title="{{ __('donations.collect_payment') }}">
                                                             <i class="bi bi-cash"></i>
                                                         </a>
                                                     @endif
                                                 @elseif(! empty($row['payment_id']))
-                                                    <a href="{{ route('collections.show', $row['payment_id']) }}" class="btn btn-outline-secondary" title="{{ __('common.view') }}">
+                                                    <a href="{{ route('collections.show', $row['payment_id']) }}" class="table-action-btn table-action-btn-view" title="{{ __('common.view') }}">
                                                         <i class="bi bi-eye"></i>
                                                     </a>
                                                 @endif
@@ -691,11 +691,11 @@
                         <table class="table table-hover align-middle mb-0 w-100" id="eventLifecycleLogsTable">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="ps-3">{{ __('events.lifecycle_action') }}</th>
+                                    <th class="ps-3">{{ __('events.lifecycle_action_short') }}</th>
                                     <th>{{ __('events.lifecycle_transition') }}</th>
-                                    <th>{{ __('events.lifecycle_reason') }}</th>
-                                    <th>{{ __('events.lifecycle_user') }}</th>
-                                    <th class="text-end pe-3">{{ __('events.lifecycle_date') }}</th>
+                                    <th>{{ __('events.lifecycle_reason_short') }}</th>
+                                    <th>{{ __('events.lifecycle_user_short') }}</th>
+                                    <th class="text-end pe-3">{{ __('common.date') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -791,14 +791,14 @@
                     <table class="table table-hover align-middle mb-0 w-100" id="aboveTargetTable">
                         <thead class="table-light">
                             <tr>
-                                <th class="ps-3">{{ __('donations.payer') }}</th>
+                                <th class="ps-3">{{ __('events.donor_short') }}</th>
                                 <th>{{ __('events.event') }}</th>
-                                <th class="text-end">{{ __('events.total_pledged') }} (৳)</th>
-                                <th class="text-end">{{ __('events.verified_pledge_collections') }} (৳)</th>
-                                <th class="text-end">{{ __('donations.additional_contribution') }} (৳)</th>
-                                <th>{{ __('donations.excess_destination') }}</th>
-                                <th>{{ __('donations.receipt_number') }}</th>
-                                <th class="text-end pe-3">{{ __('donations.status') }}</th>
+                                <th class="text-end">{{ __('events.pledged_short') }}</th>
+                                <th class="text-end">{{ __('events.collected_short') }}</th>
+                                <th class="text-end">{{ __('events.excess_short') }}</th>
+                                <th>{{ __('donations.destination_short') }}</th>
+                                <th>{{ __('donations.receipt_short') }}</th>
+                                <th class="text-end pe-3">{{ __('common.status') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -874,13 +874,13 @@
                     <table class="table table-hover align-middle mb-0 w-100" id="outstandingDuesTable">
                         <thead class="table-light">
                             <tr>
-                                <th class="ps-3">{{ __('donations.payer') }}</th>
+                                <th class="ps-3">{{ __('events.donor_short') }}</th>
                                 <th>{{ __('events.event') }}</th>
-                                <th class="text-end">{{ __('events.total_pledged') }} (৳)</th>
-                                <th class="text-end">{{ __('events.verified_pledge_collections') }} (৳)</th>
-                                <th class="text-end text-danger">{{ __('events.outstanding_pledges') }} (৳)</th>
-                                <th>{{ __('donations.payment_date') }}</th>
-                                <th>{{ __('donations.status') }}</th>
+                                <th class="text-end">{{ __('events.pledged_short') }}</th>
+                                <th class="text-end">{{ __('events.collected_short') }}</th>
+                                <th class="text-end text-danger">{{ __('events.due_short') }}</th>
+                                <th>{{ __('common.date') }}</th>
+                                <th>{{ __('common.status') }}</th>
                                 <th class="text-end pe-3">{{ __('common.actions') }}</th>
                             </tr>
                         </thead>
@@ -961,12 +961,12 @@
                     <table class="table table-hover align-middle mb-0 w-100" id="excessReportTable">
                         <thead class="table-light">
                             <tr>
-                                <th class="ps-3">{{ __('donations.payer') }}</th>
+                                <th class="ps-3">{{ __('events.donor_short') }}</th>
                                 <th>{{ __('donations.pledges') }}</th>
-                                <th class="text-end">{{ __('donations.additional_contribution') }} (৳)</th>
-                                <th>{{ __('donations.excess_destination') }}</th>
-                                <th>{{ __('donations.payment_date') }}</th>
-                                <th>{{ __('donations.receipt_number') }}</th>
+                                <th class="text-end">{{ __('events.excess_short') }}</th>
+                                <th>{{ __('donations.destination_short') }}</th>
+                                <th>{{ __('common.date') }}</th>
+                                <th>{{ __('donations.receipt_short') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1239,14 +1239,26 @@
     $(document).ready(function() {
         TempleUI.initDataTable('#donorComparisonTable', {
             pageLength: 10,
+            lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
             searching: true,
             paging: true,
             info: true,
-            order: [[5, 'desc']]
+            order: [[5, 'desc']],
+            columns: [
+                { orderable: true, className: 'ps-3' },
+                { orderable: true },
+                { orderable: true, className: 'text-end fw-semibold' },
+                { orderable: true, className: 'text-end text-success fw-bold' },
+                { orderable: true, className: 'text-end' },
+                { orderable: true, className: 'text-end' },
+                { orderable: true },
+                { orderable: false, searchable: false, className: 'text-end pe-3' }
+            ]
         });
 
         TempleUI.initDataTable('#aboveTargetTable', {
             pageLength: 10,
+            lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
             searching: true,
             paging: true,
             info: true,
@@ -1255,14 +1267,26 @@
 
         TempleUI.initDataTable('#outstandingDuesTable', {
             pageLength: 10,
+            lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
             searching: true,
             paging: true,
             info: true,
-            order: [[4, 'desc']]
+            order: [[4, 'desc']],
+            columns: [
+                { orderable: true, className: 'ps-3' },
+                { orderable: true },
+                { orderable: true, className: 'text-end fw-semibold' },
+                { orderable: true, className: 'text-end text-success' },
+                { orderable: true, className: 'text-end text-danger fw-bold' },
+                { orderable: true },
+                { orderable: true },
+                { orderable: false, searchable: false, className: 'text-end pe-3' }
+            ]
         });
 
         TempleUI.initDataTable('#excessReportTable', {
             pageLength: 10,
+            lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
             searching: true,
             paging: true,
             info: true,
@@ -1271,6 +1295,7 @@
 
         TempleUI.initDataTable('#eventLifecycleLogsTable', {
             pageLength: 10,
+            lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
             searching: false,
             paging: true,
             info: true,

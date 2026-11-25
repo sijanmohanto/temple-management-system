@@ -26,12 +26,11 @@
                 <table class="table table-hover align-middle mb-0 w-100" id="familiesDataTable">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-3">{{ __('families.family_code') }}</th>
-                            <th>{{ __('families.family_name') }}</th>
-                            <th>{{ __('families.primary_contact') }}</th>
-                            <th>{{ __('families.phone') }}</th>
-                            <th>{{ __('families.area') }}</th>
-                            <th>{{ __('families.members_count') }}</th>
+                            <th class="ps-3">{{ __('families.family_name_short') }}</th>
+                            <th>{{ __('families.primary_contact_short') }}</th>
+                            <th>{{ __('families.phone_short') }}</th>
+                            <th>{{ __('families.area_short') }}</th>
+                            <th>{{ __('families.members_count_short') }}</th>
                             <th>{{ __('common.status') }}</th>
                             <th class="text-end pe-3">{{ __('common.actions') }}</th>
                         </tr>
@@ -40,9 +39,6 @@
                         @foreach($families as $family)
                             <tr>
                                 <td class="ps-3">
-                                    <span class="badge bg-light text-dark border font-monospace">{{ $family->family_code }}</span>
-                                </td>
-                                <td>
                                     <a href="{{ route('families.show', $family) }}" class="fw-bold text-dark text-decoration-none">
                                         {{ $family->family_name }}
                                     </a>
@@ -75,22 +71,22 @@
                                     @endif
                                 </td>
                                 <td class="text-end pe-3">
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="{{ route('families.show', $family) }}" class="btn btn-outline-primary" title="{{ __('common.view') }}">
+                                    <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                                        <a href="{{ route('families.show', $family) }}" class="table-action-btn table-action-btn-view" title="{{ __('common.view') }}">
                                             <i class="bi bi-eye"></i>
                                         </a>
 
                                         @if(Auth::user()->hasPermission('manage_people'))
-                                            <a href="{{ route('families.edit', $family) }}" class="btn btn-outline-secondary" title="{{ __('common.edit') }}">
+                                            <a href="{{ route('families.edit', $family) }}" class="table-action-btn table-action-btn-edit" title="{{ __('common.edit') }}">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
 
                                             @if($family->canBeSafelyDeleted())
-                                                <form method="POST" action="{{ route('families.destroy', $family) }}" class="d-inline"
+                                                <form method="POST" action="{{ route('families.destroy', $family) }}" class="d-inline m-0 p-0"
                                                       onsubmit="return confirm('{{ __('families.delete_confirm') }}')">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-outline-danger" title="{{ __('common.delete') }}">
+                                                    <button type="submit" class="table-action-btn table-action-btn-delete" title="{{ __('common.delete') }}">
                                                         <i class="bi bi-trash"></i>
                                                     </button>
                                                 </form>
@@ -129,14 +125,13 @@
                 url: "{{ route('families.index') }}"
             },
             columns: [
-                { data: 0, name: 'family_code' },
-                { data: 1, name: 'family_name' },
-                { data: 2, name: 'primary_contact', orderable: false },
-                { data: 3, name: 'phone' },
-                { data: 4, name: 'area' },
-                { data: 5, name: 'members_count' },
-                { data: 6, name: 'status' },
-                { data: 7, name: 'actions', orderable: false, className: 'text-end pe-3' }
+                { data: 0, name: 'family_name', className: 'ps-3' },
+                { data: 1, name: 'primary_contact', orderable: false },
+                { data: 2, name: 'phone' },
+                { data: 3, name: 'area' },
+                { data: 4, name: 'members_count' },
+                { data: 5, name: 'status' },
+                { data: 6, name: 'actions', orderable: false, className: 'text-end pe-3' }
             ]
         });
 

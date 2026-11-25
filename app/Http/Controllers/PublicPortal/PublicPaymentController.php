@@ -613,7 +613,7 @@ class PublicPaymentController extends Controller implements HasMiddleware
 
             return [
                 'id' => $p->id,
-                'text' => "{$name}{$phone} ({$p->person_code})",
+                'text' => "{$name}{$phone}",
                 'name' => $name,
                 'phone' => $p->phone,
                 'person_code' => $p->person_code,

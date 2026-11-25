@@ -59,11 +59,28 @@ class ExpenseController extends Controller
 
             $start = (int) $request->input('start', 0);
             $length = (int) $request->input('length', 25);
-            $orderColIdx = (int) $request->input('order.0.column', 0);
+            $orderColIdx = (int) $request->input('order.0.column', 4);
             $orderDir = $request->input('order.0.dir', 'desc');
 
-            $columns = ['expense_number', 'expense_date', 'title_en', 'expense_account_id', 'amount', 'status', 'created_at'];
-            $orderCol = $columns[$orderColIdx] ?? 'expense_date';
+            $colMap = [
+                0 => 'title_en',
+                1 => 'expense_account_id',
+                2 => 'payment_account_id',
+                3 => 'vendor_name',
+                4 => 'expense_date',
+                5 => 'status',
+            ];
+            $orderColName = $request->input('columns.'.$orderColIdx.'.name');
+            $validColumns = [
+                'title_en' => 'title_en',
+                'expense_account_id' => 'expense_account_id',
+                'payment_account_id' => 'payment_account_id',
+                'vendor_name' => 'vendor_name',
+                'amount' => 'amount',
+                'expense_date' => 'expense_date',
+                'status' => 'status',
+            ];
+            $orderCol = $validColumns[$orderColName] ?? ($colMap[$orderColIdx] ?? 'expense_date');
 
             $expenses = $query->orderBy($orderCol, $orderDir)
                 ->skip($start)
@@ -83,7 +100,11 @@ class ExpenseController extends Controller
                     'id' => $exp->id,
                     'expense_number' => $exp->expense_number,
                     'expense_date' => $exp->expense_date->toDateString(),
+                    'expense_date_formatted' => $exp->expense_date->format('d M Y'),
                     'title' => $exp->title_en,
+                    'title_bn' => $exp->title_bn,
+                    'display_title' => app()->getLocale() === 'bn' && $exp->title_bn ? $exp->title_bn : ($exp->title_en ?: $exp->title_bn),
+                    'event_name' => $exp->event?->title_en,
                     'category' => $exp->expenseAccount?->name_en,
                     'paid_from' => $exp->paymentAccount?->name_en,
                     'amount' => number_format($exp->amount, 2),

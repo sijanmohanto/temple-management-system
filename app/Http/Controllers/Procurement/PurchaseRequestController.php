@@ -277,18 +277,22 @@ class PurchaseRequestController extends Controller
         $recordsFiltered = (clone $query)->count();
 
         $columns = [
-            0 => 'request_number',
-            1 => 'title',
-            2 => 'request_date',
-            3 => 'requested_by',
-            4 => 'event_id',
-            5 => 'total_estimated_amount',
-            6 => 'status',
+            0 => 'title',
+            1 => 'request_date',
+            2 => 'requested_by',
+            3 => 'event_id',
+            4 => 'total_estimated_amount',
+            5 => 'status',
         ];
 
-        $orderIndex = (int) $request->input('order.0.column', 0);
-        $orderDirection = $request->input('order.0.dir', 'desc') === 'asc' ? 'asc' : 'desc';
-        $orderColumn = $columns[$orderIndex] ?? 'created_at';
+        $orderIndex = $request->input('order.0.column');
+        if ($orderIndex !== null && isset($columns[(int) $orderIndex])) {
+            $orderColumn = $columns[(int) $orderIndex];
+            $orderDirection = $request->input('order.0.dir', 'desc') === 'asc' ? 'asc' : 'desc';
+        } else {
+            $orderColumn = 'id';
+            $orderDirection = 'desc';
+        }
 
         $start = (int) $request->input('start', 0);
         $length = (int) $request->input('length', 15);
@@ -307,7 +311,7 @@ class PurchaseRequestController extends Controller
         foreach ($requests as $r) {
             $codeHtml = '<a href="'.route('procurement.requests.show', $r).'" class="fw-bold font-monospace text-primary text-decoration-none">'.e($r->request_number).'</a>';
 
-            $titleHtml = '<div class="fw-semibold">'.e($r->title).'</div><small class="text-muted">'.$r->items->count().' '.__('procurement.items').'</small>';
+            $titleHtml = '<a href="'.route('procurement.requests.show', $r).'" class="text-decoration-none text-dark fw-semibold">'.e($r->title).'</a><small class="text-muted d-block">'.$r->items->count().' '.__('procurement.items').'</small><span class="d-none">'.e($r->request_number).'</span>';
 
             $dateHtml = '<span class="text-nowrap">'.$r->request_date?->format('d M Y').'</span>';
 
@@ -319,17 +323,22 @@ class PurchaseRequestController extends Controller
 
             $amountHtml = '৳'.number_format((float) $r->total_estimated_amount, 2);
 
-            $actions = '<div class="btn-group btn-group-sm" role="group">';
-            $actions .= '<a href="'.route('procurement.requests.show', $r).'" class="btn btn-outline-info" title="'.__('common.view').'"><i class="bi bi-eye"></i></a>';
+            $actions = '<div class="dropdown text-end">';
+            $actions .= '<button class="btn btn-light btn-sm rounded-circle p-0 d-inline-flex align-items-center justify-content-center border shadow-sm" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-popper-config=\'{"strategy":"fixed"}\' aria-expanded="false" style="width: 32px; height: 32px;" title="'.__('common.actions').'">';
+            $actions .= '<i class="bi bi-three-dots-vertical text-secondary"></i>';
+            $actions .= '</button>';
+            $actions .= '<ul class="dropdown-menu dropdown-menu-end shadow-sm border py-1" style="min-width: 170px; font-size: 0.875rem;">';
+            $actions .= '<li><a class="dropdown-item py-1 px-3 d-flex align-items-center" href="'.route('procurement.requests.show', $r).'"><i class="bi bi-eye text-primary me-2"></i>'.__('common.view').'</a></li>';
 
             if ($canManage && $r->canBeEdited()) {
-                $actions .= '<a href="'.route('procurement.requests.edit', $r).'" class="btn btn-outline-secondary" title="'.__('common.edit').'"><i class="bi bi-pencil"></i></a>';
+                $actions .= '<li><a class="dropdown-item py-1 px-3 d-flex align-items-center" href="'.route('procurement.requests.edit', $r).'"><i class="bi bi-pencil text-secondary me-2"></i>'.__('common.edit').'</a></li>';
             }
 
             if ($r->canBeConvertedToPo()) {
-                $actions .= '<a href="'.route('procurement.requests.show', $r).'#convert" class="btn btn-outline-success" title="'.__('procurement.convert_to_order').'"><i class="bi bi-box-arrow-right"></i></a>';
+                $actions .= '<li><a class="dropdown-item py-1 px-3 d-flex align-items-center text-success" href="'.route('procurement.requests.show', $r).'#convert"><i class="bi bi-box-arrow-right text-success me-2"></i>'.__('procurement.convert_to_order').'</a></li>';
             }
 
+            $actions .= '</ul>';
             $actions .= '</div>';
 
             $data[] = [

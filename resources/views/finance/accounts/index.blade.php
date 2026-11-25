@@ -40,19 +40,18 @@
 
     <!-- Accounts Table -->
     <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body">
+        <div class="card-body p-3">
             <div class="table-responsive">
                 <table class="table table-hover align-middle" id="accountsTable">
                     <thead class="table-light">
                         <tr>
-                            <th>{{ __('finance.account_code') }}</th>
-                            <th>{{ __('finance.account_name') }}</th>
+                            <th class="ps-3">{{ __('finance.account_name') }}</th>
                             <th>{{ __('finance.account_type') }}</th>
                             <th>{{ __('finance.normal_balance') }}</th>
                             <th>{{ __('finance.parent_account') }}</th>
                             <th class="text-end">{{ __('finance.current_balance') }}</th>
                             <th class="text-center">{{ __('finance.status') }}</th>
-                            <th class="text-end">{{ __('common.actions') }}</th>
+                            <th class="text-end pe-3">{{ __('common.actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -60,14 +59,14 @@
                             @foreach($group['accounts'] as $item)
                                 @php $acc = $item['account']; @endphp
                                 <tr>
-                                    <td class="fw-bold font-monospace">{{ $acc->code }}</td>
-                                    <td>
+                                    <td class="ps-3">
                                         <a href="{{ route('finance.accounts.show', $acc) }}" class="text-decoration-none fw-semibold">
                                             {{ $acc->name_en }}
                                         </a>
                                         @if($acc->name_bn)
                                             <div class="text-muted small">{{ $acc->name_bn }}</div>
                                         @endif
+                                        <span class="d-none">{{ $acc->code }}</span>
                                     </td>
                                     <td>
                                         <span class="badge bg-secondary bg-opacity-10 text-dark border">
@@ -81,18 +80,20 @@
                                     </td>
                                     <td class="text-center">
                                         @if($acc->is_active)
-                                            <span class="badge bg-success">{{ __('common.status_active') }}</span>
+                                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">{{ __('common.status_active') }}</span>
                                         @else
-                                            <span class="badge bg-secondary">{{ __('common.status_inactive') }}</span>
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border">{{ __('common.status_inactive') }}</span>
                                         @endif
                                         @if($acc->is_system)
-                                            <span class="badge bg-info text-dark" title="{{ __('finance.is_system') }}">System</span>
+                                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25" title="{{ __('finance.is_system') }}">System</span>
                                         @endif
                                     </td>
-                                    <td class="text-end">
-                                        <a href="{{ route('finance.accounts.show', $acc) }}" class="btn btn-sm btn-outline-primary" title="{{ __('common.view') }}">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
+                                    <td class="text-end pe-3">
+                                        <div class="d-inline-flex gap-1 justify-content-end">
+                                            <a href="{{ route('finance.accounts.show', $acc) }}" class="table-action-btn table-action-btn-view" title="{{ __('common.view') }}">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -177,7 +178,16 @@
 $(document).ready(function() {
     TempleUI.initDataTable('#accountsTable', {
         pageLength: 25,
-        order: [[0, 'asc']]
+        order: [],
+        columns: [
+            { orderable: true, className: 'ps-3' },
+            { orderable: true },
+            { orderable: true },
+            { orderable: true },
+            { orderable: true, className: 'text-end' },
+            { orderable: true, className: 'text-center' },
+            { orderable: false, className: 'text-end pe-3' }
+        ]
     });
 });
 </script>

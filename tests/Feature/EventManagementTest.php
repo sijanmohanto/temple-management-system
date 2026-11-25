@@ -470,6 +470,7 @@ class EventManagementTest extends TestCase
         $json = $response->json();
         $this->assertEquals(1, $json['draw']);
         $this->assertGreaterThanOrEqual(1, $json['recordsFiltered']);
-        $this->assertStringContainsString('Shivaratri', json_encode($json['data']));
+        $this->assertCount(5, $json['data'][0]);
+        $this->assertStringContainsString('Shivaratri', $json['data'][0][0]);
     }
 }

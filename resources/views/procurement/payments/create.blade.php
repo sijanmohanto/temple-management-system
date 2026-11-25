@@ -182,34 +182,27 @@
                     </button>
                 </div>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive p-3">
-                    <table class="table table-hover align-middle mb-0" id="allocationsTable">
+            <div class="card-body p-3 p-md-4">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 w-100" id="allocationsTable">
                         <thead class="table-light">
                             <tr>
-                                <th>{{ __('procurement.bill_number') }}</th>
-                                <th>{{ __('procurement.invoice_reference') }}</th>
-                                <th>{{ __('procurement.bill_date') }}</th>
-                                <th>{{ __('procurement.due_date') }}</th>
-                                <th class="text-end">{{ __('procurement.total_price') }}</th>
-                                <th class="text-end">{{ __('procurement.total_paid') }}</th>
-                                <th class="text-end text-danger">{{ __('procurement.total_outstanding') }}</th>
-                                <th class="text-end" style="width: 200px;">{{ __('procurement.allocated_amount') }} (৳) <span class="text-danger">*</span></th>
-                                <th class="text-center" style="width: 140px;">{{ __('common.actions') }}</th>
+                                <th class="ps-3">{{ __('procurement.invoice_no_short') }}</th>
+                                <th>{{ __('common.date') }}</th>
+                                <th>{{ __('procurement.due_date_short') }}</th>
+                                <th class="text-end">{{ __('procurement.total_price_short') }}</th>
+                                <th class="text-end">{{ __('procurement.total_paid_short') }}</th>
+                                <th class="text-end text-danger">{{ __('procurement.total_outstanding_short') }}</th>
+                                <th class="text-end" style="width: 180px;">{{ __('procurement.allocation_short') }}</th>
+                                <th class="text-center" style="width: 130px;">{{ __('common.actions') }}</th>
                             </tr>
                         </thead>
-                        <tbody id="allocationsBody">
-                            <tr id="emptyBillsRow">
-                                <td colspan="9" class="text-center text-muted py-4">
-                                    <i class="bi bi-info-circle me-1"></i> {{ __('procurement.select_vendor_to_load_bills') }}
-                                </td>
-                            </tr>
-                        </tbody>
+                        <tbody id="allocationsBody"></tbody>
                     </table>
                 </div>
 
                 <!-- Allocation Summary Footer -->
-                <div class="bg-light p-3 border-top d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div class="bg-light p-3 border rounded mt-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                     <div class="d-flex align-items-center gap-2">
                         <span id="allocationStatusBadge" class="badge bg-secondary fs-6">
                             {{ __('procurement.unallocated_amount') }}: ৳0.00
@@ -256,16 +249,49 @@ $(document).ready(function() {
 
     var preselectedBillId = {{ $selectedBillId ? (int)$selectedBillId : 'null' }};
     var preloadedBills = @json($payableBills ?? []);
+    var allocationsTable = null;
 
     function formatMoney(amount) {
         return '৳' + parseFloat(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function initAllocationsDataTable(emptyMessage) {
+        if ($.fn.DataTable.isDataTable('#allocationsTable')) {
+            $('#allocationsTable').DataTable().destroy();
+        }
+
+        var emptyText = emptyMessage || "{{ __('procurement.select_vendor_to_load_bills') }}";
+
+        allocationsTable = TempleUI.initDataTable('#allocationsTable', {
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "{{ __('common.all') }}"]],
+            searching: true,
+            paging: true,
+            info: true,
+            columnDefs: [
+                { orderable: false, targets: [6, 7] }
+            ],
+            order: [[1, 'desc']],
+            dom: '<"row align-items-center mb-3"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row align-items-center mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+            language: {
+                emptyTable: emptyText,
+                zeroRecords: "{{ __('procurement.no_payable_bills') }}",
+                search: "_INPUT_",
+                searchPlaceholder: "{{ __('common.search') }}...",
+                paginate: {
+                    previous: "{{ __('datatables.paginate.previous') }}",
+                    next: "{{ __('datatables.paginate.next') }}"
+                }
+            }
+        });
     }
 
     function calculateAllocations() {
         var paymentAmount = parseFloat($('#amount').val()) || 0;
         var totalAllocated = 0;
 
-        $('.allocated-input').each(function() {
+        var inputs = allocationsTable ? allocationsTable.$('.allocated-input') : $('.allocated-input');
+        inputs.each(function() {
             var val = parseFloat($(this).val()) || 0;
             totalAllocated += val;
         });
@@ -279,25 +305,33 @@ $(document).ready(function() {
         var diff = Math.round((paymentAmount - totalAllocated) * 100) / 100;
         var statusBadge = $('#allocationStatusBadge');
 
+        var matchedLabel = "{{ __('procurement.matched') }}";
+        var unallocatedLabel = "{{ __('procurement.unallocated_amount') }}";
+        var overallocatedLabel = "{{ __('procurement.overallocated_amount') }}";
+
         if (paymentAmount > 0 && Math.abs(diff) < 0.001) {
             statusBadge.removeClass('bg-secondary bg-warning bg-danger').addClass('bg-success');
-            statusBadge.html('<i class="bi bi-check-circle me-1"></i> Matched (৳0.00)');
+            statusBadge.html('<i class="bi bi-check-circle me-1"></i> ' + matchedLabel + ' (৳0.00)');
             $('#btnSubmitPayment').prop('disabled', false);
         } else if (diff > 0) {
             statusBadge.removeClass('bg-secondary bg-success bg-danger').addClass('bg-warning text-dark');
-            statusBadge.html('<i class="bi bi-exclamation-circle me-1"></i> Unallocated: ' + formatMoney(diff));
+            statusBadge.html('<i class="bi bi-exclamation-circle me-1"></i> ' + unallocatedLabel + ': ' + formatMoney(diff));
         } else {
             statusBadge.removeClass('bg-secondary bg-success bg-warning text-dark').addClass('bg-danger');
-            statusBadge.html('<i class="bi bi-x-circle me-1"></i> Overallocated: ' + formatMoney(Math.abs(diff)));
+            statusBadge.html('<i class="bi bi-x-circle me-1"></i> ' + overallocatedLabel + ': ' + formatMoney(Math.abs(diff)));
         }
     }
 
     function renderPayableBills(bills) {
+        if ($.fn.DataTable.isDataTable('#allocationsTable')) {
+            $('#allocationsTable').DataTable().destroy();
+        }
+
         var tbody = $('#allocationsBody');
         tbody.empty();
 
         if (!bills || bills.length === 0) {
-            tbody.html('<tr><td colspan="9" class="text-center text-muted py-4"><i class="bi bi-info-circle me-1"></i> {{ __("procurement.no_payable_bills") }}</td></tr>');
+            initAllocationsDataTable("{{ __('procurement.no_payable_bills') }}");
             calculateAllocations();
             return;
         }
@@ -307,10 +341,12 @@ $(document).ready(function() {
             var initialAllocation = isPreselected ? bill.outstanding_amount : '';
 
             var rowHtml = '<tr data-bill-id="' + bill.id + '" data-outstanding="' + bill.outstanding_amount + '">' +
-                '<td class="fw-bold font-monospace text-primary">' + bill.bill_number +
+                '<td class="ps-3">' +
+                    '<span class="font-monospace fw-semibold text-dark">' + (bill.vendor_invoice_number || '-') + '</span>' +
+                    '<div class="text-muted small"><span class="badge bg-light text-secondary border font-xs">' + bill.bill_number + '</span></div>' +
+                    '<span class="d-none">' + bill.bill_number + '</span>' +
                     '<input type="hidden" name="allocations[' + index + '][vendor_bill_id]" value="' + bill.id + '">' +
                 '</td>' +
-                '<td class="font-monospace fw-semibold">' + bill.vendor_invoice_number + '</td>' +
                 '<td>' + bill.bill_date + '</td>' +
                 '<td>' + (bill.due_date || '-') + '</td>' +
                 '<td class="text-end font-monospace">৳' + parseFloat(bill.total_amount).toFixed(2) + '</td>' +
@@ -332,6 +368,8 @@ $(document).ready(function() {
             tbody.append(rowHtml);
         });
 
+        initAllocationsDataTable();
+
         if (preselectedBillId) {
             var selectedBill = bills.find(function(b) { return b.id === preselectedBillId; });
             if (selectedBill) {
@@ -346,8 +384,7 @@ $(document).ready(function() {
     $('#vendor_id').on('change', function() {
         var vendorId = $(this).val();
         if (!vendorId) {
-            $('#allocationsBody').html('<tr><td colspan="9" class="text-center text-muted py-4"><i class="bi bi-info-circle me-1"></i> {{ __("procurement.select_vendor_to_load_bills") }}</td></tr>');
-            calculateAllocations();
+            renderPayableBills([]);
             return;
         }
 
@@ -360,6 +397,8 @@ $(document).ready(function() {
                 TempleUI.hideSpinner('#allocationsTable');
                 if (res.success && res.bills) {
                     renderPayableBills(res.bills);
+                } else {
+                    renderPayableBills([]);
                 }
             },
             error: function() {
@@ -375,14 +414,13 @@ $(document).ready(function() {
         var outstanding = parseFloat(tr.data('outstanding')) || 0;
         var paymentAmount = parseFloat($('#amount').val()) || 0;
 
-        // If payment amount is not set or 0, suggest setting payment amount to this bill's outstanding
         if (paymentAmount <= 0) {
             $('#amount').val(outstanding.toFixed(2));
             tr.find('.allocated-input').val(outstanding.toFixed(2));
         } else {
-            // Fill either the outstanding or the remaining unallocated payment amount
+            var inputs = allocationsTable ? allocationsTable.$('.allocated-input') : $('.allocated-input');
             var currentlyAllocatedOther = 0;
-            $('.allocated-input').not(tr.find('.allocated-input')).each(function() {
+            inputs.not(tr.find('.allocated-input')).each(function() {
                 currentlyAllocatedOther += parseFloat($(this).val()) || 0;
             });
             var remainingUnallocated = Math.max(0, paymentAmount - currentlyAllocatedOther);
@@ -399,7 +437,8 @@ $(document).ready(function() {
     });
 
     $('#btnClearAllocations').on('click', function() {
-        $('.allocated-input').val('');
+        var inputs = allocationsTable ? allocationsTable.$('.allocated-input') : $('.allocated-input');
+        inputs.val('');
         calculateAllocations();
     });
 
@@ -409,7 +448,8 @@ $(document).ready(function() {
         var totalAllocated = 0;
         var hasValidAllocation = false;
 
-        $('.allocated-input').each(function() {
+        var inputs = allocationsTable ? allocationsTable.$('.allocated-input') : $('.allocated-input');
+        inputs.each(function() {
             var val = parseFloat($(this).val()) || 0;
             if (val > 0) {
                 totalAllocated += val;
@@ -438,12 +478,29 @@ $(document).ready(function() {
             return false;
         }
 
+        // Include any inputs on inactive DataTables pages before submitting
+        if (allocationsTable) {
+            $(this).find('.dt-hidden-allocation').remove();
+            allocationsTable.$('input').each(function() {
+                if (!$.contains(document, this)) {
+                    $('<input>')
+                        .attr('type', 'hidden')
+                        .addClass('dt-hidden-allocation')
+                        .attr('name', $(this).attr('name'))
+                        .val($(this).val())
+                        .appendTo('#paymentForm');
+                }
+            });
+        }
+
         TempleUI.btnLoader('#btnSubmitPayment', true);
     });
 
-    // Initial render if preloaded
+    // Initial render
     if (preloadedBills && preloadedBills.length > 0) {
         renderPayableBills(preloadedBills);
+    } else {
+        initAllocationsDataTable("{{ __('procurement.select_vendor_to_load_bills') }}");
     }
 });
 </script>

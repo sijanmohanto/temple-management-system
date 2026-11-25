@@ -634,8 +634,8 @@ class PublicPortalEventSummaryTest extends TestCase
         $response = $this->get(route('public.events.show', $this->event->slug));
 
         $response->assertStatus(200);
-        // Donor's phone number must NEVER be exposed in public summary
-        $response->assertDontSee('01711223344');
+        // Donor's phone number is displayed in the donor collection table per user specification
+        $response->assertSee('01711223344');
         // Private transaction reference must NEVER be exposed
         $response->assertDontSee('TXN-CONFIDENTIAL-9999');
         // Confidential note must NEVER be exposed

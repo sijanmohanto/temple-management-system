@@ -65,20 +65,19 @@
     </div>
 
     <!-- Journals DataTable -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="card-body p-3 p-md-4">
             <div class="table-responsive">
-                <table class="table table-hover align-middle w-100" id="journalsTable">
+                <table class="table table-hover align-middle mb-0 w-100" id="journalsTable">
                     <thead class="table-light">
                         <tr>
-                            <th>{{ __('finance.journal_number') }}</th>
-                            <th>{{ __('finance.entry_date') }}</th>
+                            <th class="ps-3">{{ __('finance.entry_date_short') }}</th>
                             <th>{{ __('common.description') }}</th>
-                            <th>{{ __('finance.source_type') }}</th>
-                            <th class="text-end">{{ __('finance.total_debit') }}</th>
-                            <th class="text-end">{{ __('finance.total_credit') }}</th>
-                            <th class="text-center">{{ __('finance.status') }}</th>
-                            <th class="text-end">{{ __('common.actions') }}</th>
+                            <th>{{ __('finance.source_type_short') }}</th>
+                            <th class="text-end">{{ __('finance.total_debit_short') }}</th>
+                            <th class="text-end">{{ __('finance.total_credit_short') }}</th>
+                            <th class="text-center">{{ __('common.status') }}</th>
+                            <th class="text-end pe-3">{{ __('common.actions') }}</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -108,25 +107,25 @@ $(document).ready(function() {
         },
         columns: [
             { 
-                data: 'journal_number', 
-                name: 'journal_number',
-                render: function(data, type, row) {
-                    return '<a href="' + row.view_url + '" class="fw-bold font-monospace text-decoration-none">' + data + '</a>';
-                }
+                data: 'entry_date', 
+                name: 'entry_date',
+                className: 'ps-3 text-nowrap font-monospace text-muted small'
             },
-            { data: 'entry_date', name: 'entry_date' },
             { 
                 data: 'description', 
                 name: 'description',
-                render: function(data) {
-                    return '<div class="text-truncate" style="max-width: 300px;" title="' + (data || '') + '">' + (data || '-') + '</div>';
+                render: function(data, type, row) {
+                    return '<div>' +
+                        '<a href="' + row.view_url + '" class="fw-bold font-monospace text-primary text-decoration-none">' + (row.journal_number || '') + '</a>' +
+                        '<div class="text-truncate text-muted small mt-1" style="max-width: 340px;" title="' + (data || '') + '">' + (data || '—') + '</div>' +
+                    '</div>';
                 }
             },
             { 
                 data: 'source_type', 
                 name: 'source_type',
                 render: function(data) {
-                    return '<span class="badge bg-light text-dark border">' + data + '</span>';
+                    return '<span class="badge bg-light text-dark border">' + (data || '—') + '</span>';
                 }
             },
             { 
@@ -147,11 +146,11 @@ $(document).ready(function() {
                 className: 'text-center',
                 render: function(data) {
                     if (data === 'posted') {
-                        return '<span class="badge bg-success">{{ __("finance.posted") }}</span>';
+                        return '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">{{ __("finance.posted") }}</span>';
                     } else if (data === 'reversed') {
-                        return '<span class="badge bg-danger">{{ __("finance.reversed") }}</span>';
+                        return '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">{{ __("finance.reversed") }}</span>';
                     }
-                    return '<span class="badge bg-secondary">' + data + '</span>';
+                    return '<span class="badge bg-secondary bg-opacity-10 text-secondary border">' + data + '</span>';
                 }
             },
             { 
@@ -159,13 +158,13 @@ $(document).ready(function() {
                 name: 'actions', 
                 orderable: false, 
                 searchable: false, 
-                className: 'text-end',
+                className: 'text-end pe-3',
                 render: function(data) {
-                    return '<a href="' + data + '" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>';
+                    return '<a href="' + data + '" class="table-action-btn table-action-btn-view" title="{{ __("common.view") }}"><i class="bi bi-eye"></i></a>';
                 }
             }
         ],
-        order: [[1, 'desc']]
+        order: [[0, 'desc']]
     });
 
     $('#filterSource, #filterStatus, #filterEvent, #filterStartDate, #filterEndDate').on('change', function() {

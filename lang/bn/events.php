@@ -190,4 +190,15 @@ return [
     'settlement_completed_banner' => 'অনুষ্ঠানের তহবিল নিষ্পত্তি সম্পন্ন: নীট উদ্বৃত্ত অর্থ সাধারণ মন্দির তহবিলে স্থানান্তরিত হয়েছে।',
     'view_settlement_voucher' => 'লেজার ভাউচার দেখুন',
     'settlement_notes' => 'নিষ্পত্তির মন্তব্য ও বিবরণ',
+
+    // Table Headers (Clean & Short)
+    'donor_short' => 'দাতা',
+    'type_short' => 'ধরন',
+    'pledged_short' => 'অঙ্গীকার (৳)',
+    'collected_short' => 'আদায় (৳)',
+    'excess_short' => 'অতিরিক্ত (৳)',
+    'due_short' => 'বকেয়া (৳)',
+    'lifecycle_action_short' => 'অ্যাকশন',
+    'lifecycle_reason_short' => 'কারণ',
+    'lifecycle_user_short' => 'ব্যবহারকারী',
 ];

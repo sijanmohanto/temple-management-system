@@ -25,13 +25,13 @@
 
     <!-- Filter Card -->
     <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-body p-4">
-            <form id="paymentFilterForm" class="row g-3">
+        <div class="card-body p-3 p-md-4">
+            <form id="paymentFilterForm" class="row g-3 align-items-end">
                 <!-- Event Filter -->
                 <div class="col-md-3">
-                    <label for="filterEvent" class="form-label small fw-semibold text-secondary">{{ __('portal.public.event') }}</label>
+                    <label for="filterEvent" class="form-label small fw-semibold text-secondary">{{ __('events.event') }}</label>
                     <select id="filterEvent" name="event_id" class="form-select select2-basic">
-                        <option value="">{{ __('common.all') }} {{ __('portal.public.events') }}</option>
+                        <option value="">{{ __('events.all_events') }}</option>
                         @foreach($events as $event)
                             <option value="{{ $event->id }}">{{ $event->name }} ({{ $event->event_year }})</option>
                         @endforeach
@@ -40,40 +40,41 @@
 
                 <!-- Status Filter -->
                 <div class="col-md-2">
-                    <label for="filterStatus" class="form-label small fw-semibold text-secondary">{{ __('portal.public.status') }}</label>
+                    <label for="filterStatus" class="form-label small fw-semibold text-secondary">{{ __('common.status') }}</label>
                     <select id="filterStatus" name="status" class="form-select">
                         <option value="all">{{ __('common.all') }}</option>
-                        <option value="verified">{{ __('portal.public.status_verified') }}</option>
-                        <option value="pending">{{ __('portal.public.status_pending') }}</option>
-                        <option value="rejected">{{ __('portal.public.status_rejected') }}</option>
-                        <option value="reversed">{{ __('portal.public.status_reversed') }}</option>
+                        <option value="verified">{{ __('common.status_verified') }}</option>
+                        <option value="pending">{{ __('common.status_pending') }}</option>
+                        <option value="rejected">{{ __('common.status_rejected') }}</option>
+                        <option value="reversed">{{ __('donations.status_reversed') }}</option>
                     </select>
                 </div>
 
                 <!-- Payment Method Filter -->
                 <div class="col-md-2">
-                    <label for="filterMethod" class="form-label small fw-semibold text-secondary">{{ __('portal.public.payment_method') }}</label>
+                    <label for="filterMethod" class="form-label small fw-semibold text-secondary">{{ __('donations.payment_method_short') }}</label>
                     <select id="filterMethod" name="payment_method" class="form-select">
                         <option value="all">{{ __('common.all') }}</option>
                         <option value="bkash">bKash</option>
                         <option value="nagad">Nagad</option>
                         <option value="rocket">Rocket</option>
-                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="bank_transfer">{{ __('portal.payment_methods.bank_transfer') ?? 'Bank Transfer' }}</option>
+                        <option value="cash">{{ __('donations.method_cash') ?? 'Cash' }}</option>
                     </select>
                 </div>
 
                 <!-- Date Range Filters -->
                 <div class="col-md-2">
                     <label for="filterDateFrom" class="form-label small fw-semibold text-secondary">{{ __('common.date_from') }}</label>
-                    <input type="date" id="filterDateFrom" name="date_from" class="form-control">
+                    <input type="date" id="filterDateFrom" name="date_from" class="form-control" title="{{ __('common.date_from') }}">
                 </div>
                 <div class="col-md-2">
                     <label for="filterDateTo" class="form-label small fw-semibold text-secondary">{{ __('common.date_to') }}</label>
-                    <input type="date" id="filterDateTo" name="date_to" class="form-control">
+                    <input type="date" id="filterDateTo" name="date_to" class="form-control" title="{{ __('common.date_to') }}">
                 </div>
 
                 <!-- Filter Actions -->
-                <div class="col-md-1 d-flex align-items-end">
+                <div class="col-md-1">
                     <button type="button" id="resetFiltersBtn" class="btn btn-outline-secondary w-100" title="{{ __('common.reset') }}">
                         <i class="bi bi-arrow-counterclockwise"></i>
                     </button>
@@ -84,19 +85,18 @@
 
     <!-- Payments DataTable Card -->
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="card-body p-4">
+        <div class="card-body p-3 p-md-4">
             <div class="table-responsive">
                 <table id="devoteePaymentsTable" class="table table-hover align-middle mb-0 w-100">
                     <thead class="table-light">
                         <tr>
-                            <th>{{ __('portal.public.payment_code') }}</th>
-                            <th>{{ __('portal.public.event') }}</th>
-                            <th>{{ __('portal.public.allocation_breakdown') }}</th>
-                            <th>{{ __('portal.public.amount') }}</th>
-                            <th>{{ __('portal.public.payment_method') }}</th>
-                            <th>{{ __('portal.public.payment_date') }}</th>
-                            <th>{{ __('portal.public.status') }}</th>
-                            <th class="text-end">{{ __('common.actions') }}</th>
+                            <th class="ps-3">{{ __('events.event') }}</th>
+                            <th>{{ __('donations.type') }}</th>
+                            <th class="text-end">{{ __('common.amount_short') }}</th>
+                            <th>{{ __('donations.payment_method_short') }}</th>
+                            <th>{{ __('common.date') }}</th>
+                            <th class="text-center">{{ __('common.status') }}</th>
+                            <th class="text-end pe-3">{{ __('common.actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -129,7 +129,7 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
-    var table = $('#devoteePaymentsTable').DataTable({
+    var table = TempleUI.initDataTable('#devoteePaymentsTable', {
         processing: true,
         serverSide: true,
         ordering: false,
@@ -143,19 +143,37 @@ $(document).ready(function() {
                 d.date_to = $('#filterDateTo').val();
             }
         },
-        language: window.TempleConfig.datatablesLanguage,
         pageLength: 10,
-        responsive: true
+        lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+        responsive: true,
+        columns: [
+            { className: 'ps-3' },
+            { className: '' },
+            { className: 'text-end' },
+            { className: '' },
+            { className: 'text-nowrap font-monospace text-muted small' },
+            { className: 'text-center' },
+            { className: 'text-end pe-3' }
+        ]
     });
 
-    // Event Filters
-    $('#filterEvent, #filterStatus, #filterMethod, #filterDateFrom, #filterDateTo').on('change', function() {
+    // Event & Method Filters
+    $('#filterEvent, #filterStatus, #filterMethod').on('change', function() {
+        table.draw();
+    });
+
+    // Date Picker Input & Change (Instant Reactive Redraw)
+    $('#filterDateFrom, #filterDateTo').on('change input', function() {
         table.draw();
     });
 
     $('#resetFiltersBtn').on('click', function() {
         $('#paymentFilterForm')[0].reset();
         $('#filterEvent').val('').trigger('change');
+        $('#filterStatus').val('all');
+        $('#filterMethod').val('all');
+        $('#filterDateFrom').val('');
+        $('#filterDateTo').val('');
         table.draw();
     });
 
@@ -186,13 +204,13 @@ $(document).ready(function() {
                     html += '<div class="d-flex justify-content-between align-items-center mb-3">';
                     html += '<span class="badge bg-light text-dark border font-monospace fs-6">' + p.payment_code + '</span>';
                     if (p.status === 'verified') {
-                        html += '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Verified</span>';
+                        html += '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> ' + "{{ __('common.status_verified') }}" + '</span>';
                     } else if (p.status === 'pending') {
-                        html += '<span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i> Pending Verification</span>';
+                        html += '<span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i> ' + "{{ __('common.status_pending') }}" + '</span>';
                     } else if (p.status === 'rejected') {
-                        html += '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i> Rejected</span>';
+                        html += '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i> ' + "{{ __('common.status_rejected') }}" + '</span>';
                     } else if (p.status === 'reversed') {
-                        html += '<span class="badge bg-dark"><i class="bi bi-arrow-counterclockwise me-1"></i> Reversed</span>';
+                        html += '<span class="badge bg-dark"><i class="bi bi-arrow-counterclockwise me-1"></i> ' + "{{ __('donations.status_reversed') }}" + '</span>';
                     }
                     html += '</div>';
 
@@ -222,23 +240,23 @@ $(document).ready(function() {
                     const methodBadgeHtml = '<span class="payment-method-badge method-' + p.payment_method + '"><img src="' + mLogo + '" class="method-logo" alt="' + mLabel + '"> <span class="method-name">' + mLabel + '</span></span>';
 
                     html += '<div class="list-group list-group-flush mb-4">';
-                    html += '<div class="list-group-item d-flex justify-content-between px-0 py-2"><span>Event</span><strong class="text-dark">' + (p.event_name || '—') + '</strong></div>';
-                    html += '<div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2"><span>Payment Method</span>' + methodBadgeHtml + '</div>';
+                    html += '<div class="list-group-item d-flex justify-content-between px-0 py-2"><span>' + "{{ __('events.event') }}" + '</span><strong class="text-dark">' + (p.event_name || '—') + '</strong></div>';
+                    html += '<div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2"><span>' + "{{ __('donations.payment_method_short') }}" + '</span>' + methodBadgeHtml + '</div>';
                     if (p.transaction_reference) {
-                        html += '<div class="list-group-item d-flex justify-content-between px-0 py-2"><span>Transaction Ref</span><strong class="font-monospace text-dark">' + p.transaction_reference + '</strong></div>';
+                        html += '<div class="list-group-item d-flex justify-content-between px-0 py-2"><span>' + "{{ __('donations.transaction_reference') }}" + '</span><strong class="font-monospace text-dark">' + p.transaction_reference + '</strong></div>';
                     }
                     if (p.sender_mobile) {
-                        html += '<div class="list-group-item d-flex justify-content-between px-0 py-2"><span>Sender Mobile</span><strong class="text-dark">' + p.sender_mobile + '</strong></div>';
+                        html += '<div class="list-group-item d-flex justify-content-between px-0 py-2"><span>' + "{{ __('donations.sender_mobile') }}" + '</span><strong class="text-dark">' + p.sender_mobile + '</strong></div>';
                     }
-                    html += '<div class="list-group-item d-flex justify-content-between px-0 py-2"><span>Payment Date</span><strong class="text-dark">' + (p.payment_date || '—') + '</strong></div>';
+                    html += '<div class="list-group-item d-flex justify-content-between px-0 py-2"><span>' + "{{ __('common.date') }}" + '</span><strong class="text-dark">' + (p.payment_date || '—') + '</strong></div>';
                     if (p.verified_at) {
-                        html += '<div class="list-group-item d-flex justify-content-between px-0 py-2"><span>Verified On</span><strong class="text-success">' + p.verified_at + '</strong></div>';
+                        html += '<div class="list-group-item d-flex justify-content-between px-0 py-2"><span>' + "{{ __('donations.verified_at') }}" + '</span><strong class="text-success">' + p.verified_at + '</strong></div>';
                     }
                     if (p.rejection_reason) {
-                        html += '<div class="list-group-item px-0 py-2 bg-danger bg-opacity-10 text-danger rounded mt-2 p-2"><strong>Rejection Reason:</strong> ' + p.rejection_reason + '</div>';
+                        html += '<div class="list-group-item px-0 py-2 bg-danger bg-opacity-10 text-danger rounded mt-2 p-2"><strong>' + "{{ __('donations.rejection_reason') }}: " + '</strong> ' + p.rejection_reason + '</div>';
                     }
                     if (p.reversal_reason) {
-                        html += '<div class="list-group-item px-0 py-2 bg-dark bg-opacity-10 text-dark rounded mt-2 p-2"><strong>Reversal Reason:</strong> ' + p.reversal_reason + ' (' + p.reversed_at + ')</div>';
+                        html += '<div class="list-group-item px-0 py-2 bg-dark bg-opacity-10 text-dark rounded mt-2 p-2"><strong>' + "{{ __('donations.reversal_reason') }}: " + '</strong> ' + p.reversal_reason + ' (' + p.reversed_at + ')</div>';
                     }
                     html += '</div>';
 

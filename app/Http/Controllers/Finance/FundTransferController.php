@@ -78,7 +78,7 @@ class FundTransferController extends Controller
         $transfers = FundTransfer::with(['fromAccount', 'toAccount', 'processor', 'journalEntry'])
             ->orderBy('transfer_date', 'desc')
             ->orderBy('id', 'desc')
-            ->paginate(25);
+            ->get();
 
         return view('finance.transfers.index', compact('transfers'));
     }

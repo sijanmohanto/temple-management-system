@@ -44,12 +44,45 @@ class Person extends Model
         'family_id',
         'family_relationship',
         'status',
+        'photo_path',
         'visibility',
         'private_notes',
         'public_notes',
         'created_by',
         'updated_by',
     ];
+
+    /**
+     * Get the URL for the devotee's photo or null if none uploaded.
+     */
+    public function getPhotoUrlAttribute(): ?string
+    {
+        if (! empty($this->photo_path)) {
+            return asset('storage/'.$this->photo_path);
+        }
+
+        return null;
+    }
+
+    /**
+     * Get the display avatar URL: uploaded photo, or gender-based avatar.
+     */
+    public function getAvatarUrlAttribute(): string
+    {
+        if (! empty($this->photo_path)) {
+            return asset('storage/'.$this->photo_path);
+        }
+
+        if ($this->gender === 'female') {
+            return asset('assets/images/avatars/avatar-female.svg');
+        }
+
+        if ($this->gender === 'male') {
+            return asset('assets/images/avatars/avatar-male.svg');
+        }
+
+        return asset('assets/images/avatars/avatar-default.svg');
+    }
 
     protected function casts(): array
     {

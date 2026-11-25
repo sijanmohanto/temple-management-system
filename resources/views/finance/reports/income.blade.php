@@ -171,16 +171,16 @@
     <!-- Income Report DataTable Card -->
     <!-- STRICTLY NO ROW NUMBER / # COLUMN -->
     <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body p-0">
-            <div class="table-responsive p-3">
+        <div class="card-body p-3">
+            <div class="table-responsive">
                 <table class="table table-hover align-middle w-100" id="incomeReportTable">
                     <thead class="table-light">
                         <tr>
-                            <th>{{ __('finance.donor_user_details') }}</th>
-                            <th>{{ __('common.title') }} / {{ __('finance.income_type') }}</th>
+                            <th class="ps-3">{{ __('finance.donor_user_details_short') }}</th>
+                            <th>{{ __('finance.income_type_short') }}</th>
                             <th>{{ __('events.event') }}</th>
-                            <th class="text-end">{{ __('common.amount') }}</th>
-                            <th>{{ __('finance.entry_date') }}</th>
+                            <th class="text-end">{{ __('common.amount_short') }}</th>
+                            <th>{{ __('finance.entry_date_short') }}</th>
                             <th class="text-center">{{ __('common.status') }}</th>
                             <th class="text-end pe-3">{{ __('common.actions') }}</th>
                         </tr>

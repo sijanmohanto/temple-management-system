@@ -12,6 +12,7 @@ return [
     // General Actions
     'save' => 'সংরক্ষণ করুন',
     'save_changes' => 'পরিবর্তন সংরক্ষণ করুন',
+    'save_as_draft' => 'খসড়া হিসেবে সংরক্ষণ করুন',
     'cancel' => 'বাতিল',
     'edit' => 'সম্পাদনা',
     'delete' => 'মুছুন',
@@ -30,9 +31,12 @@ return [
     'name' => 'নাম',
     'select' => 'নির্বাচন করুন',
     'amount' => 'পরিমাণ',
+    'amount_short' => 'পরিমাণ (৳)',
     'notes' => 'মন্তব্য / নোট',
     'description' => 'বিবরণ',
     'date' => 'তারিখ',
+    'date_from' => 'হতে (তারিখ)',
+    'date_to' => 'পর্যন্ত (তারিখ)',
     'category' => 'শ্রেণী / খাত',
     'total' => 'মোট',
     'optional' => 'ঐচ্ছিক',
@@ -104,6 +108,8 @@ return [
     'reject' => 'প্রত্যাখ্যান করুন',
     'active' => 'সক্রিয়',
     'inactive' => 'নিষ্ক্রিয়',
+    'unauthorized' => 'এই কাজটি করার জন্য আপনার অনুমতি নেই।',
+    'unauthorized_access' => 'এই বিভাগে প্রবেশের অনুমতি আপনার নেই।',
 
     // Footer
     'copyright' => 'সর্বস্বত্ব সংরক্ষিত।',

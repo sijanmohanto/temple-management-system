@@ -199,6 +199,16 @@
             return $table.DataTable();
         }
 
+        // Automatically ensure parent card-body has p-3 padding across all views
+        var $cardBody = $table.closest('.card-body');
+        if ($cardBody.length) {
+            if ($cardBody.hasClass('p-0')) {
+                $cardBody.removeClass('p-0').addClass('p-3');
+            } else if (!$cardBody.is('[class*="p-"]')) {
+                $cardBody.addClass('p-3');
+            }
+        }
+
         // Clean single colspan empty row if present to prevent DataTables column count mismatch
         var $rows = $table.find('tbody tr');
         if ($rows.length === 1 && $rows.first().find('td[colspan]').length) {
@@ -267,8 +277,134 @@
         });
     };
 
+    // ------------------------------------------------------------------------
+    // 5. Month & Year Picker Component
+    // ------------------------------------------------------------------------
+    TempleUI.initMonthPicker = function(containerSelector) {
+        var $containers = $(containerSelector || '.month-picker-group');
+        if (!$containers.length) return;
+
+        var isBn = (document.documentElement.lang === 'bn');
+        var monthsEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        var monthsBn = ['জানু', 'ফেব', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টে', 'অক্টো', 'নভে', 'ডিসে'];
+        var fullMonthsEn = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        var fullMonthsBn = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+
+        var shortMonths = isBn ? monthsBn : monthsEn;
+        var fullMonths = isBn ? fullMonthsBn : fullMonthsEn;
+
+        var toBnDigits = function(str) {
+            if (!isBn) return str;
+            var bnMap = {'0':'০','1':'১','2':'২','3':'৩','4':'৪','5':'৫','6':'৬','7':'৭','8':'৮','9':'৯'};
+            return String(str).replace(/[0-9]/g, function(d) { return bnMap[d] || d; });
+        };
+
+        $containers.each(function() {
+            var $group = $(this);
+            if ($group.data('month-picker-initialized')) return;
+            $group.data('month-picker-initialized', true);
+
+            var $inputDisplay = $group.find('.month-picker-display');
+            var $inputValue = $group.find('.month-picker-value');
+            var $toggleBtn = $group.find('.month-picker-toggle');
+            var $yearLabel = $group.find('.month-picker-year-label');
+            var $monthsGrid = $group.find('.month-picker-months');
+            var $prevYear = $group.find('.month-picker-prev-year');
+            var $nextYear = $group.find('.month-picker-next-year');
+            var $currentMonthBtn = $group.find('.month-picker-current');
+            var $applyBtn = $group.find('.month-picker-apply');
+
+            var initialVal = $inputValue.val() || new Date().toISOString().slice(0, 7);
+            var parts = initialVal.split('-');
+            var currentYear = parseInt(parts[0], 10) || new Date().getFullYear();
+            var currentMonth = parseInt(parts[1], 10) || (new Date().getMonth() + 1);
+
+            var viewYear = currentYear;
+            var selectedMonth = currentMonth;
+
+            var render = function() {
+                $yearLabel.text(toBnDigits(viewYear));
+                $monthsGrid.empty();
+
+                for (var i = 1; i <= 12; i++) {
+                    var mVal = (i < 10 ? '0' + i : '' + i);
+                    var isSelected = (viewYear === currentYear && i === selectedMonth);
+                    var $col = $('<div class="col-4"></div>');
+                    var $btn = $('<button type="button" class="btn w-100 month-picker-btn' + (isSelected ? ' active' : '') + '">' + shortMonths[i - 1] + '</button>');
+                    $btn.data('month', i);
+                    $btn.data('month-str', mVal);
+
+                    $btn.on('click', function(e) {
+                        e.preventDefault();
+                        var m = $(this).data('month');
+                        currentYear = viewYear;
+                        selectedMonth = m;
+                        updateSelection();
+                        var bsDropdown = bootstrap.Dropdown.getInstance($toggleBtn[0]);
+                        if (bsDropdown) {
+                            bsDropdown.hide();
+                        }
+                    });
+
+                    $col.append($btn);
+                    $monthsGrid.append($col);
+                }
+            };
+
+            var updateSelection = function() {
+                var mStr = (selectedMonth < 10 ? '0' + selectedMonth : '' + selectedMonth);
+                var formattedVal = currentYear + '-' + mStr;
+                var displayStr = fullMonths[selectedMonth - 1] + ' ' + toBnDigits(currentYear);
+
+                $inputValue.val(formattedVal).trigger('change');
+                $inputDisplay.val(displayStr);
+                render();
+            };
+
+            $prevYear.on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                viewYear--;
+                render();
+            });
+
+            $nextYear.on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                viewYear++;
+                render();
+            });
+
+            $currentMonthBtn.on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var now = new Date();
+                currentYear = now.getFullYear();
+                viewYear = currentYear;
+                selectedMonth = now.getMonth() + 1;
+                updateSelection();
+            });
+
+            $applyBtn.on('click', function(e) {
+                e.preventDefault();
+                var bsDropdown = bootstrap.Dropdown.getInstance($toggleBtn[0]);
+                if (bsDropdown) {
+                    bsDropdown.hide();
+                }
+                $group.closest('form').trigger('submit');
+            });
+
+            $inputDisplay.on('click', function() {
+                $toggleBtn.dropdown('toggle');
+            });
+
+            updateSelection();
+        });
+    };
+
     // Auto-initialize standard elements on DOM ready
     $(document).ready(function() {
+        TempleUI.initMonthPicker();
         // Auto-scroll sidebar so active menu item is prominently visible
         TempleUI.initSidebarScroll();
         setTimeout(TempleUI.initSidebarScroll, 80);

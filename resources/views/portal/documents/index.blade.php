@@ -79,7 +79,7 @@
 
     {{-- DataTable Card --}}
     <div class="card shadow-sm border-0">
-        <div class="card-body">
+        <div class="card-body p-3">
             <div class="table-responsive">
                 <table id="documentsTable" class="table table-hover align-middle w-100">
                     <thead class="table-light">

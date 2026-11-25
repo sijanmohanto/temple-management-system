@@ -133,13 +133,17 @@
                 <div class="card-body p-4">
                     <h6 class="fw-bold text-dark mb-3"><i class="bi bi-person me-2 text-primary"></i>{{ __('donations.payer') }} &amp; Method</h6>
                     <div class="mb-3">
-                        <label class="small text-muted mb-0">{{ __('donations.payer') }}</label>
-                        <div class="fw-bold text-dark fs-6">{{ $payment->payer_display_name }}</div>
-                        @if($payment->payerPerson && $payment->payerPerson->phone)
-                            <div class="small text-muted"><i class="bi bi-telephone me-1"></i>{{ $payment->payerPerson->phone }}</div>
-                        @elseif($payment->payer_phone_override)
-                            <div class="small text-muted"><i class="bi bi-telephone me-1"></i>{{ $payment->payer_phone_override }}</div>
-                        @endif
+                        <label class="small text-muted mb-2 d-block">{{ __('donations.payer') }}</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <img src="{{ $payment->payer_avatar_url }}" alt="{{ $payment->payer_display_name }}"
+                                 class="rounded-circle object-fit-cover shadow-sm border flex-shrink-0" style="width: 44px; height: 44px; min-width: 44px;">
+                            <div>
+                                <div class="fw-bold text-dark fs-6">{{ $payment->payer_display_name }}</div>
+                                @if($payment->payer_display_phone)
+                                    <div class="small text-muted"><i class="bi bi-telephone me-1"></i>{{ $payment->payer_display_phone }}</div>
+                                @endif
+                            </div>
+                        </div>
                     </div>
 
                     <div class="mb-3">

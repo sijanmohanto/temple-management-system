@@ -140,13 +140,12 @@
 
     <!-- DataTable Card (Strictly NO Row Number / # Column) -->
     <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body p-0">
-            <div class="table-responsive p-3">
+        <div class="card-body p-3">
+            <div class="table-responsive">
                 <table class="table table-hover align-middle w-100" id="budgetTable">
                     <thead class="table-light">
                         <tr>
-                            <th>{{ __('procurement.budget_code') }}</th>
-                            <th>{{ __('common.title') }}</th>
+                            <th class="ps-3">{{ __('common.title') }}</th>
                             <th>{{ __('procurement.budget_type') }}</th>
                             <th>{{ __('procurement.scope') }}</th>
                             <th class="text-end">{{ __('procurement.total_budget') }}</th>
@@ -187,15 +186,14 @@ $(document).ready(function() {
             }
         },
         columns: [
-            { data: 'budget_code', name: 'budget_code', orderable: true },
-            { data: 'title', name: 'title_en', orderable: true },
+            { data: 'title', name: 'title_en', orderable: true, className: 'ps-3' },
             { data: 'budget_type', name: 'budget_type', orderable: true },
             { data: 'scope_period', name: 'fiscal_year', orderable: true },
             { data: 'total_amount', name: 'total_amount', orderable: true, className: 'text-end fw-bold text-primary' },
             { data: 'status', name: 'status', orderable: true, className: 'text-center' },
             { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-end pe-3' }
         ],
-        order: [[0, 'desc']],
+        order: [],
         pageLength: 15,
         lengthMenu: [[10, 15, 25, 50, 100], [10, 15, 25, 50, 100]],
         dom: '<"row align-items-center mb-3"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row align-items-center mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',

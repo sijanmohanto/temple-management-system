@@ -520,7 +520,7 @@ class IncomeAndExpenseReportTest extends TestCase
         $this->assertNotEmpty($results);
         $this->assertEquals($this->registeredPerson->id, $results[0]['id']);
         $this->assertStringContainsString('Rahul Sharma', $results[0]['text']);
-        $this->assertStringContainsString('P-2026-0001', $results[0]['text']);
+        $this->assertStringNotContainsString('P-2026-0001', $results[0]['text']);
     }
 
     public function test_bengali_locale_renders_clean_localized_labels_without_raw_translation_keys(): void

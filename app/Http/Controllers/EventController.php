@@ -99,11 +99,10 @@ class EventController extends Controller implements HasMiddleware
         $orderColumnIndex = $request->has('order.0.column') ? (int) $request->input('order.0.column') : null;
         $orderDir = strtolower((string) $request->input('order.0.dir', 'desc')) === 'asc' ? 'asc' : 'desc';
         $columnMap = [
-            0 => 'event_code',
-            1 => 'name_en',
-            2 => 'start_date',
-            3 => 'collection_start_date',
-            4 => 'status',
+            0 => 'name_en',
+            1 => 'start_date',
+            2 => 'collection_start_date',
+            3 => 'status',
         ];
 
         if ($orderColumnIndex !== null && isset($columnMap[$orderColumnIndex])) {
@@ -116,8 +115,6 @@ class EventController extends Controller implements HasMiddleware
         $canManage = $request->user()?->hasPermission('manage_events') ?? false;
 
         $data = $records->map(function (Event $event) use ($canManage) {
-            $codeHtml = '<span class="badge bg-light text-dark border font-monospace">'.e($event->event_code).'</span>';
-
             $nameHtml = '<div class="fw-bold text-dark">'.e($event->name).'</div>';
             if ($event->name_bn && app()->getLocale() !== 'bn') {
                 $nameHtml .= '<small class="text-muted">'.e($event->name_bn).'</small>';
@@ -155,17 +152,16 @@ class EventController extends Controller implements HasMiddleware
                 }
             }
 
-            $actionsHtml = '<div class="btn-group btn-group-sm text-end">'
-                .'<a href="'.route('events.show', $event).'" class="btn btn-outline-primary" title="'.e(__('common.view')).'"><i class="bi bi-eye"></i></a>';
+            $actionsHtml = '<div class="d-inline-flex align-items-center justify-content-end gap-1">'
+                .'<a href="'.route('events.show', $event).'" class="table-action-btn table-action-btn-view" title="'.e(__('common.view')).'"><i class="bi bi-eye"></i></a>';
 
             if ($canManage && ! $event->isClosed()) {
-                $actionsHtml .= '<a href="'.route('events.edit', $event).'" class="btn btn-outline-secondary" title="'.e(__('common.edit')).'"><i class="bi bi-pencil"></i></a>';
+                $actionsHtml .= '<a href="'.route('events.edit', $event).'" class="table-action-btn table-action-btn-edit" title="'.e(__('common.edit')).'"><i class="bi bi-pencil"></i></a>';
             }
 
             $actionsHtml .= '</div>';
 
             return [
-                $codeHtml,
                 $nameHtml,
                 $datesHtml,
                 $collHtml,

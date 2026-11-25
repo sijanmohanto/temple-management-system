@@ -83,8 +83,9 @@
                         </button>
                     @endif
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 w-100" id="activeMembersTable">
+                <div class="card-body p-3">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 w-100" id="activeMembersTable">
                         <thead class="table-light">
                             <tr>
                                 <th class="ps-4">{{ __('people.person') }}</th>
@@ -230,6 +231,7 @@
                     </table>
                 </div>
             </div>
+        </div>
 
             <!-- 2. Historical / Past Memberships Preserved -->
             <div class="card border-0 shadow-sm rounded-4">
@@ -238,8 +240,9 @@
                         <i class="bi bi-clock-history text-secondary me-2"></i> {{ __('committees.historical_members') }} ({{ $historicalMemberships->count() }})
                     </h5>
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 w-100" id="historicalMembersTable">
+                <div class="card-body p-3">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 w-100" id="historicalMembersTable">
                         <thead class="table-light">
                             <tr>
                                 <th class="ps-4">{{ __('people.person') }}</th>
@@ -278,6 +281,7 @@
                 </div>
             </div>
         </div>
+    </div>
 
         <!-- Right Side: Committee Info & Rules -->
         <div class="col-lg-4">
