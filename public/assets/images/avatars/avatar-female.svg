@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <linearGradient id="femBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff1f2"/>
+      <stop offset="100%" stop-color="#ffe4e6"/>
+    </linearGradient>
+    <linearGradient id="sareeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#be123c"/>
+      <stop offset="100%" stop-color="#881337"/>
+    </linearGradient>
+    <linearGradient id="femSkin" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fed7aa"/>
+      <stop offset="100%" stop-color="#fbcfe8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background Circle -->
+  <circle cx="64" cy="64" r="64" fill="url(#femBg)"/>
+  <circle cx="64" cy="64" r="62.5" fill="none" stroke="#fbcfe8" stroke-width="3"/>
+
+  <!-- Torso & Saree Pallu -->
+  <path d="M26 128 C26 96 38 82 64 82 C90 82 102 96 102 128 Z" fill="url(#sareeGrad)"/>
+  <!-- Saree Zari Border -->
+  <path d="M40 128 L84 82 L90 85 L50 128 Z" fill="#eab308" opacity="0.9"/>
+  <path d="M42 128 L86 82" stroke="#fef08a" stroke-width="1.5" stroke-dasharray="3 2"/>
+
+  <!-- Neck -->
+  <rect x="56" y="66" width="16" height="17" rx="4" fill="url(#femSkin)"/>
+  <!-- Small Necklace -->
+  <path d="M56 77 Q64 82 72 77" stroke="#eab308" stroke-width="2" fill="none"/>
+  <circle cx="64" cy="80" r="2" fill="#dc2626"/>
+
+  <!-- Earrings / Jhumka -->
+  <circle cx="41" cy="58" r="3" fill="#eab308"/>
+  <circle cx="87" cy="58" r="3" fill="#eab308"/>
+
+  <!-- Ears -->
+  <circle cx="43" cy="53" r="5" fill="url(#femSkin)"/>
+  <circle cx="85" cy="53" r="5" fill="url(#femSkin)"/>
+
+  <!-- Head -->
+  <ellipse cx="64" cy="52" rx="21" ry="24" fill="url(#femSkin)"/>
+
+  <!-- Long Hair Behind & Bun -->
+  <path d="M38 46 C35 68 39 88 44 96 C40 86 36 68 39 46 Z" fill="#0f172a"/>
+  <path d="M90 46 C93 68 89 88 84 96 C88 86 92 68 89 46 Z" fill="#0f172a"/>
+
+  <!-- Hair Forehead -->
+  <path d="M42 46 C41 28 50 20 64 20 C78 20 87 28 86 46 C82 32 74 27 64 30 C54 27 46 32 42 46 Z" fill="#0f172a"/>
+  <path d="M64 20 L64 30" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round"/> <!-- Sindoor -->
+
+  <!-- Bindi (Traditional Red Forehead Dot) -->
+  <circle cx="64" cy="39" r="2.8" fill="#dc2626"/>
+
+  <!-- Eyebrows -->
+  <path d="M49 43 Q54 41 59 43" stroke="#0f172a" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+  <path d="M69 43 Q74 41 79 43" stroke="#0f172a" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+
+  <!-- Eyes -->
+  <ellipse cx="54" cy="48" rx="2.4" ry="2" fill="#0f172a"/>
+  <ellipse cx="74" cy="48" rx="2.4" ry="2" fill="#0f172a"/>
+  <path d="M51 46 Q54 45 57 46" stroke="#0f172a" stroke-width="1" fill="none"/>
+  <path d="M71 46 Q74 45 77 46" stroke="#0f172a" stroke-width="1" fill="none"/>
+
+  <!-- Nose -->
+  <path d="M64 47 L63 55 L65.5 55" stroke="#f43f5e" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+  <!-- Lips / Smile -->
+  <path d="M59 62 Q64 66 69 62" stroke="#e11d48" stroke-width="2" stroke-linecap="round" fill="none"/>
+</svg>

@@ -148,6 +148,39 @@ A modular, secure enterprise web application designed for a Bengali Hindu temple
   - 16 granular permissions guarding every financial action.
   - 100% parity across `lang/en/finance.php` and `lang/bn/finance.php`.
 
+### 7. Phase 6 & Public Portal (Completed & Verified)
+- Public Homepage, Event Listings, Double-Entry Public Financial Reports, and Document Archive.
+- Public MFS and Bank payment submission workflows with anti-duplicate transaction reference protection.
+- Public complaint management system with IDOR protection, private attachments, and admin review workflows.
+- Previous Event Financial Reports & Audited Statements archive (`/previous-events`) with in-browser PDF preview stream.
+
+### 8. Increment 8: Devotee Self-Service Portal & Event-wise Payment System (Completed & Verified)
+- **Devotee Provisioning & Phone Authentication**:
+  - Auto-provisioning of linked `User` accounts when Admin adds a devotee with phone number in Directory.
+  - Dedicated authentication supporting Bangladesh phone number variants (`01XXXXXXXXX`, `+8801XXXXXXXXX`, `8801XXXXXXXXX`) + Password.
+  - No mandatory first-login password change.
+- **Dedicated Password Storage Architecture**:
+  - One-way standard Laravel hash in `users.password`.
+  - Reversible AES-256 encrypted copy in `devotee_credentials.encrypted_password`.
+  - Atomic synchronization maintained via `DevoteeCredentialService`.
+  - Authorized Admin reveal (`view_devotee_passwords`) with mandatory audit logging and reset (`update_devotee_passwords`).
+  - Passwords strictly excluded from DataTables, API responses, and logs.
+- **Devotee Dashboard & Running Event Cards**:
+  - 4 financial overview metrics: Total Pledged, Total Paid (verified only), Total Due, and Pending Payments.
+  - Independent Running Event Cards displaying individual event pledge, verified paid, remaining due, and direct "Pay Now" action.
+  - Server-side running event eligibility enforcement (`active` status, `published`, and within collection dates).
+- **Event-Wise Payment Isolation & My Payments Ledger**:
+  - Independent payment application: paying for Event A never reduces Event B due.
+  - My Payments DataTables (`/devotee/payments`) with server-side processing, filters, and strictly no serial `#` column.
+  - Offcanvas payment details modal with transaction timeline and verified receipt links.
+- **Profile Self-Service & Single-Use Email OTP**:
+  - Devotees can view profile and update non-sensitive fields (`present_address`, `permanent_address`, `occupation`, `email`).
+  - Self-service profile updates and password changes strictly require single-use, 6-digit Email OTP (`EmailOtpService`).
+  - OTP hashed in database (`sha256`), 10-minute expiry, rate-limited, 5-attempt brute-force protection.
+  - Password change verifies current password + valid OTP, synchronizing hash and encrypted copy atomically.
+- **Automated Test Suite**:
+  - 35 tests (128 assertions) in `tests/Feature/Devotee` passing 100%.
+
 ---
 
 ## Directory & Setup

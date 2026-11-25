@@ -2,9 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Models\DevoteeCredential;
+use App\Models\Person;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
@@ -97,6 +100,33 @@ class UserSeeder extends Seeder
             $role = Role::where('slug', $roleSlug)->first();
             if ($role) {
                 $user->roles()->sync([$role->id]);
+            }
+
+            if ($roleSlug === 'devotee') {
+                $person = Person::firstOrCreate(
+                    ['email' => $userData['email']],
+                    [
+                        'person_code' => Person::generatePersonCode(),
+                        'name_en' => 'Subir Roy',
+                        'name_bn' => 'সুবীর রায়',
+                        'phone' => $userData['phone'],
+                        'email' => $userData['email'],
+                        'status' => 'active',
+                        'gender' => 'male',
+                        'present_address' => $userData['address'],
+                        'permanent_address' => $userData['address'],
+                        'occupation' => 'Devotee & Donor',
+                        'created_by' => 1,
+                    ]
+                );
+
+                $user->person_id = $person->id;
+                $user->save();
+
+                DevoteeCredential::updateOrCreate(
+                    ['user_id' => $user->id],
+                    ['encrypted_password' => Crypt::encryptString('Devotee@123456')]
+                );
             }
         }
     }

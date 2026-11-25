@@ -25,7 +25,7 @@ class UpdatePersonRequest extends FormRequest
         return [
             'name_en' => ['required', 'string', 'max:150'],
             'name_bn' => ['nullable', 'string', 'max:150'],
-            'phone' => ['nullable', 'string', 'max:50'],
+            'phone' => ['required', 'string', 'max:50'],
             'email' => ['nullable', 'email', 'max:150'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'gender' => ['nullable', 'string', 'in:male,female,other'],
@@ -46,6 +46,9 @@ class UpdatePersonRequest extends FormRequest
             'classifications.*' => ['exists:classifications,id'],
             'public_notes' => ['nullable', 'string'],
             'private_notes' => ['nullable', 'string'],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:3072'],
+            'remove_photo' => ['nullable', 'boolean'],
+            'send_update_email' => ['nullable', 'boolean'],
         ];
     }
 }

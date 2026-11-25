@@ -53,7 +53,7 @@ class PublicComplaintController extends Controller
             });
         }
 
-        $complaints = $query->orderByDesc('id')->paginate(10)->withQueryString();
+        $complaints = $query->orderByDesc('id')->get();
 
         return view('public.complaints.index', compact('complaints', 'donor'));
     }

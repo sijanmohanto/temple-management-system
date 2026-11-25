@@ -208,55 +208,69 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>{{ __('finance.journal_number') }}</th>
-                            <th>{{ __('finance.entry_date') }}</th>
+                            <th class="ps-3">{{ __('finance.entry_date_short') }}</th>
                             <th>{{ __('common.description') }}</th>
-                            <th>{{ __('finance.source_type') }}</th>
-                            <th class="text-end">{{ __('finance.total_debit') }}</th>
-                            <th class="text-end">{{ __('finance.total_credit') }}</th>
-                            <th class="text-center">{{ __('finance.status') }}</th>
-                            <th class="text-end">{{ __('common.actions') }}</th>
+                            <th>{{ __('finance.source_type_short') }}</th>
+                            <th class="text-end">{{ __('finance.total_debit_short') }}</th>
+                            <th class="text-end">{{ __('finance.total_credit_short') }}</th>
+                            <th class="text-center">{{ __('common.status') }}</th>
+                            <th class="text-end pe-3">{{ __('common.actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($recentJournals as $journal)
                             <tr>
-                                <td class="fw-bold">
-                                    <a href="{{ route('finance.journals.show', $journal) }}" class="text-decoration-none">
-                                        {{ $journal->journal_number }}
-                                    </a>
+                                <td class="ps-3 text-nowrap font-monospace text-muted small">
+                                    {{ $journal->entry_date->format('Y-m-d') }}
                                 </td>
-                                <td>{{ $journal->entry_date->format('Y-m-d') }}</td>
                                 <td>
-                                    <div class="text-truncate" style="max-width: 320px;" title="{{ $journal->description }}">
-                                        {{ $journal->description }}
+                                    <div>
+                                        <a href="{{ route('finance.journals.show', $journal) }}" class="font-monospace fw-bold text-primary text-decoration-none">
+                                            {{ $journal->journal_number }}
+                                        </a>
+                                        <div class="text-truncate text-muted small mt-1" style="max-width: 340px;" title="{{ $journal->description }}">
+                                            {{ $journal->description }}
+                                        </div>
                                     </div>
                                 </td>
                                 <td>
+                                    @php
+                                        $sourceBase = class_basename($journal->source_type);
+                                        $sourceLabel = match($sourceBase) {
+                                            'CollectionPayment' => __('donations.collections'),
+                                            'Expense' => __('finance.expenses'),
+                                            'FundTransfer' => __('finance.transfers'),
+                                            'ManualIncome' => __('finance.income'),
+                                            'VendorPayment' => __('procurement.vendor_payment'),
+                                            'EventSettlement' => 'Settlement',
+                                            'reversal' => 'Reversal',
+                                            default => ucfirst(str_replace('_', ' ', $sourceBase)),
+                                        };
+                                    @endphp
                                     <span class="badge bg-light text-dark border">
-                                        {{ ucfirst(str_replace('_', ' ', $journal->source_type)) }}
+                                        {{ $sourceLabel }}
                                     </span>
                                 </td>
                                 <td class="text-end fw-bold text-success">৳{{ number_format($journal->total_debit, 2) }}</td>
                                 <td class="text-end fw-bold text-primary">৳{{ number_format($journal->total_credit, 2) }}</td>
                                 <td class="text-center">
                                     @if($journal->status === 'posted')
-                                        <span class="badge bg-success">{{ __('finance.posted') }}</span>
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">{{ __('finance.posted') }}</span>
                                     @elseif($journal->status === 'reversed')
-                                        <span class="badge bg-danger">{{ __('finance.reversed') }}</span>
+                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">{{ __('finance.reversed') }}</span>
                                     @else
-                                        <span class="badge bg-secondary">{{ ucfirst($journal->status) }}</span>
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border">{{ ucfirst($journal->status) }}</span>
                                     @endif
                                 </td>
-                                <td class="text-end">
-                                    <a href="{{ route('finance.journals.show', $journal) }}" class="btn btn-sm btn-outline-primary" title="{{ __('common.view') }}">
+                                <td class="text-end pe-3">
+                                    <a href="{{ route('finance.journals.show', $journal) }}" class="table-action-btn table-action-btn-view" title="{{ __('common.view') }}">
                                         <i class="bi bi-eye"></i>
                                     </a>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center py-4 text-muted">
+                                <td colspan="7" class="text-center py-4 text-muted">
                                     {{ __('common.no_records_found') }}
                                 </td>
                             </tr>

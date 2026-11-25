@@ -8,6 +8,7 @@ use App\Models\Family;
 use App\Models\Person;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -16,9 +17,14 @@ class DashboardController extends Controller
     /**
      * Show the application dashboard.
      */
-    public function index(): View
+    public function index(): View|RedirectResponse
     {
         $user = Auth::user();
+
+        // Redirect ordinary devotees directly to their dedicated self-service portal
+        if ($user->hasRole('devotee') && ! $user->hasAnyRole(['super_admin', 'temple_admin', 'treasurer'])) {
+            return redirect()->route('devotee.dashboard');
+        }
 
         $stats = [
             'total_users' => User::count(),

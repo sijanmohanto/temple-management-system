@@ -2,6 +2,63 @@
 
 @section('title', __('people.people_directory'))
 
+@push('styles')
+<style>
+    .table-action-btn {
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        text-decoration: none;
+        transition: all 0.2s ease-in-out;
+        font-size: 0.85rem;
+    }
+    .table-action-btn-view {
+        background-color: #eff6ff;
+        color: #2563eb;
+        border-color: #dbeafe;
+    }
+    .table-action-btn-view:hover {
+        background-color: #2563eb;
+        color: #ffffff;
+        border-color: #2563eb;
+    }
+    .table-action-btn-edit {
+        background-color: #f8fafc;
+        color: #475569;
+        border-color: #e2e8f0;
+    }
+    .table-action-btn-edit:hover {
+        background-color: #475569;
+        color: #ffffff;
+        border-color: #475569;
+    }
+    .table-action-btn-toggle-deactivate {
+        background-color: #fff1f2;
+        color: #e11d48;
+        border-color: #ffe4e6;
+    }
+    .table-action-btn-toggle-deactivate:hover {
+        background-color: #e11d48;
+        color: #ffffff;
+        border-color: #e11d48;
+    }
+    .table-action-btn-toggle-reactivate {
+        background-color: #f0fdf4;
+        color: #16a34a;
+        border-color: #dcfce7;
+    }
+    .table-action-btn-toggle-reactivate:hover {
+        background-color: #16a34a;
+        color: #ffffff;
+        border-color: #16a34a;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="container-fluid px-0">
     <!-- Page Header -->
@@ -76,8 +133,7 @@
                 <table class="table table-hover align-middle mb-0 w-100" id="peopleDataTable">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-3">{{ __('people.person_code') }}</th>
-                            <th>{{ __('people.name_en') }}</th>
+                            <th class="ps-3">{{ __('people.name') }}</th>
                             <th>{{ __('people.phone') }}</th>
                             <th>{{ __('people.classifications') }}</th>
                             <th>{{ __('families.family') }}</th>
@@ -89,18 +145,20 @@
                         @foreach($people as $person)
                             <tr>
                                 <td class="ps-3">
-                                    <span class="badge bg-light text-dark border font-monospace">
-                                        {{ $person->person_code }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="fw-bold text-dark">{{ $person->name_en }}</div>
-                                    @if($person->name_bn)
-                                        <small class="text-muted">{{ $person->name_bn }}</small>
-                                    @endif
-                                    @if($person->gotra)
-                                        <div><span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.72rem;">{{ $person->gotra }}</span></div>
-                                    @endif
+                                    <div class="d-flex align-items-center gap-3">
+                                        <img src="{{ $person->avatar_url }}" alt="{{ $person->name_en }}" class="rounded-circle shadow-sm object-fit-cover border" style="width: 40px; height: 40px; min-width: 40px;">
+                                        <div>
+                                            <div class="fw-bold text-dark">{{ $person->name_en }}</div>
+                                            @if($person->name_bn)
+                                                <small class="text-muted d-block" style="font-size: 0.78rem;">{{ $person->name_bn }}</small>
+                                            @endif
+                                            @if($person->gotra)
+                                                <div class="mt-1">
+                                                    <span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.7rem;">{{ $person->gotra }}</span>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
                                     <div>{{ $person->phone ?? '—' }}</div>
@@ -156,20 +214,20 @@
                                     @endif
                                 </td>
                                 <td class="text-end pe-3">
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="{{ route('people.show', $person) }}" class="btn btn-outline-primary" title="{{ __('common.view') }}">
+                                    <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                                        <a href="{{ route('people.show', $person) }}" class="table-action-btn table-action-btn-view" title="{{ __('common.view') }}">
                                             <i class="bi bi-eye"></i>
                                         </a>
 
                                         @if(Auth::user()->hasPermission('manage_people'))
-                                            <a href="{{ route('people.edit', $person) }}" class="btn btn-outline-secondary" title="{{ __('common.edit') }}">
+                                            <a href="{{ route('people.edit', $person) }}" class="table-action-btn table-action-btn-edit" title="{{ __('common.edit') }}">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
 
-                                            <form method="POST" action="{{ route('people.toggle-status', $person) }}" class="d-inline"
+                                            <form method="POST" action="{{ route('people.toggle-status', $person) }}" class="d-inline m-0 p-0"
                                                   onsubmit="return confirm('{{ $person->isActive() ? __('people.deactivate_confirm') : __('people.reactivate_confirm') }}')">
                                                 @csrf
-                                                <button type="submit" class="btn btn-outline-{{ $person->isActive() ? 'warning' : 'success' }}" 
+                                                <button type="submit" class="table-action-btn {{ $person->isActive() ? 'table-action-btn-toggle-deactivate' : 'table-action-btn-toggle-reactivate' }}" 
                                                         title="{{ $person->isActive() ? __('people.deactivate') : __('people.reactivate') }}">
                                                     <i class="bi bi-power"></i>
                                                 </button>
@@ -214,13 +272,12 @@
                 }
             },
             columns: [
-                { data: 0, name: 'person_code' },
-                { data: 1, name: 'name_en' },
-                { data: 2, name: 'phone' },
-                { data: 3, name: 'classifications', orderable: false },
-                { data: 4, name: 'family', orderable: false },
-                { data: 5, name: 'status' },
-                { data: 6, name: 'actions', orderable: false, className: 'text-end pe-3' }
+                { data: 0, name: 'name_en', className: 'ps-3' },
+                { data: 1, name: 'phone' },
+                { data: 2, name: 'classifications', orderable: false },
+                { data: 3, name: 'family', orderable: false },
+                { data: 4, name: 'status' },
+                { data: 5, name: 'actions', orderable: false, className: 'text-end pe-3' }
             ]
         });
 

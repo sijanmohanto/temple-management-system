@@ -70,7 +70,7 @@ class UiStandardizationTest extends TestCase
         $this->assertCount(1, $results);
         $this->assertEquals($activePerson->id, $results[0]['id']);
         $this->assertStringContainsString('Subrata Majumder', $results[0]['text']);
-        $this->assertStringContainsString($activePerson->person_code, $results[0]['text']);
+        $this->assertStringNotContainsString($activePerson->person_code, $results[0]['text']);
     }
 
     public function test_guest_cannot_access_families_search_ajax(): void
@@ -151,25 +151,25 @@ class UiStandardizationTest extends TestCase
             'draw' => 10,
             'start' => 0,
             'length' => 25,
-            'order' => [['column' => '1', 'dir' => 'asc']],
+            'order' => [['column' => '0', 'dir' => 'asc']],
             'search' => ['value' => '', 'regex' => 'false'],
         ]));
         $sortAsc->assertOk();
         $this->assertEquals(10, $sortAsc->json('draw'));
         $this->assertEquals(3, $sortAsc->json('recordsTotal'));
-        $this->assertStringContainsString('Aaron Banerjee', $sortAsc->json('data.0.1'));
+        $this->assertStringContainsString('Aaron Banerjee', $sortAsc->json('data.0.0'));
 
         // 2. Sort by name descending
         $sortDesc = $this->actingAs($this->superAdmin)->getJson(route('people.index', [
             'draw' => 11,
             'start' => 0,
             'length' => 50,
-            'order' => [['column' => '1', 'dir' => 'desc']],
+            'order' => [['column' => '0', 'dir' => 'desc']],
             'search' => ['value' => '', 'regex' => 'false'],
         ]));
         $sortDesc->assertOk();
         $this->assertEquals(11, $sortDesc->json('draw'));
-        $this->assertStringContainsString('Zack Mukherjee', $sortDesc->json('data.0.1'));
+        $this->assertStringContainsString('Zack Mukherjee', $sortDesc->json('data.0.0'));
 
         // 3. Page length change to 1
         $lenChange = $this->actingAs($this->superAdmin)->getJson(route('people.index', [
@@ -194,7 +194,7 @@ class UiStandardizationTest extends TestCase
         $searchRes->assertOk();
         $this->assertEquals(1, $searchRes->json('recordsFiltered'));
         $this->assertCount(1, $searchRes->json('data'));
-        $this->assertStringContainsString('Bikash Roy', $searchRes->json('data.0.1'));
+        $this->assertStringContainsString('Bikash Roy', $searchRes->json('data.0.0'));
     }
 
     public function test_families_datatable_server_side_json_response(): void
@@ -220,6 +220,7 @@ class UiStandardizationTest extends TestCase
         $this->assertEquals(4, $json['recordsTotal']);
         $this->assertEquals(4, $json['recordsFiltered']);
         $this->assertCount(4, $json['data']);
+        $this->assertCount(7, $json['data'][0]);
     }
 
     public function test_audit_logs_datatable_server_side_json_response(): void

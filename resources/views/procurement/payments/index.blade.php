@@ -123,17 +123,16 @@
 
     <!-- DataTable Card (Strictly NO Row Number / # Column) -->
     <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body p-0">
-            <div class="table-responsive p-3">
+        <div class="card-body p-3 p-md-4">
+            <div class="table-responsive" style="min-height: 320px; padding-bottom: 50px;">
                 <table class="table table-hover align-middle w-100" id="paymentsTable">
                     <thead class="table-light">
                         <tr>
-                            <th>{{ __('procurement.payment_number') }}</th>
-                            <th>{{ __('procurement.vendor') }}</th>
-                            <th>{{ __('procurement.payment_date') }}</th>
-                            <th>{{ __('procurement.payment_method') }}</th>
-                            <th>{{ __('procurement.payment_account') }}</th>
-                            <th class="text-end">{{ __('procurement.payment_amount') }}</th>
+                            <th class="ps-3">{{ __('procurement.vendor') }}</th>
+                            <th>{{ __('common.date') }}</th>
+                            <th>{{ __('procurement.payment_method_short') }}</th>
+                            <th>{{ __('procurement.payment_account_short') }}</th>
+                            <th class="text-end">{{ __('common.amount') }}</th>
                             <th class="text-center">{{ __('common.status') }}</th>
                             <th class="text-end pe-3">{{ __('common.actions') }}</th>
                         </tr>
@@ -161,8 +160,7 @@ $(document).ready(function() {
             }
         },
         columns: [
-            { data: 'payment_number', name: 'payment_number', orderable: true },
-            { data: 'vendor', name: 'vendor_id', orderable: true },
+            { data: 'vendor', name: 'vendor_id', orderable: true, className: 'ps-3' },
             { data: 'payment_date', name: 'payment_date', orderable: true },
             { data: 'payment_method', name: 'payment_method', orderable: true },
             { data: 'financial_account', name: 'financial_account_id', orderable: true },
@@ -170,7 +168,7 @@ $(document).ready(function() {
             { data: 'status', name: 'status', orderable: true, className: 'text-center' },
             { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-end pe-3' }
         ],
-        order: [[0, 'desc']],
+        order: [[1, 'desc']],
         pageLength: 15,
         lengthMenu: [[10, 15, 25, 50, 100], [10, 15, 25, 50, 100]],
         dom: '<"row align-items-center mb-3"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row align-items-center mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',

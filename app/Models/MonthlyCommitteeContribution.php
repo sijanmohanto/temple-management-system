@@ -195,7 +195,29 @@ class MonthlyCommitteeContribution extends Model
      */
     public function getMemberNameAttribute(): string
     {
-        return $this->membership?->person?->name_en ?? '—';
+        if ($this->membership && $this->membership->person) {
+            return app()->getLocale() === 'bn' && ! empty($this->membership->person->name_bn)
+                ? $this->membership->person->name_bn
+                : $this->membership->person->name_en;
+        }
+
+        return '—';
+    }
+
+    /**
+     * Member avatar URL.
+     */
+    public function getMemberAvatarUrlAttribute(): string
+    {
+        return $this->membership?->person?->avatar_url ?? asset('assets/images/avatars/avatar-default.svg');
+    }
+
+    /**
+     * Member phone number.
+     */
+    public function getMemberPhoneAttribute(): ?string
+    {
+        return $this->membership?->person?->phone;
     }
 
     /**

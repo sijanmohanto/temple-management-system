@@ -65,13 +65,13 @@ class CollectionDashboardController extends Controller implements HasMiddleware
         $metrics['pledge_outstanding'] = max(0.0, round($metrics['pledge_total_amount'] - $metrics['event_pledge_collections'], 2));
         $metrics['committee_contributions_outstanding'] = max(0.0, round($metrics['committee_contributions_expected'] - $metrics['monthly_committee_collections'], 2));
 
-        $recentVerified = CollectionPayment::with(['payerPerson', 'payerFamily', 'event', 'receipt'])
+        $recentVerified = CollectionPayment::with(['payerPerson', 'payerFamily.primaryContact', 'event', 'receipt'])
             ->where('status', CollectionPayment::STATUS_VERIFIED)
             ->latest('verified_at')
             ->take(6)
             ->get();
 
-        $pendingQueue = CollectionPayment::with(['payerPerson', 'payerFamily', 'event', 'submitter'])
+        $pendingQueue = CollectionPayment::with(['payerPerson', 'payerFamily.primaryContact', 'event', 'submitter'])
             ->where('status', CollectionPayment::STATUS_PENDING)
             ->oldest('created_at')
             ->take(6)

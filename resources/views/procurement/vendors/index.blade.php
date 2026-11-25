@@ -106,13 +106,12 @@
 
     <!-- DataTable Card (Strictly NO Row Number / # Column) -->
     <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body p-0">
-            <div class="table-responsive p-3">
+        <div class="card-body p-3">
+            <div class="table-responsive" style="min-height: 320px; padding-bottom: 50px;">
                 <table class="table table-hover align-middle w-100" id="vendorTable">
                     <thead class="table-light">
                         <tr>
-                            <th>{{ __('procurement.vendor_code') }}</th>
-                            <th>{{ __('procurement.vendor_name') }}</th>
+                            <th class="ps-3">{{ __('procurement.vendor_name') }}</th>
                             <th>{{ __('procurement.phone') }}</th>
                             <th>{{ __('procurement.vendor_type') }}</th>
                             <th>{{ __('procurement.expenses') }}</th>
@@ -166,15 +165,14 @@ $(document).ready(function() {
             }
         },
         columns: [
-            { data: 'vendor_code', name: 'vendor_code', orderable: true },
-            { data: 'name', name: 'name', orderable: true },
+            { data: 'name', name: 'name', orderable: true, className: 'ps-3' },
             { data: 'contact', name: 'phone', orderable: false },
             { data: 'vendor_type', name: 'vendor_type', orderable: true },
             { data: 'transactions', name: 'expenses_count', orderable: true },
             { data: 'status', name: 'is_active', orderable: true, className: 'text-center' },
             { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-end pe-3' }
         ],
-        order: [[0, 'desc']],
+        order: [],
         pageLength: 15,
         lengthMenu: [[10, 15, 25, 50, 100], [10, 15, 25, 50, 100]],
         dom: '<"row align-items-center mb-3"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row align-items-center mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',

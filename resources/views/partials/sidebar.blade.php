@@ -1,6 +1,6 @@
 <aside class="app-sidebar" id="appSidebar">
     <div class="sidebar-header">
-        <a href="{{ route('dashboard') }}" class="sidebar-brand">
+        <a href="{{ (Auth::user()->hasRole('devotee') && !Auth::user()->hasAnyRole(['super_admin', 'temple_admin', 'treasurer'])) ? route('devotee.dashboard') : route('dashboard') }}" class="sidebar-brand">
             <span class="temple-emblem">ॐ</span>
             <div>
                 <div class="lh-1">{{ __('common.app_name') }}</div>
@@ -11,10 +11,116 @@
 
     <div class="sidebar-menu" id="appSidebarMenu">
         <!-- Main Dashboard -->
-        <a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-            <i class="bi bi-speedometer2"></i>
-            <span>{{ __('nav.dashboard') }}</span>
-        </a>
+        @if(!Auth::user()->hasRole('devotee') || Auth::user()->hasAnyRole(['super_admin', 'temple_admin', 'treasurer']))
+            <a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                <i class="bi bi-speedometer2"></i>
+                <span>{{ __('nav.dashboard') }}</span>
+            </a>
+        @endif
+
+        <!-- Devotee Self-Service Portal -->
+        @if(Auth::user()->person || Auth::user()->hasRole('devotee'))
+            <div class="sidebar-heading">{{ __('devotee.portal_title') }}</div>
+
+            <!-- Devotee Dashboard -->
+            <a href="{{ route('devotee.dashboard') }}" class="sidebar-link {{ request()->routeIs('devotee.dashboard') ? 'active' : '' }}">
+                <i class="bi bi-speedometer2"></i>
+                <span>{{ __('devotee.my_dashboard') }}</span>
+            </a>
+
+            <!-- Puja & Events (Menu & Submenu) -->
+            @php
+                $isDevoteeEventsActive = request()->routeIs('public.events.*') || request()->routeIs('public.previous-events.*');
+                $activeEventForPayment = \App\Models\Event::runningForPayment()->first(['id', 'slug']);
+                $payEventUrl = $activeEventForPayment ? route('public.events.pay', $activeEventForPayment->slug) : route('public.events.index');
+            @endphp
+            <a class="sidebar-link sidebar-parent {{ $isDevoteeEventsActive ? 'active-parent' : '' }}"
+               data-bs-toggle="collapse"
+               href="#menuDevoteeEvents"
+               role="button"
+               aria-expanded="{{ $isDevoteeEventsActive ? 'true' : 'false' }}"
+               aria-controls="menuDevoteeEvents">
+                <i class="bi bi-calendar-event"></i>
+                <span>{{ __('devotee.events_and_puja') }}</span>
+                <i class="bi bi-chevron-down ms-auto sidebar-chevron"></i>
+            </a>
+            <div class="collapse {{ $isDevoteeEventsActive ? 'show' : '' }}" id="menuDevoteeEvents">
+                <div class="sidebar-submenu">
+                    <a href="{{ route('public.events.index') }}" class="sidebar-sublink {{ request()->routeIs('public.events.index') || request()->routeIs('public.events.show') ? 'active' : '' }}">
+                        <i class="bi bi-calendar4-week"></i>
+                        <span>{{ __('devotee.running_events_menu') }}</span>
+                    </a>
+                    <a href="{{ $payEventUrl }}" class="sidebar-sublink {{ request()->routeIs('public.events.pay*') ? 'active' : '' }}">
+                        <i class="bi bi-cash-coin"></i>
+                        <span>{{ __('devotee.submit_payment_action') }}</span>
+                    </a>
+                    <a href="{{ route('public.previous-events.index') }}" class="sidebar-sublink {{ request()->routeIs('public.previous-events.*') ? 'active' : '' }}">
+                        <i class="bi bi-file-earmark-bar-graph"></i>
+                        <span>{{ __('devotee.previous_events_reports') }}</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Contributions & Finances (Menu & Submenu) -->
+            @php
+                $isDevoteeFinanceActive = request()->routeIs('devotee.payments.*') || (request()->routeIs('public.payments.*') && !request()->routeIs('public.events.pay*'));
+            @endphp
+            <a class="sidebar-link sidebar-parent {{ $isDevoteeFinanceActive ? 'active-parent' : '' }}"
+               data-bs-toggle="collapse"
+               href="#menuDevoteeFinance"
+               role="button"
+               aria-expanded="{{ $isDevoteeFinanceActive ? 'true' : 'false' }}"
+               aria-controls="menuDevoteeFinance">
+                <i class="bi bi-wallet2"></i>
+                <span>{{ __('devotee.my_finances') }}</span>
+                <i class="bi bi-chevron-down ms-auto sidebar-chevron"></i>
+            </a>
+            <div class="collapse {{ $isDevoteeFinanceActive ? 'show' : '' }}" id="menuDevoteeFinance">
+                <div class="sidebar-submenu">
+                    <a href="{{ route('devotee.payments.index') }}" class="sidebar-sublink {{ request()->routeIs('devotee.payments.*') ? 'active' : '' }}">
+                        <i class="bi bi-clock-history"></i>
+                        <span>{{ __('devotee.payment_history') }}</span>
+                    </a>
+                    <a href="{{ route('public.payments.history') }}" class="sidebar-sublink {{ request()->routeIs('public.payments.*') ? 'active' : '' }}">
+                        <i class="bi bi-receipt"></i>
+                        <span>{{ __('devotee.public_contributions_view') }}</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Complaints & Feedback (Menu & Submenu) -->
+            @php
+                $isDevoteeComplaintsActive = request()->routeIs('public.complaints.*');
+            @endphp
+            <a class="sidebar-link sidebar-parent {{ $isDevoteeComplaintsActive ? 'active-parent' : '' }}"
+               data-bs-toggle="collapse"
+               href="#menuDevoteeComplaints"
+               role="button"
+               aria-expanded="{{ $isDevoteeComplaintsActive ? 'true' : 'false' }}"
+               aria-controls="menuDevoteeComplaints">
+                <i class="bi bi-chat-left-dots"></i>
+                <span>{{ __('devotee.complaints_and_feedback') }}</span>
+                <i class="bi bi-chevron-down ms-auto sidebar-chevron"></i>
+            </a>
+            <div class="collapse {{ $isDevoteeComplaintsActive ? 'show' : '' }}" id="menuDevoteeComplaints">
+                <div class="sidebar-submenu">
+                    <a href="{{ route('public.complaints.index') }}" class="sidebar-sublink {{ request()->routeIs('public.complaints.index') || request()->routeIs('public.complaints.show') ? 'active' : '' }}">
+                        <i class="bi bi-list-check"></i>
+                        <span>{{ __('devotee.my_complaints') }}</span>
+                    </a>
+                    <a href="{{ route('public.complaints.create') }}" class="sidebar-sublink {{ request()->routeIs('public.complaints.create') ? 'active' : '' }}">
+                        <i class="bi bi-pencil-square"></i>
+                        <span>{{ __('devotee.new_complaint') }}</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Profile Settings -->
+            <a href="{{ route('devotee.profile') }}" class="sidebar-link {{ request()->routeIs('devotee.profile*') ? 'active' : '' }}">
+                <i class="bi bi-person-gear"></i>
+                <span>{{ __('devotee.profile_settings') }}</span>
+            </a>
+        @endif
 
         <!-- Module 1: People & Devotees -->
         @if(Auth::user()->hasPermission('view_people'))
@@ -201,7 +307,9 @@
             {{-- Income & Expense Reports + Misc Income --}}
             @if(Auth::user()->hasAnyPermission(['view_financial_reports', 'view_income']))
                 @php
-                    $isIncomeExpenseActive = request()->routeIs('finance.reports.income*') || request()->routeIs('finance.reports.expenses*') || request()->routeIs('finance.income.*');
+                    $isIncomeReportActive = request()->routeIs('finance.reports.income', 'finance.reports.income.details');
+                    $isExpenseReportActive = request()->routeIs('finance.reports.expenses', 'finance.reports.expenses.details');
+                    $isIncomeExpenseActive = $isIncomeReportActive || $isExpenseReportActive || request()->routeIs('finance.income.*');
                 @endphp
                 <a class="sidebar-link sidebar-parent {{ $isIncomeExpenseActive ? 'active-parent' : '' }}"
                    data-bs-toggle="collapse"
@@ -216,11 +324,11 @@
                 <div class="collapse {{ $isIncomeExpenseActive ? 'show' : '' }}" id="menuFinanceIncomeExpense">
                     <div class="sidebar-submenu">
                         @if(Auth::user()->hasPermission('view_financial_reports'))
-                            <a href="{{ route('finance.reports.income') }}" class="sidebar-sublink {{ request()->routeIs('finance.reports.income*') ? 'active' : '' }}">
+                            <a href="{{ route('finance.reports.income') }}" class="sidebar-sublink {{ $isIncomeReportActive ? 'active' : '' }}">
                                 <i class="bi bi-graph-up-arrow"></i>
                                 <span>{{ __('finance.income_report') }}</span>
                             </a>
-                            <a href="{{ route('finance.reports.expenses') }}" class="sidebar-sublink {{ request()->routeIs('finance.reports.expenses*') ? 'active' : '' }}">
+                            <a href="{{ route('finance.reports.expenses') }}" class="sidebar-sublink {{ $isExpenseReportActive ? 'active' : '' }}">
                                 <i class="bi bi-graph-down-arrow"></i>
                                 <span>{{ __('finance.expense_report') }}</span>
                             </a>
@@ -337,7 +445,7 @@
             {{-- Financial Statements / Reports --}}
             @if(Auth::user()->hasPermission('view_financial_reports'))
                 @php
-                    $isFinancialReportsActive = request()->routeIs('finance.reports.*') && !request()->routeIs('finance.reports.income*') && !request()->routeIs('finance.reports.expenses*');
+                    $isFinancialReportsActive = request()->routeIs('finance.reports.*') && !request()->routeIs('finance.reports.income', 'finance.reports.income.details', 'finance.reports.expenses', 'finance.reports.expenses.details');
                 @endphp
                 <a class="sidebar-link sidebar-parent {{ $isFinancialReportsActive ? 'active-parent' : '' }}"
                    data-bs-toggle="collapse"
@@ -396,10 +504,12 @@
                         <i class="bi bi-list-columns-reverse"></i>
                         <span>{{ __('procurement.budget_list') }}</span>
                     </a>
+                    @if(Auth::user()->hasRole('super_admin') || Auth::user()->hasPermission('manage_budgets'))
                     <a href="{{ Route::has('procurement.budgets.create') ? route('procurement.budgets.create') : '#budgetsCreate' }}" class="sidebar-sublink {{ request()->routeIs('procurement.budgets.create') ? 'active' : '' }}">
                         <i class="bi bi-plus-circle"></i>
                         <span>{{ __('procurement.create_budget') }}</span>
                     </a>
+                    @endif
                     <a href="{{ Route::has('procurement.reports.budget-vs-actual') ? route('procurement.reports.budget-vs-actual') : '#budgetVsActual' }}" class="sidebar-sublink {{ request()->routeIs('procurement.reports.budget-vs-actual') ? 'active' : '' }}">
                         <i class="bi bi-graph-up"></i>
                         <span>{{ __('procurement.budget_vs_actual') }}</span>
@@ -557,8 +667,9 @@
             @endif
 
             {{-- Procurement Reports --}}
+            @if(Auth::user()->hasRole('super_admin') || Auth::user()->hasAnyPermission(['view_procurement_reports', 'view_purchase_requisition_reports', 'view_purchase_order_reports', 'view_outstanding_vendor_bill_reports']))
             @php
-                $isProcurementReportsActive = request()->routeIs('procurement.reports.*');
+                $isProcurementReportsActive = request()->routeIs('procurement.reports.*') && ! request()->routeIs('procurement.reports.budget-vs-actual');
             @endphp
             <a class="sidebar-link sidebar-parent {{ $isProcurementReportsActive ? 'active-parent' : '' }}"
                data-bs-toggle="collapse"
@@ -572,24 +683,27 @@
             </a>
             <div class="collapse {{ $isProcurementReportsActive ? 'show' : '' }}" id="menuProcurementReports">
                 <div class="sidebar-submenu">
-                    <a href="{{ Route::has('procurement.reports.budget-vs-actual') ? route('procurement.reports.budget-vs-actual') : '#repBudgetVsActual' }}" class="sidebar-sublink {{ request()->routeIs('procurement.reports.budget-vs-actual') ? 'active' : '' }}">
-                        <i class="bi bi-graph-up"></i>
-                        <span>{{ __('procurement.budget_vs_actual') }}</span>
-                    </a>
-                    <a href="{{ Route::has('procurement.reports.requests') ? route('procurement.reports.requests') : '#repRequests' }}" class="sidebar-sublink {{ request()->routeIs('procurement.reports.requests') ? 'active' : '' }}">
+                    @if(Auth::user()->hasRole('super_admin') || Auth::user()->hasAnyPermission(['view_procurement_reports', 'view_purchase_requisition_reports']))
+                    <a href="{{ route('procurement.reports.requests') }}" class="sidebar-sublink {{ request()->routeIs('procurement.reports.requests*') ? 'active' : '' }}">
                         <i class="bi bi-file-earmark-text"></i>
                         <span>{{ __('procurement.purchase_request_report') }}</span>
                     </a>
-                    <a href="{{ Route::has('procurement.reports.orders') ? route('procurement.reports.orders') : '#repOrders' }}" class="sidebar-sublink {{ request()->routeIs('procurement.reports.orders') ? 'active' : '' }}">
+                    @endif
+                    @if(Auth::user()->hasRole('super_admin') || Auth::user()->hasAnyPermission(['view_procurement_reports', 'view_purchase_order_reports']))
+                    <a href="{{ route('procurement.reports.orders') }}" class="sidebar-sublink {{ request()->routeIs('procurement.reports.orders*') ? 'active' : '' }}">
                         <i class="bi bi-file-earmark-check"></i>
                         <span>{{ __('procurement.purchase_order_report') }}</span>
                     </a>
-                    <a href="{{ Route::has('procurement.reports.outstanding-bills') ? route('procurement.reports.outstanding-bills') : '#repOutstandingBills' }}" class="sidebar-sublink {{ request()->routeIs('procurement.reports.outstanding-bills') ? 'active' : '' }}">
+                    @endif
+                    @if(Auth::user()->hasRole('super_admin') || Auth::user()->hasAnyPermission(['view_procurement_reports', 'view_outstanding_vendor_bill_reports']))
+                    <a href="{{ route('procurement.reports.outstanding-bills') }}" class="sidebar-sublink {{ request()->routeIs('procurement.reports.outstanding-bills*') ? 'active' : '' }}">
                         <i class="bi bi-file-earmark-x"></i>
                         <span>{{ __('procurement.vendor_outstanding_report') }}</span>
                     </a>
+                    @endif
                 </div>
             </div>
+            @endif
         @endif
 
         <!-- Public Transparency & Payment Portal (Admin Modules) -->
@@ -644,13 +758,6 @@
             </div>
         @endif
 
-        <!-- Module 6: Venues & Hall Bookings (P2) -->
-        <div class="sidebar-heading">{{ __('nav.venues') }}</div>
-        <a href="#venueModule" class="sidebar-link disabled-future" title="{{ __('common.under_construction') }}">
-            <i class="bi bi-building"></i>
-            <span>{{ __('nav.venues_list') }}</span>
-            <span class="badge bg-secondary ms-auto" style="font-size: 0.65rem;">P2</span>
-        </a>
 
         <!-- Module 7: Operations & Seva (P2) -->
         <div class="sidebar-heading">{{ __('nav.operations') }}</div>

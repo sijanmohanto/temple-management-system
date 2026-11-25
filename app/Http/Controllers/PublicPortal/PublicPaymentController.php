@@ -613,7 +613,7 @@ class PublicPaymentController extends Controller implements HasMiddleware
 
             return [
                 'id' => $p->id,
-                'text' => "{$name}{$phone} ({$p->person_code})",
+                'text' => "{$name}{$phone}",
                 'name' => $name,
                 'phone' => $p->phone,
                 'person_code' => $p->person_code,
@@ -667,15 +667,9 @@ class PublicPaymentController extends Controller implements HasMiddleware
     protected function formatAmountColumn(CollectionPayment $payment): string
     {
         $amount = number_format((float) $payment->amount, 2);
-        $methodBadge = match ($payment->payment_method) {
-            'bkash' => '<span class="badge bg-danger">bKash</span>',
-            'nagad' => '<span class="badge bg-warning text-dark">Nagad</span>',
-            'rocket' => '<span class="badge bg-primary">Rocket</span>',
-            'bank_transfer' => '<span class="badge bg-dark">Bank</span>',
-            default => '<span class="badge bg-secondary">'.e(ucwords($payment->payment_method)).'</span>',
-        };
+        $methodBadge = view('partials.payment-method-badge', ['method' => $payment->payment_method])->render();
 
-        return '<div class="fw-bold fs-6 text-success">৳ '.$amount.'</div><div>'.$methodBadge.'</div>';
+        return '<div class="fw-bold fs-6 text-success mb-1">৳ '.$amount.'</div><div>'.$methodBadge.'</div>';
     }
 
     protected function formatTransactionColumn(CollectionPayment $payment): string

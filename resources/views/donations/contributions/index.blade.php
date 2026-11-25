@@ -99,7 +99,36 @@
 
                 <div class="col-md-4">
                     <label class="form-label small fw-semibold text-muted">{{ __('donations.contribution_month') }}</label>
-                    <input type="month" name="month" id="filterMonth" class="form-control" value="{{ $selectedMonth }}">
+                    <div class="input-group month-picker-group position-relative" id="filterMonthPicker">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-calendar-month"></i></span>
+                        <input type="text" class="form-control border-start-0 border-end-0 bg-white month-picker-display" readonly 
+                               value="{{ \Carbon\Carbon::parse($selectedMonth)->format('F Y') }}" 
+                               placeholder="Select Month & Year" style="cursor: pointer;">
+                        <input type="hidden" name="month" class="month-picker-value" id="filterMonth" value="{{ $selectedMonth }}">
+                        <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split month-picker-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                            <span class="visually-hidden">Toggle Month Picker</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end p-3 shadow-lg rounded-4 border-0 month-picker-dropdown" style="width: 290px; z-index: 1060;">
+                            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle p-0 d-flex align-items-center justify-content-center month-picker-prev-year" style="width: 28px; height: 28px;">
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+                                <span class="fw-bold fs-6 text-dark month-picker-year-label"></span>
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle p-0 d-flex align-items-center justify-content-center month-picker-next-year" style="width: 28px; height: 28px;">
+                                    <i class="bi bi-chevron-right"></i>
+                                </button>
+                            </div>
+                            <div class="row g-2 text-center month-picker-months"></div>
+                            <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                                <button type="button" class="btn btn-sm btn-link text-decoration-none text-muted p-0 month-picker-current">
+                                    {{ __('common.today') ?? 'Current Month' }}
+                                </button>
+                                <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 month-picker-apply" style="background-color: var(--temple-maroon); border-color: var(--temple-maroon);">
+                                    {{ __('common.apply') ?? 'Apply' }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="col-md-3 d-flex gap-2">
@@ -121,8 +150,7 @@
                 <table class="table table-hover align-middle mb-0 w-100" id="contributionsDataTable">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-3">{{ __('donations.contribution_code') }}</th>
-                            <th>{{ __('people.person') ?? 'Member' }}</th>
+                            <th class="ps-3">{{ __('people.person') ?? 'Member' }}</th>
                             <th>{{ __('committees.designation') ?? 'Designation' }}</th>
                             <th>{{ __('donations.expected_amount') }}</th>
                             <th>{{ __('donations.paid_amount') }}</th>
@@ -135,14 +163,17 @@
                         @foreach($contributions as $contribution)
                             <tr>
                                 <td class="ps-3">
-                                    <span class="badge bg-light text-dark border font-monospace">{{ $contribution->contribution_code }}</span>
-                                    <div class="small text-muted mt-1">{{ $contribution->month_name }}</div>
-                                </td>
-                                <td>
-                                    <div class="fw-bold text-dark">{{ $contribution->member_name }}</div>
-                                    @if($contribution->membership?->person?->phone)
-                                        <small class="text-muted"><i class="bi bi-telephone me-1"></i>{{ $contribution->membership->person->phone }}</small>
-                                    @endif
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="{{ $contribution->member_avatar_url }}"
+                                             alt="{{ $contribution->member_name }}"
+                                             class="rounded-circle object-fit-cover shadow-sm border flex-shrink-0" style="width: 38px; height: 38px; min-width: 38px;">
+                                        <div>
+                                            <div class="fw-bold text-dark">{{ $contribution->member_name }}</div>
+                                            @if($contribution->member_phone)
+                                                <small class="text-muted"><i class="bi bi-telephone me-1"></i>{{ $contribution->member_phone }}</small>
+                                            @endif
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
                                     <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">
@@ -180,14 +211,14 @@
                                     </span>
                                 </td>
                                 <td class="text-end pe-3">
-                                    <div class="btn-group btn-group-sm">
+                                    <div class="d-inline-flex gap-1 justify-content-end">
                                         @if(Auth::user()->hasPermission('record_collections') && $contribution->outstanding_amount > 0 && $contribution->status !== 'waived')
-                                            <a href="{{ route('collections.create', ['monthly_contribution_id' => $contribution->id]) }}" class="btn btn-outline-success" title="{{ __('donations.collect_payment') }}">
-                                                <i class="bi bi-cash me-1"></i> {{ __('donations.collect_payment') }}
+                                            <a href="{{ route('collections.create', ['monthly_contribution_id' => $contribution->id]) }}" class="table-action-btn table-action-btn-toggle-reactivate" title="{{ __('donations.collect_payment') }}">
+                                                <i class="bi bi-cash"></i>
                                             </a>
                                         @endif
                                         @if(Auth::user()->hasPermission('manage_committee_contributions') && $contribution->verified_paid_amount == 0 && $contribution->status !== 'waived')
-                                            <button type="button" class="btn btn-outline-danger waive-btn" 
+                                            <button type="button" class="table-action-btn table-action-btn-delete waive-btn" 
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#waiveModal" 
                                                 data-action="{{ route('contributions.waive', $contribution) }}"
@@ -236,7 +267,33 @@
 
                         <div class="mb-3">
                             <label class="form-label fw-bold required">{{ __('donations.contribution_month') }}</label>
-                            <input type="month" name="contribution_month" class="form-control" value="{{ $selectedMonth }}" required>
+                            <div class="input-group month-picker-group position-relative">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-calendar-month"></i></span>
+                                <input type="text" class="form-control border-start-0 border-end-0 bg-white month-picker-display" readonly 
+                                       value="{{ \Carbon\Carbon::parse($selectedMonth)->format('F Y') }}" 
+                                       placeholder="Select Month & Year" style="cursor: pointer;">
+                                <input type="hidden" name="contribution_month" class="month-picker-value" value="{{ $selectedMonth }}" required>
+                                <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split month-picker-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                    <span class="visually-hidden">Toggle Month Picker</span>
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-end p-3 shadow-lg rounded-4 border-0 month-picker-dropdown" style="width: 290px; z-index: 1060;">
+                                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle p-0 d-flex align-items-center justify-content-center month-picker-prev-year" style="width: 28px; height: 28px;">
+                                            <i class="bi bi-chevron-left"></i>
+                                        </button>
+                                        <span class="fw-bold fs-6 text-dark month-picker-year-label"></span>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle p-0 d-flex align-items-center justify-content-center month-picker-next-year" style="width: 28px; height: 28px;">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                    <div class="row g-2 text-center month-picker-months"></div>
+                                    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                                        <button type="button" class="btn btn-sm btn-link text-decoration-none text-muted p-0 month-picker-current">
+                                            {{ __('common.today') ?? 'Current Month' }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -290,7 +347,33 @@
 
                         <div class="mb-3">
                             <label class="form-label fw-bold required">{{ __('donations.contribution_month') }}</label>
-                            <input type="month" name="contribution_month" class="form-control" value="{{ $selectedMonth }}" required>
+                            <div class="input-group month-picker-group position-relative">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-calendar-month"></i></span>
+                                <input type="text" class="form-control border-start-0 border-end-0 bg-white month-picker-display" readonly 
+                                       value="{{ \Carbon\Carbon::parse($selectedMonth)->format('F Y') }}" 
+                                       placeholder="Select Month & Year" style="cursor: pointer;">
+                                <input type="hidden" name="contribution_month" class="month-picker-value" value="{{ $selectedMonth }}" required>
+                                <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split month-picker-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                    <span class="visually-hidden">Toggle Month Picker</span>
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-end p-3 shadow-lg rounded-4 border-0 month-picker-dropdown" style="width: 290px; z-index: 1060;">
+                                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle p-0 d-flex align-items-center justify-content-center month-picker-prev-year" style="width: 28px; height: 28px;">
+                                            <i class="bi bi-chevron-left"></i>
+                                        </button>
+                                        <span class="fw-bold fs-6 text-dark month-picker-year-label"></span>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle p-0 d-flex align-items-center justify-content-center month-picker-next-year" style="width: 28px; height: 28px;">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                    <div class="row g-2 text-center month-picker-months"></div>
+                                    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                                        <button type="button" class="btn btn-sm btn-link text-decoration-none text-muted p-0 month-picker-current">
+                                            {{ __('common.today') ?? 'Current Month' }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -347,21 +430,24 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
-        @if($contributions->isNotEmpty())
-            TempleUI.initDataTable('#contributionsDataTable', {
-                pageLength: 25,
-                columns: [
-                    { orderable: true },
-                    { orderable: true },
-                    { orderable: true },
-                    { orderable: true },
-                    { orderable: false },
-                    { orderable: false },
-                    { orderable: true },
-                    { orderable: false }
-                ]
-            });
-        @endif
+        TempleUI.initDataTable('#contributionsDataTable', {
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+            columns: [
+                { orderable: true, className: 'ps-3' },
+                { orderable: true },
+                { orderable: true },
+                { orderable: true },
+                { orderable: true },
+                { orderable: true },
+                { orderable: false, className: 'text-end pe-3' }
+            ]
+        });
+
+        // Initialize Month Pickers in Modals when opened
+        $(document).on('shown.bs.modal', '.modal', function() {
+            TempleUI.initMonthPicker(this);
+        });
 
         $('.waive-btn').on('click', function() {
             var actionUrl = $(this).data('action');

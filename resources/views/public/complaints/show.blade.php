@@ -1,4 +1,4 @@
-@extends('layouts.public')
+@extends(auth()->check() ? 'layouts.app' : 'layouts.public')
 
 @section('title', $complaint->tracking_number . ' — ' . __('portal.public.my_complaints') . ' — ' . __('common.app_name'))
 
@@ -8,8 +8,8 @@
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb mb-0 small bg-white p-2 px-3 rounded-3 shadow-sm border">
             <li class="breadcrumb-item">
-                <a href="{{ route('home') }}" class="text-decoration-none text-muted">
-                    <i class="bi bi-house-door me-1"></i> {{ __('portal.public.home') }}
+                <a href="{{ auth()->check() ? route('devotee.dashboard') : route('home') }}" class="text-decoration-none text-muted">
+                    <i class="bi bi-house-door me-1"></i> {{ auth()->check() ? __('devotee.my_dashboard') : __('portal.public.home') }}
                 </a>
             </li>
             <li class="breadcrumb-item">

@@ -31,8 +31,14 @@
                     {{ $pledge->pledge_year }}
                 </span>
             </div>
-            <h1 class="h3 fw-bold mb-1 text-dark">{{ $pledge->owner_name }}</h1>
-            <p class="text-muted mb-0"><i class="bi bi-calendar-event me-1"></i>{{ $pledge->event?->name ?? '—' }}</p>
+            <div class="d-flex align-items-center gap-3">
+                <img src="{{ $pledge->owner_avatar_url }}" alt="{{ $pledge->owner_name }}"
+                     class="rounded-circle object-fit-cover shadow-sm border flex-shrink-0" style="width: 48px; height: 48px; min-width: 48px;">
+                <div>
+                    <h1 class="h3 fw-bold mb-0 text-dark">{{ $pledge->owner_name }}</h1>
+                    <p class="text-muted mb-0"><i class="bi bi-calendar-event me-1"></i>{{ $pledge->event?->name ?? '—' }}</p>
+                </div>
+            </div>
         </div>
 
         <!-- Action Toolbar -->

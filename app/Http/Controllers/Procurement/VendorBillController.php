@@ -381,18 +381,22 @@ class VendorBillController extends Controller
         $recordsFiltered = (clone $query)->count();
 
         $columns = [
-            0 => 'bill_number',
-            1 => 'vendor_id',
-            2 => 'vendor_invoice_number',
-            3 => 'bill_date',
-            4 => 'due_date',
-            5 => 'total_amount',
-            6 => 'status',
+            0 => 'vendor_id',
+            1 => 'vendor_invoice_number',
+            2 => 'bill_date',
+            3 => 'due_date',
+            4 => 'total_amount',
+            5 => 'status',
         ];
 
-        $orderIndex = (int) $request->input('order.0.column', 0);
-        $orderDirection = $request->input('order.0.dir', 'desc') === 'asc' ? 'asc' : 'desc';
-        $orderColumn = $columns[$orderIndex] ?? 'created_at';
+        $orderIndex = $request->input('order.0.column');
+        if ($orderIndex !== null && isset($columns[(int) $orderIndex])) {
+            $orderColumn = $columns[(int) $orderIndex];
+            $orderDirection = $request->input('order.0.dir', 'desc') === 'asc' ? 'asc' : 'desc';
+        } else {
+            $orderColumn = 'id';
+            $orderDirection = 'desc';
+        }
 
         $start = (int) $request->input('start', 0);
         $length = (int) $request->input('length', 15);
@@ -411,7 +415,9 @@ class VendorBillController extends Controller
         foreach ($bills as $b) {
             $codeHtml = '<a href="'.route('procurement.bills.show', $b).'" class="fw-bold font-monospace text-primary text-decoration-none">'.e($b->bill_number).'</a>';
 
-            $vendorHtml = '<a href="'.route('procurement.vendors.show', $b->vendor).'" class="fw-semibold text-dark text-decoration-none">'.e($b->vendor?->name).'</a>';
+            $vendorHtml = '<a href="'.route('procurement.bills.show', $b).'" class="fw-semibold text-dark text-decoration-none">'.e($b->vendor?->name ?? 'N/A').'</a>';
+            $vendorHtml .= '<div class="text-muted small"><span class="badge bg-light text-secondary border font-xs">'.e($b->bill_number).'</span></div>';
+            $vendorHtml .= '<span class="d-none">'.e($b->bill_number).' '.e($b->vendor?->vendor_code).'</span>';
 
             $invoiceHtml = '<span class="font-monospace fw-semibold text-dark">'.e($b->vendor_invoice_number).'</span>';
             if ($b->purchaseOrder) {
@@ -426,14 +432,20 @@ class VendorBillController extends Controller
 
             $amountHtml = '<span class="fw-bold font-monospace">৳'.number_format((float) $b->total_amount, 2).'</span>';
 
-            $actions = '<div class="btn-group btn-group-sm" role="group">';
-            $actions .= '<a href="'.route('procurement.bills.show', $b).'" class="btn btn-outline-info" title="'.__('common.view').'"><i class="bi bi-eye"></i></a>';
+            $actions = '<div class="dropdown text-end">';
+            $actions .= '<button class="btn btn-light btn-sm rounded-circle p-0 d-inline-flex align-items-center justify-content-center border shadow-sm" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-popper-config=\'{"strategy":"fixed"}\' aria-expanded="false" style="width: 32px; height: 32px;" title="'.__('common.actions').'">';
+            $actions .= '<i class="bi bi-three-dots-vertical text-secondary"></i>';
+            $actions .= '</button>';
+            $actions .= '<ul class="dropdown-menu dropdown-menu-end shadow-sm border py-1" style="min-width: 170px; font-size: 0.875rem;">';
+            $actions .= '<li><a class="dropdown-item py-1 px-3 d-flex align-items-center" href="'.route('procurement.bills.show', $b).'"><i class="bi bi-eye text-primary me-2"></i>'.__('common.view').'</a></li>';
 
             if ($canManage && $b->canBeEdited()) {
-                $actions .= '<a href="'.route('procurement.bills.edit', $b).'" class="btn btn-outline-primary" title="'.__('common.edit').'"><i class="bi bi-pencil"></i></a>';
+                $actions .= '<li><a class="dropdown-item py-1 px-3 d-flex align-items-center" href="'.route('procurement.bills.edit', $b).'"><i class="bi bi-pencil text-secondary me-2"></i>'.__('common.edit').'</a></li>';
             }
 
-            $actions .= '<a href="'.route('procurement.bills.print', $b).'" target="_blank" class="btn btn-outline-dark" title="'.__('procurement.print_bill').'"><i class="bi bi-printer"></i></a>';
+            $actions .= '<li><a class="dropdown-item py-1 px-3 d-flex align-items-center" href="'.route('procurement.bills.print', $b).'" target="_blank"><i class="bi bi-printer text-secondary me-2"></i>'.__('procurement.print_bill').'</a></li>';
+
+            $actions .= '</ul>';
             $actions .= '</div>';
 
             $data[] = [

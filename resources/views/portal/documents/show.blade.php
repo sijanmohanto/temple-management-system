@@ -61,8 +61,14 @@
                         </div>
                         <div class="col-md-6">
                             <label class="text-muted small">{{ __('portal.documents.type') }}</label>
-                            <div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
                                 <span class="badge bg-info text-dark">{{ $document->document_type_name }}</span>
+                                @if($document->report_category)
+                                    <span class="badge bg-light text-secondary border">{{ $document->report_category_name }}</span>
+                                @endif
+                                @if($document->financial_year)
+                                    <span class="badge bg-light text-dark border"><i class="bi bi-calendar-event me-1"></i>{{ $document->financial_year }}</span>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -95,7 +101,9 @@
                             @endphp
                             @if($ext === 'pdf')
                                 <i class="bi bi-file-earmark-pdf text-danger fs-1 me-3"></i>
-                            @elseif(in_array($ext, ['jpg', 'jpeg', 'png']))
+                            @elseif(in_array($ext, ['xlsx', 'xls', 'csv']))
+                                <i class="bi bi-file-earmark-excel text-success fs-1 me-3"></i>
+                            @elseif(in_array($ext, ['jpg', 'jpeg', 'png', 'webp']))
                                 <i class="bi bi-file-earmark-image text-primary fs-1 me-3"></i>
                             @else
                                 <i class="bi bi-file-earmark-text text-secondary fs-1 me-3"></i>

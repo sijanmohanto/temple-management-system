@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\DevoteeCredentialController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CollectionDashboardController;
@@ -7,6 +8,9 @@ use App\Http\Controllers\CollectionPaymentController;
 use App\Http\Controllers\CollectionReportController;
 use App\Http\Controllers\CommitteeController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Devotee\DevoteeDashboardController;
+use App\Http\Controllers\Devotee\DevoteePaymentController;
+use App\Http\Controllers\Devotee\DevoteeProfileController;
 use App\Http\Controllers\EventCategoryController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventDashboardController;
@@ -26,6 +30,7 @@ use App\Http\Controllers\PersonController;
 use App\Http\Controllers\PledgeController;
 use App\Http\Controllers\Procurement\BudgetController;
 use App\Http\Controllers\Procurement\BudgetReportController;
+use App\Http\Controllers\Procurement\ProcurementReportController;
 use App\Http\Controllers\Procurement\PurchaseOrderController;
 use App\Http\Controllers\Procurement\PurchaseRequestController;
 use App\Http\Controllers\Procurement\VendorBillController;
@@ -34,6 +39,7 @@ use App\Http\Controllers\Procurement\VendorPaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\PaymentSubmissionController;
+use App\Http\Controllers\Public\PreviousEventArchiveController;
 use App\Http\Controllers\Public\PublicComplaintController;
 use App\Http\Controllers\PublicPortal\ComplaintController;
 use App\Http\Controllers\PublicPortal\EventDocumentController;
@@ -71,6 +77,13 @@ Route::get('/my-complaints/create', [PublicComplaintController::class, 'create']
 Route::post('/my-complaints', [PublicComplaintController::class, 'store'])->name('public.complaints.store');
 Route::get('/my-complaints/{reference}', [PublicComplaintController::class, 'show'])->name('public.complaints.show');
 Route::get('/my-complaints/{reference}/attachment', [PublicComplaintController::class, 'downloadAttachment'])->name('public.complaints.attachment');
+
+// Increment 7: Public Previous Events & Financial Reports
+Route::get('/previous-events', [PreviousEventArchiveController::class, 'index'])->name('public.previous-events.index');
+Route::get('/previous-events/{slug}', [PreviousEventArchiveController::class, 'show'])->name('public.previous-events.show');
+Route::get('/previous-events/{slug}/documents/{uuid}/preview', [PreviousEventArchiveController::class, 'previewDocument'])->name('public.previous-events.document.preview');
+Route::get('/previous-events/{slug}/documents/{uuid}/download', [PreviousEventArchiveController::class, 'downloadDocument'])->name('public.previous-events.document.download');
+Route::get('/event-accounts', fn () => redirect()->route('public.previous-events.index'))->name('public.event-accounts.redirect');
 
 // Language switcher (available to guests and authenticated users)
 Route::get('/lang/{locale}', [LanguageController::class, 'switchLocale'])->name('lang.switch');
@@ -116,6 +129,28 @@ Route::middleware('auth')->group(function () {
     Route::get('/people/{person}/edit', [PersonController::class, 'edit'])->name('people.edit');
     Route::put('/people/{person}', [PersonController::class, 'update'])->name('people.update');
     Route::post('/people/{person}/toggle-status', [PersonController::class, 'toggleStatus'])->name('people.toggle-status');
+
+    // Increment 8: Devotee Credentials & Password Management (Admin)
+    Route::prefix('admin/people/{person}/credentials')->name('people.credentials.')->group(function () {
+        Route::post('/reveal', [DevoteeCredentialController::class, 'reveal'])->name('reveal');
+        Route::post('/reset', [DevoteeCredentialController::class, 'reset'])->name('reset');
+        Route::post('/provision', [DevoteeCredentialController::class, 'provision'])->name('provision');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Increment 8: Devotee Self-Service Portal Routes
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware('devotee.linked')->prefix('devotee')->name('devotee.')->group(function () {
+        Route::get('/dashboard', [DevoteeDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/payments', [DevoteePaymentController::class, 'index'])->name('payments.index');
+        Route::get('/payments/{paymentCode}/details', [DevoteePaymentController::class, 'details'])->name('payments.details');
+        Route::get('/profile', [DevoteeProfileController::class, 'edit'])->name('profile');
+        Route::post('/profile/otp', [DevoteeProfileController::class, 'requestOtp'])->name('profile.otp');
+        Route::put('/profile', [DevoteeProfileController::class, 'update'])->name('profile.update');
+        Route::put('/password', [DevoteeProfileController::class, 'updatePassword'])->name('password.update');
+    });
 
     // Family Management
     Route::get('/families/search', [FamilyController::class, 'search'])->name('families.search');
@@ -363,6 +398,24 @@ Route::middleware('auth')->group(function () {
         // Reports
         Route::prefix('reports')->name('reports.')->group(function () {
             Route::get('/budget-vs-actual', [BudgetReportController::class, 'budgetVsActual'])->name('budget-vs-actual');
+
+            // Purchase Requisitions Report
+            Route::get('/requests', [ProcurementReportController::class, 'purchaseRequests'])->name('requests');
+            Route::get('/requests/export', [ProcurementReportController::class, 'exportPurchaseRequests'])->name('requests.export');
+            Route::get('/requests/print', [ProcurementReportController::class, 'printPurchaseRequests'])->name('requests.print');
+            Route::get('/requests/{purchaseRequest}/details', [ProcurementReportController::class, 'purchaseRequestDetails'])->name('requests.details');
+
+            // Purchase Orders Report
+            Route::get('/orders', [ProcurementReportController::class, 'purchaseOrders'])->name('orders');
+            Route::get('/orders/export', [ProcurementReportController::class, 'exportPurchaseOrders'])->name('orders.export');
+            Route::get('/orders/print', [ProcurementReportController::class, 'printPurchaseOrders'])->name('orders.print');
+            Route::get('/orders/{purchaseOrder}/details', [ProcurementReportController::class, 'purchaseOrderDetails'])->name('orders.details');
+
+            // Outstanding Vendor Bills Report
+            Route::get('/outstanding-bills', [ProcurementReportController::class, 'outstandingBills'])->name('outstanding-bills');
+            Route::get('/outstanding-bills/export', [ProcurementReportController::class, 'exportOutstandingBills'])->name('outstanding-bills.export');
+            Route::get('/outstanding-bills/print', [ProcurementReportController::class, 'printOutstandingBills'])->name('outstanding-bills.print');
+            Route::get('/outstanding-bills/{vendorBill}/details', [ProcurementReportController::class, 'outstandingBillDetails'])->name('outstanding-bills.details');
         });
     });
 

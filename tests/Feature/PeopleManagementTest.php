@@ -2,12 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Mail\DevoteeProfileUpdatedMail;
+use App\Mail\DevoteeWelcomeMail;
 use App\Models\Classification;
 use App\Models\Person;
 use App\Models\User;
 use Database\Seeders\ClassificationSeeder;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class PeopleManagementTest extends TestCase
@@ -152,6 +157,7 @@ class PeopleManagementTest extends TestCase
 
         $response = $this->actingAs($this->superAdmin)->put(route('people.update', $person), [
             'name_en' => 'Updated Name',
+            'phone' => '01712000111',
             'status' => 'active',
             'gotra' => 'Shandilya',
         ]);
@@ -214,5 +220,159 @@ class PeopleManagementTest extends TestCase
         $responseCommittee->assertOk();
         $responseCommittee->assertSee('Open public comment');
         $responseCommittee->assertDontSee('Secret administrative background remark');
+    }
+
+    public function test_admin_can_create_person_with_photo_and_welcome_email(): void
+    {
+        Storage::fake('public');
+        Mail::fake();
+
+        $photo = UploadedFile::fake()->image('devotee_avatar.jpg', 400, 400);
+
+        $payload = [
+            'name_en' => 'Joydip Chakraborty',
+            'name_bn' => 'জয়দীপ চক্রবর্তী',
+            'phone' => '+8801700998877',
+            'email' => 'joydip.devotee@example.com',
+            'status' => 'active',
+            'send_credentials_email' => '1',
+            'photo' => $photo,
+        ];
+
+        $response = $this->actingAs($this->superAdmin)->post(route('people.store'), $payload);
+
+        $person = Person::where('phone', '+8801700998877')->first();
+        $this->assertNotNull($person);
+        $this->assertNotNull($person->photo_path);
+        Storage::disk('public')->assertExists($person->photo_path);
+
+        $response->assertRedirect(route('people.show', $person));
+        $response->assertSessionHas('devotee_credential_modal');
+
+        $modalData = session('devotee_credential_modal');
+        $this->assertEquals($person->id, $modalData['person_id']);
+        $this->assertEquals('Joydip Chakraborty', $modalData['name']);
+        $this->assertEquals('+8801700998877', $modalData['login_id']);
+        $this->assertNotEmpty($modalData['plain_password']);
+        $this->assertTrue($modalData['email_sent']);
+
+        Mail::assertSent(DevoteeWelcomeMail::class, function ($mail) use ($person) {
+            return $mail->hasTo('joydip.devotee@example.com') &&
+                   $mail->person->id === $person->id;
+        });
+    }
+
+    public function test_admin_can_update_and_remove_person_photo(): void
+    {
+        Storage::fake('public');
+
+        $photo = UploadedFile::fake()->image('old_photo.jpg');
+        $path = $photo->store('people/photos', 'public');
+
+        $person = Person::factory()->create([
+            'photo_path' => $path,
+        ]);
+
+        Storage::disk('public')->assertExists($path);
+
+        // Remove photo via update
+        $response = $this->actingAs($this->superAdmin)->put(route('people.update', $person), [
+            'name_en' => $person->name_en,
+            'phone' => $person->phone ?? '01712999888',
+            'status' => 'active',
+            'remove_photo' => '1',
+        ]);
+
+        $response->assertRedirect(route('people.show', $person));
+        $person->refresh();
+
+        $this->assertNull($person->photo_path);
+        Storage::disk('public')->assertMissing($path);
+    }
+
+    public function test_phone_is_required_and_email_is_optional(): void
+    {
+        // 1. Omission of phone should fail validation
+        $responsePhoneFail = $this->actingAs($this->superAdmin)->post(route('people.store'), [
+            'name_en' => 'Phone Missing Devotee',
+            'status' => 'active',
+        ]);
+        $responsePhoneFail->assertSessionHasErrors(['phone']);
+
+        // 2. Providing phone without email should succeed
+        $responseEmailOptional = $this->actingAs($this->superAdmin)->post(route('people.store'), [
+            'name_en' => 'Email Optional Devotee',
+            'phone' => '+8801755112233',
+            'status' => 'active',
+        ]);
+        $responseEmailOptional->assertSessionDoesntHaveErrors(['email', 'phone']);
+        $this->assertDatabaseHas('people', [
+            'phone' => '+8801755112233',
+            'email' => null,
+        ]);
+    }
+
+    public function test_admin_can_update_person_and_dispatch_profile_updated_email(): void
+    {
+        Mail::fake();
+
+        $person = Person::factory()->create([
+            'phone' => '+8801799881122',
+            'email' => 'updated.devotee@example.com',
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($this->superAdmin)->put(route('people.update', $person), [
+            'name_en' => 'Subir Roy Updated',
+            'phone' => '+8801799881122',
+            'email' => 'updated.devotee@example.com',
+            'status' => 'active',
+            'send_update_email' => '1',
+        ]);
+
+        $response->assertRedirect(route('people.show', $person));
+        $response->assertSessionHas('success', __('people.updated_with_email_success'));
+
+        Mail::assertSent(DevoteeProfileUpdatedMail::class, function ($mail) use ($person) {
+            return $mail->hasTo('updated.devotee@example.com') &&
+                   $mail->person->id === $person->id;
+        });
+    }
+
+    public function test_gender_avatars_and_datatable_structure(): void
+    {
+        $malePerson = Person::factory()->create([
+            'name_en' => 'Subir Roy',
+            'gender' => 'male',
+            'photo_path' => null,
+        ]);
+
+        $femalePerson = Person::factory()->create([
+            'name_en' => 'Purnima Das',
+            'gender' => 'female',
+            'photo_path' => null,
+        ]);
+
+        $otherPerson = Person::factory()->create([
+            'name_en' => 'Devotee Unspecified',
+            'gender' => null,
+            'photo_path' => null,
+        ]);
+
+        $this->assertStringContainsString('avatar-male.svg', $malePerson->avatar_url);
+        $this->assertStringContainsString('avatar-female.svg', $femalePerson->avatar_url);
+        $this->assertStringContainsString('avatar-default.svg', $otherPerson->avatar_url);
+
+        // Test server-side DataTable response has 6 columns (Code column removed)
+        $response = $this->actingAs($this->superAdmin)->getJson(route('people.index', [
+            'draw' => 1,
+            'start' => 0,
+            'length' => 10,
+        ]));
+
+        $response->assertOk();
+        $data = $response->json('data');
+        $this->assertNotEmpty($data);
+        $this->assertCount(6, $data[0]); // exactly 6 columns: name, phone, classifications, family, status, actions
     }
 }

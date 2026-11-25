@@ -84,7 +84,7 @@
                         <div class="col-md-6">
                             <label class="text-muted small">{{ __('portal.payments.method') }}</label>
                             <div>
-                                <span class="badge bg-dark fs-6">{{ ucwords(str_replace('_', ' ', $payment->payment_method)) }}</span>
+                                @include('partials.payment-method-badge', ['method' => $payment->payment_method])
                             </div>
                         </div>
                         <div class="col-md-6">

@@ -81,12 +81,11 @@
                 <table class="table table-hover align-middle mb-0 w-100" id="pledgesDataTable">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-3">{{ __('donations.pledge_code') }}</th>
-                            <th>{{ __('donations.payer') }}</th>
+                            <th class="ps-3">{{ __('donations.payer_short') }}</th>
                             <th>{{ __('events.event') }}</th>
-                            <th>{{ __('donations.pledged_amount') }}</th>
-                            <th>{{ __('donations.paid_amount') }}</th>
-                            <th>{{ __('donations.outstanding_amount') }}</th>
+                            <th>{{ __('donations.pledged_short') }}</th>
+                            <th>{{ __('donations.paid_short') }}</th>
+                            <th>{{ __('donations.outstanding_short') }}</th>
                             <th>{{ __('common.status') }}</th>
                             <th class="text-end pe-3">{{ __('common.actions') }}</th>
                         </tr>
@@ -95,14 +94,16 @@
                         @foreach($pledges as $pledge)
                             <tr>
                                 <td class="ps-3">
-                                    <span class="badge bg-light text-dark border font-monospace">{{ $pledge->pledge_code }}</span>
-                                    <div class="small text-muted mt-1">{{ $pledge->pledged_on->format('d M Y') }}</div>
-                                </td>
-                                <td>
-                                    <div class="fw-bold text-dark">{{ $pledge->owner_name }}</div>
-                                    @if($pledge->person && $pledge->person->phone)
-                                        <small class="text-muted"><i class="bi bi-telephone me-1"></i>{{ $pledge->person->phone }}</small>
-                                    @endif
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="{{ $pledge->owner_avatar_url }}" alt="{{ $pledge->owner_name }}"
+                                             class="rounded-circle object-fit-cover shadow-sm border flex-shrink-0" style="width: 38px; height: 38px; min-width: 38px;">
+                                        <div>
+                                            <div class="fw-bold text-dark">{{ $pledge->owner_name }}</div>
+                                            @if($pledge->owner_phone)
+                                                <small class="text-muted"><i class="bi bi-telephone me-1"></i>{{ $pledge->owner_phone }}</small>
+                                            @endif
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
                                     <div class="fw-semibold text-dark">{{ $pledge->event?->name ?? '—' }}</div>
@@ -116,6 +117,7 @@
                                 </td>
                                 <td>
                                     <div class="text-success fw-semibold">৳{{ number_format($pledge->verified_paid_amount, 2) }}</div>
+                                    <div class="small text-muted"><i class="bi bi-calendar3 me-1"></i>{{ $pledge->pledged_on->format('d M Y') }}</div>
                                 </td>
                                 <td>
                                     <div class="fw-bold {{ $pledge->outstanding_amount > 0 ? 'text-danger' : 'text-muted' }}">
@@ -137,17 +139,17 @@
                                     </span>
                                 </td>
                                 <td class="text-end pe-3">
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="{{ route('pledges.show', $pledge) }}" class="btn btn-outline-primary" title="{{ __('common.view') }}">
+                                    <div class="d-inline-flex gap-1 justify-content-end">
+                                        <a href="{{ route('pledges.show', $pledge) }}" class="table-action-btn table-action-btn-view" title="{{ __('common.view') }}">
                                             <i class="bi bi-eye"></i>
                                         </a>
                                         @if(Auth::user()->hasPermission('manage_pledges') && $pledge->status !== 'cancelled' && $pledge->status !== 'paid')
-                                            <a href="{{ route('pledges.edit', $pledge) }}" class="btn btn-outline-secondary" title="{{ __('common.edit') }}">
+                                            <a href="{{ route('pledges.edit', $pledge) }}" class="table-action-btn table-action-btn-edit" title="{{ __('common.edit') }}">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                         @endif
                                         @if(Auth::user()->hasPermission('record_collections') && $pledge->outstanding_amount > 0 && $pledge->status !== 'cancelled')
-                                            <a href="{{ route('collections.create', ['pledge_id' => $pledge->id]) }}" class="btn btn-outline-success" title="{{ __('donations.collect_payment') }}">
+                                            <a href="{{ route('collections.create', ['pledge_id' => $pledge->id]) }}" class="table-action-btn table-action-btn-toggle-reactivate" title="{{ __('donations.collect_payment') }}">
                                                 <i class="bi bi-cash"></i>
                                             </a>
                                         @endif
@@ -189,14 +191,13 @@
                 }
             },
             columns: [
-                { data: 0, name: 'pledge_code' },
-                { data: 1, name: 'owner' },
-                { data: 2, name: 'event' },
-                { data: 3, name: 'pledged_amount' },
-                { data: 4, name: 'paid_amount', orderable: false },
-                { data: 5, name: 'outstanding', orderable: false },
-                { data: 6, name: 'status' },
-                { data: 7, name: 'actions', orderable: false, className: 'text-end pe-3' }
+                { data: 0, name: 'owner', className: 'ps-3' },
+                { data: 1, name: 'event' },
+                { data: 2, name: 'pledged_amount' },
+                { data: 3, name: 'paid_amount', orderable: false },
+                { data: 4, name: 'outstanding', orderable: false },
+                { data: 5, name: 'status' },
+                { data: 6, name: 'actions', orderable: false, className: 'text-end pe-3' }
             ]
         });
 

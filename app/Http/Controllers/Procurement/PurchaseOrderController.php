@@ -310,18 +310,22 @@ class PurchaseOrderController extends Controller
         $recordsFiltered = (clone $query)->count();
 
         $columns = [
-            0 => 'order_number',
-            1 => 'vendor_id',
-            2 => 'order_date',
-            3 => 'purchase_request_id',
-            4 => 'event_id',
-            5 => 'total_amount',
-            6 => 'status',
+            0 => 'vendor_id',
+            1 => 'order_date',
+            2 => 'purchase_request_id',
+            3 => 'event_id',
+            4 => 'total_amount',
+            5 => 'status',
         ];
 
-        $orderIndex = (int) $request->input('order.0.column', 0);
-        $orderDirection = $request->input('order.0.dir', 'desc') === 'asc' ? 'asc' : 'desc';
-        $orderColumn = $columns[$orderIndex] ?? 'created_at';
+        $orderIndex = $request->input('order.0.column');
+        if ($orderIndex !== null && isset($columns[(int) $orderIndex])) {
+            $orderColumn = $columns[(int) $orderIndex];
+            $orderDirection = $request->input('order.0.dir', 'desc') === 'asc' ? 'asc' : 'desc';
+        } else {
+            $orderColumn = 'id';
+            $orderDirection = 'desc';
+        }
 
         $start = (int) $request->input('start', 0);
         $length = (int) $request->input('length', 15);
@@ -340,7 +344,9 @@ class PurchaseOrderController extends Controller
         foreach ($orders as $o) {
             $codeHtml = '<a href="'.route('procurement.orders.show', $o).'" class="fw-bold font-monospace text-primary text-decoration-none">'.e($o->order_number).'</a>';
 
-            $vendorHtml = '<a href="'.route('procurement.vendors.show', $o->vendor).'" class="fw-semibold text-dark text-decoration-none">'.e($o->vendor?->name).'</a><br><small class="text-muted font-monospace">'.e($o->vendor?->vendor_code).'</small>';
+            $vendorHtml = '<a href="'.route('procurement.orders.show', $o).'" class="fw-semibold text-dark text-decoration-none">'.e($o->vendor?->name ?? 'N/A').'</a>';
+            $vendorHtml .= '<div class="text-muted small"><span class="badge bg-light text-secondary border font-xs">'.e($o->order_number).'</span></div>';
+            $vendorHtml .= '<span class="d-none">'.e($o->order_number).' '.e($o->vendor?->vendor_code).'</span>';
 
             $dateHtml = '<span class="text-nowrap">'.$o->order_date?->format('d M Y').'</span>';
 
@@ -354,15 +360,20 @@ class PurchaseOrderController extends Controller
 
             $amountHtml = '৳'.number_format((float) $o->total_amount, 2);
 
-            $actions = '<div class="btn-group btn-group-sm" role="group">';
-            $actions .= '<a href="'.route('procurement.orders.show', $o).'" class="btn btn-outline-info" title="'.__('common.view').'"><i class="bi bi-eye"></i></a>';
+            $actions = '<div class="dropdown text-end">';
+            $actions .= '<button class="btn btn-light btn-sm rounded-circle p-0 d-inline-flex align-items-center justify-content-center border shadow-sm" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-popper-config=\'{"strategy":"fixed"}\' aria-expanded="false" style="width: 32px; height: 32px;" title="'.__('common.actions').'">';
+            $actions .= '<i class="bi bi-three-dots-vertical text-secondary"></i>';
+            $actions .= '</button>';
+            $actions .= '<ul class="dropdown-menu dropdown-menu-end shadow-sm border py-1" style="min-width: 170px; font-size: 0.875rem;">';
+            $actions .= '<li><a class="dropdown-item py-1 px-3 d-flex align-items-center" href="'.route('procurement.orders.show', $o).'"><i class="bi bi-eye text-primary me-2"></i>'.__('common.view').'</a></li>';
 
             if ($canManage && $o->canBeEdited()) {
-                $actions .= '<a href="'.route('procurement.orders.edit', $o).'" class="btn btn-outline-secondary" title="'.__('common.edit').'"><i class="bi bi-pencil"></i></a>';
+                $actions .= '<li><a class="dropdown-item py-1 px-3 d-flex align-items-center" href="'.route('procurement.orders.edit', $o).'"><i class="bi bi-pencil text-secondary me-2"></i>'.__('common.edit').'</a></li>';
             }
 
-            $actions .= '<a href="'.route('procurement.orders.print', $o).'" target="_blank" class="btn btn-outline-secondary" title="'.__('common.print').'"><i class="bi bi-printer"></i></a>';
+            $actions .= '<li><a class="dropdown-item py-1 px-3 d-flex align-items-center" href="'.route('procurement.orders.print', $o).'" target="_blank"><i class="bi bi-printer text-secondary me-2"></i>'.__('common.print').'</a></li>';
 
+            $actions .= '</ul>';
             $actions .= '</div>';
 
             $data[] = [

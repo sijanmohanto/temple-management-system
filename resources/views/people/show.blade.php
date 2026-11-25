@@ -10,10 +10,7 @@
         <div class="card-body p-4 position-relative">
             <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="avatar-circle rounded-circle bg-white text-dark d-flex align-items-center justify-content-center fw-bold shadow-sm"
-                         style="width: 64px; height: 64px; font-size: 1.5rem; background-color: var(--temple-saffron-light) !important; color: var(--temple-maroon) !important;">
-                        {{ mb_substr($person->name_en, 0, 1) }}
-                    </div>
+                    <img src="{{ $person->avatar_url }}" alt="{{ $person->name_en }}" class="rounded-circle shadow-sm object-fit-cover border border-2 border-white bg-white" style="width: 68px; height: 68px; min-width: 68px;">
                     <div>
                         <div class="d-flex align-items-center gap-2 flex-wrap">
                             @if($person->isActive())
@@ -217,7 +214,7 @@
                         <i class="bi bi-award text-primary me-2"></i> {{ __('people.committee_history') }}
                     </h5>
                 </div>
-                <div class="card-body p-0">
+                <div class="card-body p-3">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0 w-100" id="personCommitteesTable">
                             <thead class="table-light">
@@ -274,6 +271,78 @@
 
         <!-- Right Side: Family, Remarks & Security Notes -->
         <div class="col-lg-4">
+            <!-- Devotee Portal Account & Credentials Card -->
+            @php
+                $linkedUser = $person->resolveUser();
+            @endphp
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
+                    <h5 class="card-title mb-0 fw-bold text-dark">
+                        <i class="bi bi-shield-lock text-danger me-2"></i> {{ __('devotee.portal_account_card_title') }}
+                    </h5>
+                    @if($linkedUser)
+                        <span class="badge bg-success bg-opacity-10 text-success"><i class="bi bi-check-circle me-1"></i> {{ __('devotee.account_active') }}</span>
+                    @else
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary">{{ __('devotee.no_account') }}</span>
+                    @endif
+                </div>
+                <div class="card-body p-4">
+                    @if($linkedUser)
+                        <div class="mb-3">
+                            <span class="text-muted small d-block">{{ __('devotee.login_identifier') }}</span>
+                            <strong class="text-dark font-monospace fs-6">{{ $linkedUser->phone ?: $linkedUser->email }}</strong>
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted small d-block">{{ __('devotee.account_status') }}</span>
+                            @if($linkedUser->isActive())
+                                <span class="badge bg-success">{{ __('common.status_active') }}</span>
+                            @else
+                                <span class="badge bg-danger">{{ __('common.status_inactive') }}</span>
+                            @endif
+                        </div>
+                        <div class="mb-3">
+                            <span class="text-muted small d-block">{{ __('devotee.assigned_roles') }}</span>
+                            @foreach($linkedUser->roles as $role)
+                                <span class="badge bg-primary bg-opacity-10 text-primary me-1">{{ $role->name_en }}</span>
+                            @endforeach
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex flex-column gap-2 mt-3 pt-3 border-top">
+                            @if(Auth::user()->hasPermission('view_devotee_passwords'))
+                                <button type="button" class="btn btn-outline-danger btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#revealPasswordModal">
+                                    <i class="bi bi-eye me-1"></i> {{ __('devotee.reveal_password_btn') }}
+                                </button>
+                            @endif
+
+                            @if(Auth::user()->hasPermission('update_devotee_passwords'))
+                                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#resetPasswordModal">
+                                    <i class="bi bi-key me-1"></i> {{ __('devotee.reset_password_btn') }}
+                                </button>
+                            @endif
+                        </div>
+                    @else
+                        <p class="text-muted small mb-3">
+                            {{ __('devotee.no_account_notice') }}
+                        </p>
+                        @if(Auth::user()->hasPermission('manage_people'))
+                            @if(! empty($person->phone) || ! empty($person->email))
+                                <form method="POST" action="{{ route('people.credentials.provision', $person) }}">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm temple-btn-maroon rounded-pill w-100">
+                                        <i class="bi bi-person-plus me-1"></i> {{ __('devotee.provision_account_btn') }}
+                                    </button>
+                                </form>
+                            @else
+                                <div class="alert alert-warning py-2 px-3 small mb-0">
+                                    <i class="bi bi-info-circle me-1"></i> {{ __('devotee.phone_or_email_required_to_provision') }}
+                                </div>
+                            @endif
+                        @endif
+                    @endif
+                </div>
+            </div>
+
             <!-- Family Card -->
             <div class="card border-0 shadow-sm rounded-4 mb-4">
                 <div class="card-header bg-white border-bottom py-3">
@@ -368,7 +437,231 @@
         </div>
     </div>
 </div>
+
+@if($linkedUser && Auth::user()->hasPermission('view_devotee_passwords'))
+<!-- Reveal Password Modal -->
+<div class="modal fade" id="revealPasswordModal" tabindex="-1" aria-labelledby="revealPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom bg-light">
+                <h5 class="modal-title fw-bold text-dark" id="revealPasswordModalLabel">
+                    <i class="bi bi-shield-lock text-danger me-2"></i> {{ __('devotee.reveal_password_modal_title') }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-3">
+                    {{ __('devotee.reveal_password_audit_notice') }}
+                </p>
+                <div class="mb-3">
+                    <label for="revealReason" class="form-label small fw-semibold text-secondary">{{ __('devotee.inspection_reason') }}</label>
+                    <input type="text" id="revealReason" class="form-control" placeholder="e.g. Assisting devotee with initial login">
+                </div>
+                <div id="revealedPasswordContainer" class="d-none">
+                    <div class="p-3 bg-light rounded-3 text-center border">
+                        <small class="text-muted d-block mb-1">{{ __('devotee.current_password') }}</small>
+                        <h3 class="fw-bold text-danger font-monospace mb-0" id="revealedPasswordText"></h3>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top bg-light">
+                <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">{{ __('common.close') }}</button>
+                <button type="button" class="btn temple-btn-maroon rounded-pill px-3" id="confirmRevealBtn">
+                    <i class="bi bi-eye me-1"></i> {{ __('devotee.reveal_btn') }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
+@if($linkedUser && Auth::user()->hasPermission('update_devotee_passwords'))
+<!-- Reset Password Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form id="resetPasswordForm" method="POST" action="{{ route('people.credentials.reset', $person) }}">
+                @csrf
+                <div class="modal-header border-bottom bg-light">
+                    <h5 class="modal-title fw-bold text-dark" id="resetPasswordModalLabel">
+                        <i class="bi bi-key text-primary me-2"></i> {{ __('devotee.reset_password_modal_title') }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">
+                        {{ __('devotee.reset_password_modal_hint') }}
+                    </p>
+                    <div class="mb-3">
+                        <label for="newDevoteePassword" class="form-label small fw-semibold text-secondary">{{ __('devotee.custom_password_optional') }}</label>
+                        <input type="text" id="newDevoteePassword" name="new_password" class="form-control font-monospace" placeholder="Leave blank to auto-generate secure password">
+                    </div>
+                    <div class="mb-3">
+                        <label for="resetReason" class="form-label small fw-semibold text-secondary">{{ __('devotee.reset_reason') }}</label>
+                        <input type="text" id="resetReason" name="reason" class="form-control" placeholder="e.g. Devotee forgot login password" required>
+                    </div>
+                </div>
+                <div class="modal-footer border-top bg-light">
+                    <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">{{ __('common.cancel') }}</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-3">
+                        <i class="bi bi-check2-circle me-1"></i> {{ __('devotee.reset_btn') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endif
+
+@if(session('devotee_credential_modal'))
+    @php
+        $modalCreds = session('devotee_credential_modal');
+    @endphp
+    <!-- Devotee Login Credentials Created Modal (Auto-pops up on success) -->
+    <div class="modal fade" id="newDevoteeCredentialModal" tabindex="-1" aria-labelledby="newDevoteeCredentialModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <!-- Modal Header -->
+                <div class="modal-header text-white border-0 py-3" style="background: linear-gradient(135deg, var(--temple-maroon), var(--temple-maroon-dark));">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="rounded-circle bg-white text-danger d-flex align-items-center justify-content-center shadow-sm" style="width: 40px; height: 40px; font-size: 1.3rem;">
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold mb-0 text-white" id="newDevoteeCredentialModalLabel">
+                                {{ __('people.credential_modal_title') }}
+                            </h5>
+                            <small class="text-white-50">{{ __('people.credential_modal_subtitle') }}</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <!-- Status Banner -->
+                    @if($modalCreds['email_sent'])
+                        <div class="alert alert-success d-flex align-items-center gap-2 py-2 px-3 rounded-3 mb-3 border-success border-opacity-25 bg-success bg-opacity-10 text-success">
+                            <i class="bi bi-check-circle-fill fs-5"></i>
+                            <div class="small fw-semibold">
+                                {{ __('people.welcome_email_sent', ['email' => $modalCreds['sent_to_email'] ?? $modalCreds['email']]) }}
+                            </div>
+                        </div>
+                    @else
+                        <div class="alert alert-light border d-flex align-items-center gap-2 py-2 px-3 rounded-3 mb-3 text-secondary">
+                            <i class="bi bi-info-circle-fill fs-5 text-primary"></i>
+                            <div class="small">
+                                {{ __('people.welcome_email_not_sent') }}
+                            </div>
+                        </div>
+                    @endif
+
+                    <!-- Credential Card -->
+                    <div class="card border rounded-3 bg-light p-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+                            <span class="text-muted small fw-semibold">{{ __('people.person') }}</span>
+                            <span class="fw-bold text-dark">{{ $modalCreds['name'] }} @if(!empty($modalCreds['name_bn'])) ({{ $modalCreds['name_bn'] }}) @endif</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+                            <span class="text-muted small fw-semibold">{{ __('people.person_code') }}</span>
+                            <span class="badge bg-secondary font-monospace">{{ $modalCreds['person_code'] }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+                            <span class="text-muted small fw-semibold">{{ __('people.login_identifier') }}</span>
+                            <span class="fw-bold font-monospace text-primary fs-6">{{ $modalCreds['login_id'] }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+                            <span class="text-muted small fw-semibold">{{ __('people.temporary_password') }}</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span id="modalPasswordDisplay" class="font-monospace fw-bold px-2 py-1 bg-white border rounded text-danger" style="letter-spacing: 1px;">
+                                    {{ $modalCreds['plain_password'] }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted small fw-semibold">{{ __('people.portal_login_url') }}</span>
+                            <a href="{{ $modalCreds['login_url'] }}" target="_blank" class="small text-truncate text-decoration-none fw-semibold" style="max-width: 220px;">
+                                {{ $modalCreds['login_url'] }}
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Hidden text for copying -->
+                    <textarea id="credentialCopyText" class="d-none">🏛️ {{ config('app.name') }} - Devotee Portal
+👤 Devotee: {{ $modalCreds['name'] }}
+🆔 Code: {{ $modalCreds['person_code'] }}
+📱 Login ID: {{ $modalCreds['login_id'] }}
+🔑 Password: {{ $modalCreds['plain_password'] }}
+🌐 Portal URL: {{ $modalCreds['login_url'] }}</textarea>
+
+                    <p class="text-muted small text-center mb-0">
+                        <i class="bi bi-shield-exclamation text-warning me-1"></i>
+                        {{ __('people.welcome_mail_change_pass_advice') }}
+                    </p>
+                </div>
+
+                <!-- Modal Footer with prominent copy button -->
+                <div class="modal-footer border-top bg-light p-3 d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">
+                        {{ __('people.close_modal') }}
+                    </button>
+                    <button type="button" id="btnCopyDevoteeCredentials" class="btn btn-primary rounded-pill px-4 shadow-sm"
+                            style="background-color: var(--temple-maroon); border-color: var(--temple-maroon);">
+                        <i class="bi bi-clipboard-check me-1"></i> <span id="copyBtnLabel">{{ __('people.copy_credentials') }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
 @endsection
+
+@push('scripts')
+@if(session('devotee_credential_modal'))
+<script>
+    $(document).ready(function() {
+        const modalEl = document.getElementById('newDevoteeCredentialModal');
+        if (modalEl) {
+            const credModal = new bootstrap.Modal(modalEl);
+            credModal.show();
+        }
+
+        $('#btnCopyDevoteeCredentials').on('click', function() {
+            const textToCopy = $('#credentialCopyText').val();
+            const btn = $(this);
+            const originalHtml = btn.html();
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy).then(showCopied, fallbackCopy);
+            } else {
+                fallbackCopy();
+            }
+
+            function fallbackCopy() {
+                const textArea = document.createElement('textarea');
+                textArea.value = textToCopy;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showCopied();
+                } catch (err) {
+                    alert('Copy failed, please copy manually.');
+                }
+                document.body.removeChild(textArea);
+            }
+
+            function showCopied() {
+                btn.removeClass('btn-primary').addClass('btn-success').html('<i class="bi bi-check2-all me-1"></i> {{ __("people.copied_to_clipboard") }}');
+                setTimeout(function() {
+                    btn.removeClass('btn-success').addClass('btn-primary').html(originalHtml);
+                }, 2500);
+            }
+        });
+    });
+</script>
+@endif
 
 @push('scripts')
 @if($person->committeeMemberships->count() > 0)
@@ -377,6 +670,44 @@
         TempleUI.initDataTable('#personCommitteesTable', {
             pageLength: 5,
             lengthMenu: [[5, 10, 25], [5, 10, 25]]
+        });
+    });
+</script>
+@endif
+
+@if($linkedUser && Auth::user()->hasPermission('view_devotee_passwords'))
+<script>
+    $(document).ready(function() {
+        $('#confirmRevealBtn').on('click', function() {
+            var btn = $(this);
+            var reason = $('#revealReason').val();
+
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Decrypting...');
+
+            $.ajax({
+                url: "{{ route('people.credentials.reveal', $person) }}",
+                type: 'POST',
+                data: {
+                    _token: "{{ csrf_token() }}",
+                    reason: reason
+                },
+                dataType: 'json',
+                success: function(res) {
+                    btn.prop('disabled', false).html('<i class="bi bi-eye me-1"></i> Reveal');
+                    if (res.success) {
+                        $('#revealedPasswordText').text(res.password);
+                        $('#revealedPasswordContainer').removeClass('d-none');
+                        toastr.success('Password decrypted successfully.');
+                    } else {
+                        toastr.error(res.message);
+                    }
+                },
+                error: function(xhr) {
+                    btn.prop('disabled', false).html('<i class="bi bi-eye me-1"></i> Reveal');
+                    var msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Decryption failed.';
+                    toastr.error(msg);
+                }
+            });
         });
     });
 </script>

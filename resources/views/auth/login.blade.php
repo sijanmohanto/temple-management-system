@@ -16,23 +16,27 @@
                 <form method="POST" action="{{ route('login.submit') }}">
                     @csrf
 
-                    <!-- Email Input -->
+                    <!-- Phone / Email Input -->
                     <div class="mb-3">
                         <label for="email" class="form-label fw-semibold text-secondary">
-                            <i class="bi bi-envelope me-1 text-primary"></i> {{ __('auth.email_label') }}
+                            <i class="bi bi-person-badge me-1 text-primary"></i> {{ __('auth.login_identifier_label') }}
                         </label>
-                        <input type="email"
-                               class="form-control form-control-lg @error('email') is-invalid @enderror"
+                        <input type="text"
+                               class="form-control form-control-lg @if($errors->has('email') || $errors->has('phone') || $errors->has('login')) is-invalid @endif"
                                id="email"
                                name="email"
-                               value="{{ old('email') }}"
-                               placeholder="{{ __('auth.email_placeholder') }}"
+                               value="{{ old('email', old('phone', old('login'))) }}"
+                               placeholder="{{ __('auth.login_identifier_placeholder') }}"
                                required
-                               autocomplete="email"
+                               autocomplete="username"
                                autofocus>
-                        @error('email')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
+                        @if($errors->has('phone'))
+                            <div class="invalid-feedback">{{ $errors->first('phone') }}</div>
+                        @elseif($errors->has('email'))
+                            <div class="invalid-feedback">{{ $errors->first('email') }}</div>
+                        @elseif($errors->has('login'))
+                            <div class="invalid-feedback">{{ $errors->first('login') }}</div>
+                        @endif
                     </div>
 
                     <!-- Password Input -->
@@ -69,7 +73,9 @@
 
                     <!-- Submit Button -->
                     <div class="d-grid mb-3">
-                        <button type="submit" class="btn btn-lg temple-btn-maroon py-2 fw-bold">
+                        <button type="submit"
+                                class="btn btn-lg temple-btn-maroon py-2 fw-bold rounded-3 shadow-sm text-white"
+                                style="background: linear-gradient(135deg, #75141c, #560e15) !important; border: 1px solid #560e15 !important; color: #ffffff !important; box-shadow: 0 4px 14px rgba(117, 20, 28, 0.35);">
                             <i class="bi bi-box-arrow-in-right me-2"></i> {{ __('auth.sign_in_btn') }}
                         </button>
                     </div>

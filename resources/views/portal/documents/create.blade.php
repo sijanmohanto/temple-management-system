@@ -33,22 +33,105 @@
                     <form action="{{ route('portal.documents.store') }}" method="POST" enctype="multipart/form-data" id="documentUploadForm">
                         @csrf
 
-                        {{-- Event Selector --}}
-                        <div class="mb-3">
-                            <label for="event_id" class="form-label fw-bold">
-                                {{ __('portal.documents.event') }} <span class="text-danger">*</span>
-                            </label>
-                            <select name="event_id" id="event_id" class="form-select select2-enable @error('event_id') is-invalid @enderror" required>
-                                <option value="">-- {{ __('common.select') }} --</option>
-                                @foreach($events as $event)
-                                    <option value="{{ $event->id }}" {{ (old('event_id', $preselectedEventId) == $event->id) ? 'selected' : '' }}>
-                                        {{ $event->name }} ({{ $event->category?->name ?: __('common.general') }}) – {{ $event->event_year }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('event_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                        {{-- Event Selection: Existing vs New Historical Event --}}
+                        <div class="mb-4 p-3 bg-light rounded-3 border">
+                            <label class="form-label fw-bold mb-2">{{ __('portal.documents.event_source_selection') }} <span class="text-danger">*</span></label>
+                            <div class="d-flex gap-4 mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="event_mode" id="event_mode_existing" value="existing" {{ old('event_mode', 'existing') === 'existing' ? 'checked' : '' }}>
+                                    <label class="form-check-label fw-semibold" for="event_mode_existing">
+                                        <i class="bi bi-calendar3 me-1 text-primary"></i> {{ __('portal.documents.select_existing_event') }}
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="event_mode" id="event_mode_new" value="new" {{ old('event_mode') === 'new' ? 'checked' : '' }}>
+                                    <label class="form-check-label fw-semibold" for="event_mode_new">
+                                        <i class="bi bi-plus-circle me-1 text-success"></i> {{ __('portal.documents.create_new_historical_event') }}
+                                    </label>
+                                </div>
+                            </div>
+
+                            {{-- Container for Existing Event Selection --}}
+                            <div id="existing_event_container" class="{{ old('event_mode', 'existing') === 'new' ? 'd-none' : '' }}">
+                                <label for="event_id" class="form-label small fw-bold">
+                                    {{ __('portal.documents.event') }} <span class="text-danger">*</span>
+                                </label>
+                                <select name="event_id" id="event_id" class="form-select select2-enable @error('event_id') is-invalid @enderror" {{ old('event_mode', 'existing') === 'existing' ? 'required' : '' }}>
+                                    <option value="">-- {{ __('common.select') }} --</option>
+                                    @foreach($events as $event)
+                                        <option value="{{ $event->id }}" {{ (old('event_id', $preselectedEventId) == $event->id) ? 'selected' : '' }}>
+                                            {{ $event->name }} ({{ $event->category?->name ?: __('common.general') }}) – {{ $event->event_year }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('event_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            {{-- Container for New Historical Event Entry (Not in Database) --}}
+                            <div id="new_event_container" class="{{ old('event_mode', 'existing') === 'new' ? '' : 'd-none' }}">
+                                <div class="alert alert-info py-2 px-3 small border-0 mb-3">
+                                    <i class="bi bi-info-circle me-1"></i> {{ __('portal.documents.new_historical_event_help') }}
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-8">
+                                        <label for="new_event_name_en" class="form-label small fw-bold">
+                                            {{ __('portal.documents.historical_event_name_en') }} <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="text" name="new_event_name_en" id="new_event_name_en" class="form-control form-control-sm @error('new_event_name_en') is-invalid @enderror" value="{{ old('new_event_name_en') }}" placeholder="e.g. Durga Puja 2018">
+                                        @error('new_event_name_en')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="new_event_year" class="form-label small fw-bold">
+                                            {{ __('portal.documents.event_year') }} <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="number" name="new_event_year" id="new_event_year" class="form-control form-control-sm @error('new_event_year') is-invalid @enderror" value="{{ old('new_event_year', date('Y') - 1) }}" min="1900" max="2100">
+                                        @error('new_event_year')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="new_event_name_bn" class="form-label small font-bengali">
+                                            {{ __('portal.documents.historical_event_name_bn') }}
+                                        </label>
+                                        <input type="text" name="new_event_name_bn" id="new_event_name_bn" class="form-control form-control-sm font-bengali @error('new_event_name_bn') is-invalid @enderror" value="{{ old('new_event_name_bn') }}" placeholder="যেমন: শারদীয় দুর্গোৎসব ২০১৮">
+                                        @error('new_event_name_bn')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="new_event_category_id" class="form-label small fw-bold">
+                                            {{ __('portal.documents.event_category') }} <span class="text-danger">*</span>
+                                        </label>
+                                        <select name="new_event_category_id" id="new_event_category_id" class="form-select form-select-sm @error('new_event_category_id') is-invalid @enderror">
+                                            <option value="">-- {{ __('common.select') }} --</option>
+                                            @foreach($categories as $cat)
+                                                <option value="{{ $cat->id }}" {{ old('new_event_category_id') == $cat->id ? 'selected' : '' }}>
+                                                    {{ $cat->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        @error('new_event_category_id')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="new_event_venue" class="form-label small text-muted">
+                                            {{ __('portal.public.venue') }} ({{ __('common.optional') }})
+                                        </label>
+                                        <input type="text" name="new_event_venue" id="new_event_venue" class="form-control form-control-sm" value="{{ old('new_event_venue') }}" placeholder="e.g. Main Temple Complex">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="new_event_description_en" class="form-label small text-muted">
+                                            {{ __('common.description') }} ({{ __('common.optional') }})
+                                        </label>
+                                        <input type="text" name="new_event_description_en" id="new_event_description_en" class="form-control form-control-sm" value="{{ old('new_event_description_en') }}" placeholder="e.g. Historical celebration archive">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         {{-- Document Type --}}
@@ -58,7 +141,7 @@
                             </label>
                             <select name="document_type" id="document_type" class="form-select @error('document_type') is-invalid @enderror" required>
                                 <option value="">-- {{ __('common.select') }} --</option>
-                                <option value="financial_report" {{ old('document_type') === 'financial_report' ? 'selected' : '' }}>
+                                <option value="financial_report" {{ old('document_type', 'financial_report') === 'financial_report' ? 'selected' : '' }}>
                                     {{ __('portal.document_types.financial_report') }}
                                 </option>
                                 <option value="audit_report" {{ old('document_type') === 'audit_report' ? 'selected' : '' }}>
@@ -74,6 +157,38 @@
                             @error('document_type')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                        </div>
+
+                        {{-- Report Category & Financial Year --}}
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="report_category" class="form-label fw-bold">
+                                    {{ __('portal.documents.report_category') }}
+                                </label>
+                                <select name="report_category" id="report_category" class="form-select @error('report_category') is-invalid @enderror">
+                                    <option value="">-- {{ __('common.select') }} --</option>
+                                    @foreach(\App\Models\EventDocument::REPORT_CATEGORIES as $cat)
+                                        <option value="{{ $cat }}" {{ old('report_category') === $cat ? 'selected' : '' }}>
+                                            {{ __('portal.report_categories.' . $cat) }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('report_category')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-6">
+                                <label for="financial_year" class="form-label fw-bold">
+                                    {{ __('portal.documents.financial_year') }}
+                                </label>
+                                <input type="number" name="financial_year" id="financial_year"
+                                       class="form-control @error('financial_year') is-invalid @enderror"
+                                       value="{{ old('financial_year') }}" min="2000" max="2100"
+                                       placeholder="{{ date('Y') }}">
+                                @error('financial_year')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
 
                         {{-- Titles (English & Bengali) --}}
@@ -111,9 +226,9 @@
                             </label>
                             <input type="file" name="file" id="file"
                                    class="form-control @error('file') is-invalid @enderror"
-                                   accept=".pdf,.jpg,.jpeg,.png" required>
+                                   accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.csv" required>
                             <div class="form-text text-muted">
-                                {{ __('common.allowed_types') }}: PDF, JPG, PNG (Max: 10MB)
+                                {{ __('common.allowed_types') }}: PDF, JPG, PNG, Excel (XLSX, XLS), CSV (Max: 10MB)
                             </div>
                             @error('file')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -185,3 +300,30 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const radios = document.querySelectorAll('input[name="event_mode"]');
+    const existingContainer = document.getElementById('existing_event_container');
+    const newContainer = document.getElementById('new_event_container');
+    const eventSelect = document.getElementById('event_id');
+
+    radios.forEach(radio => {
+        radio.addEventListener('change', function () {
+            const isNew = this.value === 'new';
+            if (existingContainer) existingContainer.classList.toggle('d-none', isNew);
+            if (newContainer) newContainer.classList.toggle('d-none', !isNew);
+
+            if (eventSelect) {
+                if (isNew) {
+                    eventSelect.removeAttribute('required');
+                } else {
+                    eventSelect.setAttribute('required', 'required');
+                }
+            }
+        });
+    });
+});
+</script>
+@endpush

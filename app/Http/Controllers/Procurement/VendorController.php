@@ -258,17 +258,21 @@ class VendorController extends Controller
         $recordsFiltered = (clone $query)->count();
 
         $columns = [
-            0 => 'vendor_code',
-            1 => 'name',
-            2 => 'phone',
-            3 => 'vendor_type',
-            4 => 'expenses_count',
-            5 => 'is_active',
+            0 => 'name',
+            1 => 'phone',
+            2 => 'vendor_type',
+            3 => 'expenses_count',
+            4 => 'is_active',
         ];
 
-        $orderIndex = (int) $request->input('order.0.column', 0);
-        $orderDirection = $request->input('order.0.dir', 'desc') === 'asc' ? 'asc' : 'desc';
-        $orderColumn = $columns[$orderIndex] ?? 'created_at';
+        $orderIndex = $request->input('order.0.column');
+        if ($orderIndex !== null && isset($columns[(int) $orderIndex])) {
+            $orderColumn = $columns[(int) $orderIndex];
+            $orderDirection = $request->input('order.0.dir', 'desc') === 'asc' ? 'asc' : 'desc';
+        } else {
+            $orderColumn = 'id';
+            $orderDirection = 'desc';
+        }
 
         $start = (int) $request->input('start', 0);
         $length = (int) $request->input('length', 10);
@@ -287,9 +291,9 @@ class VendorController extends Controller
         foreach ($vendors as $v) {
             $codeHtml = '<a href="'.route('procurement.vendors.show', $v).'" class="fw-bold font-monospace text-primary text-decoration-none">'.e($v->vendor_code).'</a>';
 
-            $nameHtml = '<div class="fw-semibold">'.e($v->name).'</div>';
+            $nameHtml = '<a href="'.route('procurement.vendors.show', $v).'" class="text-decoration-none text-dark fw-semibold">'.e($v->name).'</a><span class="d-none">'.e($v->vendor_code).'</span>';
             if ($v->contact_person) {
-                $nameHtml .= '<small class="text-muted"><i class="bi bi-person me-1"></i>'.e($v->contact_person).'</small>';
+                $nameHtml .= '<div class="text-muted small"><i class="bi bi-person me-1"></i>'.e($v->contact_person).'</div>';
             }
 
             $contactHtml = '';
@@ -310,21 +314,27 @@ class VendorController extends Controller
 
             $statusBadge = $v->status_badge;
 
-            $actions = '<div class="btn-group btn-group-sm" role="group">';
-            $actions .= '<a href="'.route('procurement.vendors.show', $v).'" class="btn btn-outline-info" title="'.__('common.view').'"><i class="bi bi-eye"></i></a>';
+            $actions = '<div class="dropdown text-end">';
+            $actions .= '<button class="btn btn-light btn-sm rounded-circle p-0 d-inline-flex align-items-center justify-content-center border shadow-sm" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-popper-config=\'{"strategy":"fixed"}\' aria-expanded="false" style="width: 32px; height: 32px;" title="'.__('common.actions').'">';
+            $actions .= '<i class="bi bi-three-dots-vertical text-secondary"></i>';
+            $actions .= '</button>';
+            $actions .= '<ul class="dropdown-menu dropdown-menu-end shadow-sm border py-1" style="min-width: 170px; font-size: 0.875rem;">';
+            $actions .= '<li><a class="dropdown-item py-1 px-3 d-flex align-items-center" href="'.route('procurement.vendors.show', $v).'"><i class="bi bi-eye text-primary me-2"></i>'.__('common.view').'</a></li>';
 
             if ($canManage) {
-                $actions .= '<a href="'.route('procurement.vendors.edit', $v).'" class="btn btn-outline-secondary" title="'.__('common.edit').'"><i class="bi bi-pencil"></i></a>';
+                $actions .= '<li><a class="dropdown-item py-1 px-3 d-flex align-items-center" href="'.route('procurement.vendors.edit', $v).'"><i class="bi bi-pencil text-secondary me-2"></i>'.__('common.edit').'</a></li>';
 
                 $toggleIcon = $v->is_active ? 'bi-toggle-on text-success' : 'bi-toggle-off text-muted';
                 $toggleTitle = $v->is_active ? __('procurement.deactivate_vendor') : __('procurement.activate_vendor');
-                $actions .= '<button type="button" class="btn btn-outline-secondary btn-toggle-status" data-vendor-id="'.$v->id.'" data-url="'.route('procurement.vendors.toggle-status', $v).'" title="'.$toggleTitle.'"><i class="bi '.$toggleIcon.'"></i></button>';
+                $actions .= '<li><button type="button" class="dropdown-item py-1 px-3 d-flex align-items-center btn-toggle-status" data-vendor-id="'.$v->id.'" data-url="'.route('procurement.vendors.toggle-status', $v).'"><i class="bi '.$toggleIcon.' me-2"></i>'.$toggleTitle.'</button></li>';
 
                 if (! $hasTransactions) {
-                    $actions .= '<button type="button" class="btn btn-outline-danger btn-delete-vendor" data-vendor-id="'.$v->id.'" data-vendor-name="'.e($v->name).'" data-url="'.route('procurement.vendors.destroy', $v).'" title="'.__('common.delete').'"><i class="bi bi-trash"></i></button>';
+                    $actions .= '<li><hr class="dropdown-divider my-1"></li>';
+                    $actions .= '<li><button type="button" class="dropdown-item py-1 px-3 d-flex align-items-center text-danger btn-delete-vendor" data-vendor-id="'.$v->id.'" data-vendor-name="'.e($v->name).'" data-url="'.route('procurement.vendors.destroy', $v).'"><i class="bi bi-trash text-danger me-2"></i>'.__('common.delete').'</button></li>';
                 }
             }
 
+            $actions .= '</ul>';
             $actions .= '</div>';
 
             $data[] = [

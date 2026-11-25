@@ -74,7 +74,8 @@
                 <div class="col-md-3">
                     <span class="text-muted small fw-bold text-uppercase">{{ __('finance.paid_from') }}</span>
                     <div class="fs-6 fw-bold mt-1 text-dark">{{ $expense->paymentAccount?->name_en }}</div>
-                    <div class="text-muted small">{{ $expense->paymentAccount?->code }} ({{ ucfirst(str_replace('_', ' ', $expense->payment_method)) }})</div>
+                    <div class="text-muted small mb-1">{{ $expense->paymentAccount?->code }}</div>
+                    @include('partials.payment-method-badge', ['method' => $expense->payment_method])
                 </div>
                 <div class="col-md-3">
                     <span class="text-muted small fw-bold text-uppercase">{{ __('common.amount') }}</span>

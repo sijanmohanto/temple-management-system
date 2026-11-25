@@ -69,12 +69,11 @@ class FamilyController extends Controller implements HasMiddleware
         $orderColumnIndex = $request->has('order.0.column') ? (int) $request->input('order.0.column') : null;
         $orderDir = strtolower((string) $request->input('order.0.dir', 'desc')) === 'asc' ? 'asc' : 'desc';
         $columnMap = [
-            0 => 'family_code',
-            1 => 'family_name',
-            3 => 'phone',
-            4 => 'area',
-            5 => 'members_count',
-            6 => 'status',
+            0 => 'family_name',
+            2 => 'phone',
+            3 => 'area',
+            4 => 'members_count',
+            5 => 'status',
         ];
 
         if ($orderColumnIndex !== null && isset($columnMap[$orderColumnIndex])) {
@@ -87,7 +86,6 @@ class FamilyController extends Controller implements HasMiddleware
         $canManage = $request->user()?->hasPermission('manage_people') ?? false;
 
         $data = $records->map(function ($family) use ($canManage) {
-            $codeHtml = '<span class="badge bg-light text-dark border font-monospace">'.e($family->family_code).'</span>';
             $nameHtml = '<a href="'.route('families.show', $family).'" class="fw-bold text-dark text-decoration-none">'.e($family->family_name).'</a>';
 
             $contactHtml = '<span class="text-muted small">'.__('families.no_primary_contact').'</span>';
@@ -103,24 +101,23 @@ class FamilyController extends Controller implements HasMiddleware
                 ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">'.__('common.status_active').'</span>'
                 : '<span class="badge bg-secondary bg-opacity-10 text-secondary border">'.__('common.status_inactive').'</span>';
 
-            $actionsHtml = '<div class="btn-group btn-group-sm text-end">'
-                .'<a href="'.route('families.show', $family).'" class="btn btn-outline-primary" title="'.__('common.view').'"><i class="bi bi-eye"></i></a>';
+            $actionsHtml = '<div class="d-inline-flex align-items-center justify-content-end gap-1">'
+                .'<a href="'.route('families.show', $family).'" class="table-action-btn table-action-btn-view" title="'.__('common.view').'"><i class="bi bi-eye"></i></a>';
 
             if ($canManage) {
-                $actionsHtml .= '<a href="'.route('families.edit', $family).'" class="btn btn-outline-secondary" title="'.__('common.edit').'"><i class="bi bi-pencil"></i></a>';
+                $actionsHtml .= '<a href="'.route('families.edit', $family).'" class="table-action-btn table-action-btn-edit" title="'.__('common.edit').'"><i class="bi bi-pencil"></i></a>';
 
                 if ($family->canBeSafelyDeleted()) {
-                    $actionsHtml .= '<form method="POST" action="'.route('families.destroy', $family).'" class="d-inline" onsubmit="return confirm(\''.e(__('families.delete_confirm')).'\')">'
+                    $actionsHtml .= '<form method="POST" action="'.route('families.destroy', $family).'" class="d-inline m-0 p-0" onsubmit="return confirm(\''.e(__('families.delete_confirm')).'\')">'
                         .csrf_field()
                         .method_field('DELETE')
-                        .'<button type="submit" class="btn btn-outline-danger" title="'.__('common.delete').'"><i class="bi bi-trash"></i></button>'
+                        .'<button type="submit" class="table-action-btn table-action-btn-delete" title="'.__('common.delete').'"><i class="bi bi-trash"></i></button>'
                         .'</form>';
                 }
             }
             $actionsHtml .= '</div>';
 
             return [
-                $codeHtml,
                 $nameHtml,
                 $contactHtml,
                 $phoneHtml,

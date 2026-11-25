@@ -270,18 +270,36 @@ body {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
-.temple-btn-maroon {
-    background-color: var(--temple-maroon);
-    border-color: var(--temple-maroon);
-    color: #ffffff;
-    font-weight: 500;
+.temple-btn-maroon,
+.btn-temple-maroon,
+.btn.temple-btn-maroon {
+    --bs-btn-color: #ffffff;
+    --bs-btn-bg: #75141c;
+    --bs-btn-border-color: #75141c;
+    --bs-btn-hover-color: #ffffff;
+    --bs-btn-hover-bg: #560e15;
+    --bs-btn-hover-border-color: #560e15;
+    --bs-btn-focus-shadow-rgb: 117, 20, 28;
+    --bs-btn-active-color: #ffffff;
+    --bs-btn-active-bg: #560e15;
+    --bs-btn-active-border-color: #560e15;
+    background-color: #75141c !important;
+    border-color: #75141c !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
 }
 
 .temple-btn-maroon:hover,
-.temple-btn-maroon:focus {
-    background-color: var(--temple-maroon-dark);
-    border-color: var(--temple-maroon-dark);
-    color: #ffffff;
+.temple-btn-maroon:focus,
+.btn-temple-maroon:hover,
+.btn-temple-maroon:focus,
+.btn.temple-btn-maroon:hover,
+.btn.temple-btn-maroon:focus {
+    background-color: #560e15 !important;
+    border-color: #560e15 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(117, 20, 28, 0.4);
 }
 
 .temple-btn-saffron {
@@ -541,19 +559,87 @@ div.dataTables_wrapper div.dataTables_paginate ul.pagination .page-link {
     color: var(--temple-maroon);
 }
 
-div.dataTables_wrapper div.dataTables_filter input,
-div.dataTables_wrapper div.dataTables_length select {
-    border-radius: 0.375rem;
-    border: 1px solid #dee2e6;
-    padding: 0.35rem 0.65rem;
-    font-size: 0.875rem;
+/* --------------------------------------------------------------------------
+ * Global DataTables Controls (Length, Search, Pagination & Spacing)
+ * -------------------------------------------------------------------------- */
+.card-body.p-0:has(.dataTables_wrapper),
+.card-body.p-0:has(.dataTable) {
+    padding: 1rem !important;
+}
+
+.card > .table-responsive:has(.dataTables_wrapper),
+.card > .table-responsive:has(.dataTable) {
+    padding: 1rem !important;
+}
+
+div.dataTables_wrapper div.dataTables_length {
+    margin-bottom: 0.75rem;
+}
+
+div.dataTables_wrapper div.dataTables_length label {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    color: #475569 !important;
+    margin-bottom: 0 !important;
+}
+
+div.dataTables_wrapper div.dataTables_length select,
+div.dataTables_wrapper div.dataTables_length select.form-select,
+div.dataTables_wrapper div.dataTables_length select.form-select-sm {
+    display: inline-block !important;
+    width: auto !important;
+    min-width: 5.25rem !important;
+    height: auto !important;
+    padding: 0.4rem 2.25rem 0.4rem 0.85rem !important;
+    margin: 0 0.35rem !important;
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    line-height: 1.5 !important;
+    color: #1e293b !important;
+    background-color: #ffffff !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0.75rem center !important;
+    background-size: 14px 10px !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 0.5rem !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    cursor: pointer !important;
+    text-align: left !important;
+}
+
+div.dataTables_wrapper div.dataTables_filter {
+    margin-bottom: 0.75rem;
+}
+
+div.dataTables_wrapper div.dataTables_filter label {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    color: #475569 !important;
+    margin-bottom: 0 !important;
+}
+
+div.dataTables_wrapper div.dataTables_filter input {
+    border-radius: 0.5rem !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 0.4rem 0.85rem !important;
+    font-size: 0.875rem !important;
+    min-width: 13rem !important;
+    margin-left: 0.35rem !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
 }
 
 div.dataTables_wrapper div.dataTables_filter input:focus,
 div.dataTables_wrapper div.dataTables_length select:focus {
-    border-color: var(--temple-maroon);
-    outline: 0;
-    box-shadow: 0 0 0 0.2rem rgba(117, 20, 28, 0.25);
+    border-color: var(--temple-maroon) !important;
+    outline: 0 !important;
+    box-shadow: 0 0 0 0.2rem rgba(117, 20, 28, 0.2) !important;
 }
 
 /* Toastr Notification Polish */
@@ -563,4 +649,448 @@ div.dataTables_wrapper div.dataTables_length select:focus {
     opacity: 0.96 !important;
     font-family: inherit;
 }
+
+/* ==========================================================================
+   Public & Devotee Event Showcase Cards (Equal Heights & Clean Typography)
+   ========================================================================== */
+.public-event-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.85rem;
+    background: #ffffff;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.public-event-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.12), 0 8px 12px -6px rgba(0, 0, 0, 0.05);
+    border-color: #cbd5e1;
+}
+
+.public-event-banner-wrapper {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+    background: #1e1b18;
+    flex-shrink: 0;
+}
+
+.public-event-banner {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.35s ease;
+    display: block;
+}
+
+.public-event-card:hover .public-event-banner {
+    transform: scale(1.05);
+}
+
+.public-event-banner-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
+}
+
+.public-event-card-body {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+}
+
+.public-event-card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.35;
+    margin-bottom: 0.5rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 3.1rem;
+}
+
+.public-event-meta {
+    font-size: 0.825rem;
+    color: #64748b;
+    margin-bottom: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-height: 2.85rem;
+}
+
+.public-event-meta-item {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.public-event-desc {
+    font-size: 0.85rem;
+    color: #475569;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 3.85rem;
+}
+
+.public-event-card-footer {
+    margin-top: auto;
+    padding-top: 0.85rem;
+    border-top: 1px solid #f1f5f9;
+}
+
+/* ==========================================================================
+   Payment Method Badges & Selector Buttons (bKash, Nagad, Rocket, Bank, Cash)
+   ========================================================================== */
+.payment-method-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 2rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.25;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    vertical-align: middle;
+}
+
+.payment-method-badge .method-logo {
+    width: 20px;
+    height: 20px;
+    max-width: 20px;
+    max-height: 20px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.payment-method-badge.badge-full {
+    padding: 0.3rem 0.75rem;
+}
+
+.payment-method-badge.badge-full .method-logo {
+    width: auto;
+    height: 24px;
+    max-width: 85px;
+    max-height: 24px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.payment-method-badge.method-bkash {
+    background-color: #fff1f6;
+    border-color: #fbcfe8;
+    color: #be185d;
+}
+
+.payment-method-badge.method-nagad,
+.payment-method-badge.method-nagod {
+    background-color: #fff7ed;
+    border-color: #fed7aa;
+    color: #c2410c;
+}
+
+.payment-method-badge.method-rocket {
+    background-color: #faf5ff;
+    border-color: #e9d5ff;
+    color: #7e22ce;
+}
+
+.payment-method-badge.method-bank_transfer {
+    background-color: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+}
+
+.payment-method-badge.method-cash {
+    background-color: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #15803d;
+}
+
+/* Payment Method Selection Card in Forms */
+.payment-method-card {
+    border: 2px solid #e2e8f0;
+    border-radius: 0.75rem;
+    background: #ffffff;
+    padding: 0.85rem 0.5rem;
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    height: 100%;
+    text-align: center;
+}
+
+.payment-method-card:hover {
+    border-color: #cbd5e1;
+    background-color: #f8fafc;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.payment-method-card .method-icon-box {
+    width: 100%;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+}
+
+.payment-method-card .method-icon-box img {
+    max-width: 95%;
+    max-height: 42px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    transition: transform 0.2s ease;
+}
+
+.payment-method-card:hover .method-icon-box img {
+    transform: scale(1.1);
+}
+
+.payment-method-card .method-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #334155;
+    line-height: 1.2;
+}
+
+/* Active / Checked States for Radio Buttons */
+.payment-method-radio:checked + label.payment-method-card {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.payment-method-radio:checked + label.payment-method-card[for="method_bkash"] {
+    border-color: #e2136e;
+    background-color: #fff1f6;
+}
+.payment-method-radio:checked + label.payment-method-card[for="method_bkash"] .method-title {
+    color: #be185d;
+}
+
+.payment-method-radio:checked + label.payment-method-card[for="method_nagad"] {
+    border-color: #f7941d;
+    background-color: #fff7ed;
+}
+.payment-method-radio:checked + label.payment-method-card[for="method_nagad"] .method-title {
+    color: #c2410c;
+}
+
+.payment-method-radio:checked + label.payment-method-card[for="method_rocket"] {
+    border-color: #8c3494;
+    background-color: #faf5ff;
+}
+.payment-method-radio:checked + label.payment-method-card[for="method_rocket"] .method-title {
+    color: #7e22ce;
+}
+
+.payment-method-radio:checked + label.payment-method-card[for="method_bank_transfer"] {
+    border-color: #0d6efd;
+    background-color: #eff6ff;
+}
+.payment-method-radio:checked + label.payment-method-card[for="method_bank_transfer"] .method-title {
+    color: #1d4ed8;
+}
+
+/* --------------------------------------------------------------------------
+ * Running Collection Report Table - Equal Column Widths & Attractive Styling
+ * -------------------------------------------------------------------------- */
+#donorReportTable {
+    table-layout: fixed;
+    width: 100% !important;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+#donorReportTable th,
+#donorReportTable td {
+    width: 20% !important;
+    vertical-align: middle;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+#donorReportTable th:not(:last-child),
+#donorReportTable td:not(:last-child) {
+    text-align: left !important;
+}
+
+#donorReportTable th:last-child,
+#donorReportTable td:last-child {
+    text-align: center !important;
+}
+
+#donorReportTable thead th {
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    color: #475569;
+    background-color: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 2px solid #cbd5e1;
+    padding-top: 0.9rem;
+    padding-bottom: 0.9rem;
+}
+
+#donorReportTable tbody tr {
+    transition: background-color 0.15s ease-in-out;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+#donorReportTable tbody tr:hover {
+    background-color: #f8fafc !important;
+}
+
+#donorReportTable tbody td {
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+}
+
+/* Devotee Avatar in table */
+.donor-avatar {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* Action button polish */
+.btn-donor-action {
+    border-color: #cbd5e1 !important;
+    color: #2563eb !important;
+    background-color: #ffffff;
+}
+
+.btn-donor-action:hover {
+    background-color: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.25), 0 2px 4px -2px rgba(37, 99, 235, 0.15);
+}
+
+#donorReportTable_wrapper .dataTables_length,
+#donorReportTable_wrapper .dataTables_filter {
+    padding-bottom: 0.85rem;
+}
+
+#donorReportTable_wrapper .dataTables_info,
+#donorReportTable_wrapper .dataTables_paginate {
+    padding-top: 0.85rem;
+}
+
+/* Modern Unified Table Action Buttons */
+.table-action-btn {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    text-decoration: none;
+    transition: all 0.2s ease-in-out;
+    font-size: 0.85rem;
+    line-height: 1;
+}
+.table-action-btn-view {
+    background-color: #eff6ff;
+    color: #2563eb;
+    border-color: #dbeafe;
+}
+.table-action-btn-view:hover {
+    background-color: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+}
+.table-action-btn-edit {
+    background-color: #f8fafc;
+    color: #475569;
+    border-color: #e2e8f0;
+}
+.table-action-btn-edit:hover {
+    background-color: #475569;
+    color: #ffffff;
+    border-color: #475569;
+}
+.table-action-btn-delete,
+.table-action-btn-toggle-deactivate {
+    background-color: #fff1f2;
+    color: #e11d48;
+    border-color: #ffe4e6;
+}
+.table-action-btn-delete:hover,
+.table-action-btn-toggle-deactivate:hover {
+    background-color: #e11d48;
+    color: #ffffff;
+    border-color: #e11d48;
+}
+.table-action-btn-toggle-reactivate {
+    background-color: #f0fdf4;
+    color: #16a34a;
+    border-color: #dcfce7;
+}
+.table-action-btn-toggle-reactivate:hover {
+    background-color: #16a34a;
+    color: #ffffff;
+    border-color: #16a34a;
+}
+
+/* Table Dropdown Menu & Viewport Breakout */
+.table-responsive .dropdown-menu {
+    z-index: 1060;
+}
+
+/* --------------------------------------------------------------------------
+ * Month / Year Picker Styles
+ * -------------------------------------------------------------------------- */
+.month-picker-dropdown {
+    min-width: 290px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.month-picker-btn {
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 0.45rem 0.2rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background-color: #f8fafc;
+    color: #1e293b;
+    transition: all 0.15s ease-in-out;
+}
+
+.month-picker-btn:hover {
+    background-color: rgba(139, 0, 0, 0.08);
+    border-color: var(--temple-maroon);
+    color: var(--temple-maroon);
+}
+
+.month-picker-btn.active {
+    background-color: var(--temple-maroon) !important;
+    border-color: var(--temple-maroon) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 6px rgba(139, 0, 0, 0.25);
+}
+
+
 

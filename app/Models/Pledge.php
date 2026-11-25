@@ -217,7 +217,9 @@ class Pledge extends Model
     public function getOwnerNameAttribute(): string
     {
         if ($this->person) {
-            return $this->person->name_en;
+            return app()->getLocale() === 'bn' && ! empty($this->person->name_bn)
+                ? $this->person->name_bn
+                : $this->person->name_en;
         }
 
         if ($this->family) {
@@ -225,6 +227,38 @@ class Pledge extends Model
         }
 
         return '—';
+    }
+
+    /**
+     * Payer/Owner avatar URL.
+     */
+    public function getOwnerAvatarUrlAttribute(): string
+    {
+        if ($this->person) {
+            return $this->person->avatar_url;
+        }
+
+        if ($this->family && $this->family->primaryContact) {
+            return $this->family->primaryContact->avatar_url;
+        }
+
+        return asset('assets/images/avatars/avatar-default.svg');
+    }
+
+    /**
+     * Payer/Owner phone number.
+     */
+    public function getOwnerPhoneAttribute(): ?string
+    {
+        if ($this->person && $this->person->phone) {
+            return $this->person->phone;
+        }
+
+        if ($this->family && $this->family->primaryContact?->phone) {
+            return $this->family->primaryContact->phone;
+        }
+
+        return null;
     }
 
     /**

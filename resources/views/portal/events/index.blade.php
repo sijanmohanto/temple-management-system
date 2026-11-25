@@ -70,8 +70,8 @@
 
     <!-- Data Table Card (STRICTLY NO # / SERIAL COLUMN) -->
     <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body p-0">
-            <div class="table-responsive p-3">
+        <div class="card-body p-3">
+            <div class="table-responsive">
                 <table class="table table-hover align-middle w-100" id="publicEventsTable">
                     <thead class="table-light">
                         <tr>

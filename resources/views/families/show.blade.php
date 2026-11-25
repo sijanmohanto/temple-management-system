@@ -72,12 +72,13 @@
                         </span>
                     @endif
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 w-100" id="familyMembersTable">
+                <div class="card-body p-3">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 w-100" id="familyMembersTable">
                         <thead class="table-light">
                             <tr>
-                                <th class="ps-4">{{ __('people.name_en') }}</th>
-                                <th>{{ __('families.relationship_in_family') }}</th>
+                                <th class="ps-4">{{ __('people.name') }}</th>
+                                <th>{{ __('families.relationship_short') }}</th>
                                 <th>{{ __('people.classifications') }}</th>
                                 <th class="text-end pe-4">{{ __('common.actions') }}</th>
                             </tr>
@@ -86,17 +87,23 @@
                             @forelse($family->members as $member)
                                 <tr>
                                     <td class="ps-4">
-                                        <a href="{{ route('people.show', $member) }}" class="fw-bold text-dark text-decoration-none">
-                                            {{ $member->name_en }}
-                                        </a>
-                                        @if($member->name_bn)
-                                            <small class="text-muted d-block">{{ $member->name_bn }}</small>
-                                        @endif
-                                        @if($family->primary_contact_person_id === $member->id)
-                                            <span class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning border-opacity-25 mt-1">
-                                                <i class="bi bi-star-fill me-1"></i> {{ __('families.primary_contact') }}
-                                            </span>
-                                        @endif
+                                        <div class="d-flex align-items-center gap-3">
+                                            <img src="{{ $member->avatar_url }}" alt="{{ $member->name_en }}"
+                                                 class="rounded-circle shadow-sm object-fit-cover border" style="width: 40px; height: 40px; min-width: 40px;">
+                                            <div>
+                                                <a href="{{ route('people.show', $member) }}" class="fw-bold text-dark text-decoration-none">
+                                                    {{ $member->name }}
+                                                </a>
+                                                @if($member->name_bn && $member->name_bn !== $member->name)
+                                                    <small class="text-muted d-block">{{ $member->name_bn }}</small>
+                                                @endif
+                                                @if($family->primary_contact_person_id === $member->id)
+                                                    <span class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning border-opacity-25 mt-1">
+                                                        <i class="bi bi-star-fill me-1"></i> {{ __('families.primary_contact') }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </div>
                                     </td>
                                     <td>
                                         <span class="badge bg-light text-secondary border">
@@ -105,25 +112,36 @@
                                     </td>
                                     <td>
                                         <div class="d-flex flex-wrap gap-1">
-                                            @foreach($member->classifications as $c)
-                                                <span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.7rem;">
+                                            @forelse($member->classifications as $c)
+                                                @php
+                                                    $color = match ($c->slug) {
+                                                        'resident' => 'bg-info bg-opacity-10 text-info border border-info border-opacity-25',
+                                                        'donor' => 'bg-warning bg-opacity-10 text-warning-emphasis border border-warning border-opacity-25',
+                                                        'committee_member' => 'bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25',
+                                                        'volunteer' => 'bg-success bg-opacity-10 text-success border border-success border-opacity-25',
+                                                        default => 'bg-secondary bg-opacity-10 text-secondary border',
+                                                    };
+                                                @endphp
+                                                <span class="badge {{ $color }}" style="font-size: 0.72rem;">
                                                     {{ $c->name }}
                                                 </span>
-                                            @endforeach
+                                            @empty
+                                                <span class="text-muted small">—</span>
+                                            @endforelse
                                         </div>
                                     </td>
                                     <td class="text-end pe-4">
-                                        <div class="btn-group btn-group-sm">
-                                            <a href="{{ route('people.show', $member) }}" class="btn btn-outline-primary" title="{{ __('common.view') }}">
+                                        <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                                            <a href="{{ route('people.show', $member) }}" class="table-action-btn table-action-btn-view" title="{{ __('common.view') }}">
                                                 <i class="bi bi-eye"></i>
                                             </a>
 
                                             @if(Auth::user()->hasPermission('manage_people'))
-                                                <form method="POST" action="{{ route('families.members.remove', [$family, $member]) }}" class="d-inline"
+                                                <form method="POST" action="{{ route('families.members.remove', [$family, $member]) }}" class="d-inline m-0 p-0"
                                                       onsubmit="return confirm('{{ __('families.remove_member_confirm') }}')">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-outline-danger" title="Disassociate">
+                                                    <button type="submit" class="table-action-btn table-action-btn-delete" title="{{ __('families.remove_member') }}">
                                                         <i class="bi bi-person-x"></i>
                                                     </button>
                                                 </form>
@@ -143,6 +161,7 @@
                     </table>
                 </div>
             </div>
+        </div>
 
             <!-- Add Existing Person to Family Card -->
             @if(Auth::user()->hasPermission('manage_people'))
@@ -264,7 +283,7 @@
         TempleUI.initDataTable('#familyMembersTable', {
             pageLength: 10,
             columnDefs: [
-                { orderable: false, targets: 4 }
+                { orderable: false, targets: 3, className: 'text-end pe-4' }
             ]
         });
     });

@@ -104,8 +104,13 @@
                             <div class="small text-muted mt-1">
                                 {{ __('donations.payment_code') }}: <span class="font-monospace text-dark fw-bold">{{ $receipt->payment?->payment_code }}</span>
                             </div>
-                            <div class="small text-muted mt-1">
-                                {{ __('donations.payment_method') }}: <span class="fw-bold text-dark">{{ __('donations.method_'.$receipt->payment?->payment_method) }}</span>
+                            <div class="small text-muted mt-2 d-flex align-items-center justify-content-sm-end gap-1">
+                                <span>{{ __('donations.payment_method') }}:</span>
+                                @if($receipt->payment?->payment_method)
+                                    @include('partials.payment-method-badge', ['method' => $receipt->payment->payment_method])
+                                @else
+                                    <span class="fw-bold text-dark">—</span>
+                                @endif
                             </div>
                         </div>
                     </div>

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\DB;
 
 class Person extends Model
@@ -43,12 +44,45 @@ class Person extends Model
         'family_id',
         'family_relationship',
         'status',
+        'photo_path',
         'visibility',
         'private_notes',
         'public_notes',
         'created_by',
         'updated_by',
     ];
+
+    /**
+     * Get the URL for the devotee's photo or null if none uploaded.
+     */
+    public function getPhotoUrlAttribute(): ?string
+    {
+        if (! empty($this->photo_path)) {
+            return asset('storage/'.$this->photo_path);
+        }
+
+        return null;
+    }
+
+    /**
+     * Get the display avatar URL: uploaded photo, or gender-based avatar.
+     */
+    public function getAvatarUrlAttribute(): string
+    {
+        if (! empty($this->photo_path)) {
+            return asset('storage/'.$this->photo_path);
+        }
+
+        if ($this->gender === 'female') {
+            return asset('assets/images/avatars/avatar-female.svg');
+        }
+
+        if ($this->gender === 'male') {
+            return asset('assets/images/avatars/avatar-male.svg');
+        }
+
+        return asset('assets/images/avatars/avatar-default.svg');
+    }
 
     protected function casts(): array
     {
@@ -63,6 +97,43 @@ class Person extends Model
     public function family(): BelongsTo
     {
         return $this->belongsTo(Family::class, 'family_id');
+    }
+
+    /**
+     * Associated devotee login account.
+     */
+    public function user(): HasOne
+    {
+        return $this->hasOne(User::class, 'person_id');
+    }
+
+    /**
+     * Resolve user account (via direct foreign key or phone/email matching).
+     */
+    public function resolveUser(): ?User
+    {
+        if ($this->relationLoaded('user') && $this->user) {
+            return $this->user;
+        }
+
+        $direct = $this->user()->first();
+        if ($direct) {
+            return $direct;
+        }
+
+        if (! empty($this->phone)) {
+            $variants = User::getPhoneVariants($this->phone);
+            $user = User::whereIn('phone', $variants)->first();
+            if ($user) {
+                return $user;
+            }
+        }
+
+        if (! empty($this->email)) {
+            return User::where('email', $this->email)->first();
+        }
+
+        return null;
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Models\Classification;
 use App\Models\CollectionPayment;
 use App\Models\Complaint;
 use App\Models\ComplaintActivity;
+use App\Models\DevoteeCredential;
 use App\Models\Event;
 use App\Models\FinancialAccount;
 use App\Models\PaymentAllocation;
@@ -18,6 +19,7 @@ use App\Services\CollectionPaymentService;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -472,6 +474,7 @@ class PublicPortalDemoSeeder extends Seeder
 
                 // Create User
                 $user = User::create([
+                    'person_id' => $person->id,
                     'name' => $def['name_en'],
                     'email' => $def['email'],
                     'phone' => $def['phone'],
@@ -482,6 +485,11 @@ class PublicPortalDemoSeeder extends Seeder
                     'email_verified_at' => now(),
                 ]);
                 $user->roles()->sync([$devoteeRole->id]);
+
+                DevoteeCredential::create([
+                    'user_id' => $user->id,
+                    'encrypted_password' => Crypt::encryptString('Donor@123456'),
+                ]);
 
                 // Create Pledge if defined
                 $pledge = null;

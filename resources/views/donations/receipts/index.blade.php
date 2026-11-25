@@ -58,11 +58,10 @@
                 <table class="table table-hover align-middle mb-0 w-100" id="receiptsDataTable">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-3">{{ __('donations.receipt_number') }}</th>
-                            <th>{{ __('donations.payer') }}</th>
-                            <th>{{ __('donations.type') }}</th>
-                            <th>{{ __('donations.amount') }}</th>
-                            <th>{{ __('donations.verified_at') }}</th>
+                            <th class="ps-3">{{ __('donations.payer_short') }}</th>
+                            <th>{{ __('donations.type_short') }}</th>
+                            <th>{{ __('donations.amount_short') }}</th>
+                            <th>{{ __('donations.verified_at_short') }}</th>
                             <th>{{ __('common.status') }}</th>
                             <th class="text-end pe-3">{{ __('common.actions') }}</th>
                         </tr>
@@ -71,10 +70,17 @@
                         @foreach($receipts as $receipt)
                             <tr>
                                 <td class="ps-3">
-                                    <span class="badge bg-light text-dark border font-monospace">{{ $receipt->receipt_number }}</span>
-                                </td>
-                                <td>
-                                    <div class="fw-bold text-dark">{{ $receipt->payment?->payer_display_name }}</div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="{{ $receipt->payment?->payer_avatar_url ?? asset('assets/images/avatars/avatar-default.svg') }}"
+                                             alt="{{ $receipt->payment?->payer_display_name }}"
+                                             class="rounded-circle object-fit-cover shadow-sm border flex-shrink-0" style="width: 38px; height: 38px; min-width: 38px;">
+                                        <div>
+                                            <div class="fw-bold text-dark">{{ $receipt->payment?->payer_display_name }}</div>
+                                            @if($receipt->payment?->payer_display_phone)
+                                                <small class="text-muted"><i class="bi bi-telephone me-1"></i>{{ $receipt->payment->payer_display_phone }}</small>
+                                            @endif
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
                                     <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
@@ -99,12 +105,12 @@
                                     @endif
                                 </td>
                                 <td class="text-end pe-3">
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="{{ route('receipts.show', $receipt) }}" class="btn btn-outline-primary" title="{{ __('common.view') }}">
+                                    <div class="d-inline-flex gap-1 justify-content-end">
+                                        <a href="{{ route('receipts.show', $receipt) }}" class="table-action-btn table-action-btn-view" title="{{ __('common.view') }}">
                                             <i class="bi bi-eye"></i>
                                         </a>
                                         @if(Auth::user()->hasPermission('print_receipts'))
-                                            <a href="{{ route('receipts.print', $receipt) }}" target="_blank" class="btn btn-outline-secondary" title="{{ __('donations.print_receipt') }}">
+                                            <a href="{{ route('receipts.print', $receipt) }}" target="_blank" class="table-action-btn table-action-btn-edit" title="{{ __('donations.print_receipt') }}">
                                                 <i class="bi bi-printer"></i>
                                             </a>
                                         @endif
@@ -145,13 +151,12 @@
                 }
             },
             columns: [
-                { data: 0, name: 'receipt_number' },
-                { data: 1, name: 'payer' },
-                { data: 2, name: 'type' },
-                { data: 3, name: 'amount' },
-                { data: 4, name: 'issued_at' },
-                { data: 5, name: 'status' },
-                { data: 6, name: 'actions', orderable: false, className: 'text-end pe-3' }
+                { data: 0, name: 'payer', className: 'ps-3' },
+                { data: 1, name: 'type' },
+                { data: 2, name: 'amount' },
+                { data: 3, name: 'issued_at' },
+                { data: 4, name: 'status' },
+                { data: 5, name: 'actions', orderable: false, className: 'text-end pe-3' }
             ]
         });
 

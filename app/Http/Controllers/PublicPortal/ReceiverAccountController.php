@@ -382,15 +382,7 @@ class ReceiverAccountController extends Controller implements HasMiddleware
 
     protected function formatMethodColumn(ReceiverAccount $acc): string
     {
-        $icon = match ($acc->payment_method) {
-            ReceiverAccount::METHOD_BKASH => '<span class="badge bg-danger"><i class="bi bi-phone me-1"></i>bKash</span>',
-            ReceiverAccount::METHOD_NAGAD => '<span class="badge bg-warning text-dark"><i class="bi bi-phone me-1"></i>Nagad</span>',
-            ReceiverAccount::METHOD_ROCKET => '<span class="badge bg-primary"><i class="bi bi-phone me-1"></i>Rocket</span>',
-            ReceiverAccount::METHOD_BANK_TRANSFER => '<span class="badge bg-dark"><i class="bi bi-bank me-1"></i>Bank</span>',
-            default => '<span class="badge bg-secondary"><i class="bi bi-credit-card me-1"></i>'.e($acc->method_name).'</span>',
-        };
-
-        return '<div>'.$icon.'</div>';
+        return view('partials.payment-method-badge', ['method' => $acc->payment_method])->render();
     }
 
     protected function formatAccountNameColumn(ReceiverAccount $acc): string

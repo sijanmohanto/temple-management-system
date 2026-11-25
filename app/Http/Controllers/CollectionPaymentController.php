@@ -58,7 +58,7 @@ class CollectionPaymentController extends Controller implements HasMiddleware
         }
 
         $payments = CollectionPayment::query()
-            ->with(['payerPerson', 'payerFamily', 'event', 'receipt', 'submitter', 'verifier'])
+            ->with(['payerPerson', 'payerFamily.primaryContact', 'event', 'receipt', 'submitter', 'verifier'])
             ->filter($filters)
             ->latest('payment_date')
             ->paginate(15)
@@ -86,7 +86,7 @@ class CollectionPaymentController extends Controller implements HasMiddleware
         $length = $request->integer('length', 15);
         $searchValue = trim($request->input('search.value', ''));
 
-        $query = CollectionPayment::query()->with(['payerPerson', 'payerFamily', 'event', 'receipt', 'submitter', 'verifier']);
+        $query = CollectionPayment::query()->with(['payerPerson', 'payerFamily.primaryContact', 'event', 'receipt', 'submitter', 'verifier']);
         $totalRecords = CollectionPayment::count();
 
         unset($filters['search']);
@@ -102,9 +102,9 @@ class CollectionPaymentController extends Controller implements HasMiddleware
         $orderDir = strtolower((string) $request->input('order.0.dir', 'desc')) === 'asc' ? 'asc' : 'desc';
         $columnMap = [
             0 => 'payment_code',
-            2 => 'payment_date',
-            4 => 'amount',
-            5 => 'status',
+            1 => 'payment_date',
+            3 => 'amount',
+            4 => 'status',
         ];
 
         if ($orderColumnIndex !== null && isset($columnMap[$orderColumnIndex])) {
@@ -116,19 +116,23 @@ class CollectionPaymentController extends Controller implements HasMiddleware
         $records = $query->skip($start)->take($length)->get();
         $canVerify = $request->user()?->hasPermission('verify_collections') ?? false;
         $canSeeSensitive = $request->user()?->hasPermission('view_sensitive_payment_details') ?? false;
+        $canPrint = $request->user()?->hasPermission('print_receipts') ?? false;
 
-        $data = $records->map(function (CollectionPayment $payment) use ($canVerify, $canSeeSensitive) {
+        $data = $records->map(function (CollectionPayment $payment) use ($canVerify, $canSeeSensitive, $canPrint) {
             $codeHtml = '<span class="badge bg-light text-dark border font-monospace">'.e($payment->payment_code).'</span>';
             if ($payment->receipt) {
                 $badgeClass = $payment->receipt->isValid() ? 'bg-success bg-opacity-10 text-success border border-success border-opacity-25' : 'bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25';
-                $codeHtml .= '<div class="mt-1"><a href="'.route('receipts.show', $payment->receipt).'" class="badge '.$badgeClass.' text-decoration-none" title="'.e(__('donations.view_receipt')).'">'
-                    .'<i class="bi bi-receipt me-1"></i>'.e($payment->receipt->receipt_number).'</a></div>';
+                $codeHtml .= ' <a href="'.route('receipts.show', $payment->receipt).'" class="badge '.$badgeClass.' text-decoration-none" title="'.e(__('donations.view_receipt')).'">'
+                    .'<i class="bi bi-receipt me-1"></i>'.e($payment->receipt->receipt_number).'</a>';
             }
 
-            $payerHtml = '<div class="fw-bold text-dark">'.e($payment->payer_display_name).'</div>';
-            if ($payment->payerPerson && $payment->payerPerson->phone) {
-                $payerHtml .= '<small class="text-muted"><i class="bi bi-telephone me-1"></i>'.e($payment->payerPerson->phone).'</small>';
+            $payerAvatar = '<img src="'.e($payment->payer_avatar_url).'" alt="'.e($payment->payer_display_name).'" class="rounded-circle object-fit-cover shadow-sm border flex-shrink-0" style="width: 38px; height: 38px; min-width: 38px;">';
+            $payerDetails = '<div class="d-flex align-items-center gap-1 flex-wrap mb-1">'.$codeHtml.'</div>'
+                .'<div class="fw-bold text-dark">'.e($payment->payer_display_name).'</div>';
+            if ($payment->payer_display_phone) {
+                $payerDetails .= '<small class="text-muted"><i class="bi bi-telephone me-1"></i>'.e($payment->payer_display_phone).'</small>';
             }
+            $payerHtml = '<div class="d-flex align-items-center gap-2">'.$payerAvatar.'<div>'.$payerDetails.'</div></div>';
 
             $contextHtml = '<span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 mb-1" style="font-size: 0.72rem;">'
                 .e(__('donations.type_'.$payment->collection_type)).'</span>';
@@ -137,7 +141,7 @@ class CollectionPaymentController extends Controller implements HasMiddleware
             }
             $contextHtml .= '<div class="small text-muted"><i class="bi bi-calendar3 me-1"></i>'.e($payment->payment_date->format('d M Y')).'</div>';
 
-            $methodHtml = '<div class="fw-semibold text-dark"><i class="bi bi-credit-card me-1 text-muted"></i>'.e(__('donations.method_'.$payment->payment_method)).'</div>';
+            $methodHtml = '<div>'.view('partials.payment-method-badge', ['method' => $payment->payment_method])->render().'</div>';
             if ($payment->transaction_reference) {
                 $ref = $canSeeSensitive ? e($payment->transaction_reference) : substr(e($payment->transaction_reference), 0, 4).'****';
                 $methodHtml .= '<div class="small text-muted font-monospace"><i class="bi bi-hash me-1"></i>'.$ref.'</div>';
@@ -155,21 +159,20 @@ class CollectionPaymentController extends Controller implements HasMiddleware
 
             $statusHtml = '<span class="badge '.$statusBadge.' px-2 py-1"><i class="bi bi-circle-fill me-1" style="font-size: 0.45rem;"></i>'.e(__('donations.status_'.$payment->status)).'</span>';
 
-            $actionsHtml = '<div class="btn-group btn-group-sm text-end">'
-                .'<a href="'.route('collections.show', $payment).'" class="btn btn-outline-primary" title="'.e(__('common.view')).'"><i class="bi bi-eye"></i></a>';
+            $actionsHtml = '<div class="d-inline-flex gap-1 justify-content-end">'
+                .'<a href="'.route('collections.show', $payment).'" class="table-action-btn table-action-btn-view" title="'.e(__('common.view')).'"><i class="bi bi-eye"></i></a>';
 
             if ($payment->isPending() && $canVerify) {
-                $actionsHtml .= '<a href="'.route('collections.show', $payment).'" class="btn btn-outline-success" title="'.e(__('donations.verify_payment')).'"><i class="bi bi-check2-circle"></i></a>';
+                $actionsHtml .= '<a href="'.route('collections.show', $payment).'" class="table-action-btn table-action-btn-toggle-reactivate" title="'.e(__('donations.verify_payment')).'"><i class="bi bi-check2-circle"></i></a>';
             }
 
-            if ($payment->receipt && $payment->receipt->isValid()) {
-                $actionsHtml .= '<a href="'.route('receipts.print', $payment->receipt).'" target="_blank" class="btn btn-outline-secondary" title="'.e(__('donations.print_receipt')).'"><i class="bi bi-printer"></i></a>';
+            if ($payment->receipt && $payment->receipt->isValid() && $canPrint) {
+                $actionsHtml .= '<a href="'.route('receipts.print', $payment->receipt).'" target="_blank" class="table-action-btn table-action-btn-edit" title="'.e(__('donations.print_receipt')).'"><i class="bi bi-printer"></i></a>';
             }
 
             $actionsHtml .= '</div>';
 
             return [
-                $codeHtml,
                 $payerHtml,
                 $contextHtml,
                 $methodHtml,

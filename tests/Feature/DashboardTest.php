@@ -29,12 +29,24 @@ class DashboardTest extends TestCase
         $user = User::factory()->create([
             'status' => 'active',
         ]);
-        $user->assignRole('devotee');
+        $user->assignRole('temple_admin');
 
         $response = $this->actingAs($user)->get('/dashboard');
 
         $response->assertStatus(200);
         $response->assertSee($user->name);
+    }
+
+    public function test_devotee_is_redirected_to_devotee_dashboard(): void
+    {
+        $user = User::factory()->create([
+            'status' => 'active',
+        ]);
+        $user->assignRole('devotee');
+
+        $response = $this->actingAs($user)->get('/dashboard');
+
+        $response->assertRedirect(route('devotee.dashboard'));
     }
 
     public function test_user_can_view_and_update_profile(): void

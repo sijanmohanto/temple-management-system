@@ -360,7 +360,7 @@ class IncomeExpenseReportService
 
             return [
                 'id' => $person->id,
-                'text' => "{$name} ({$person->person_code}){$phone}",
+                'text' => "{$name}{$phone}",
                 'name' => $name,
             ];
         })->all();
@@ -731,67 +731,84 @@ class IncomeExpenseReportService
             $badgeClass = $isCommittee ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-secondary-subtle text-secondary border border-secondary-subtle';
             $badgeLabel = $isCommittee ? __('finance.committee_member') : __('finance.registered_person');
 
-            $donorDetails = '<div class="fw-bold">'.e($payment->payerPerson->name).'</div>';
-            $donorDetails .= '<div class="small text-muted"><span class="badge '.$badgeClass.' me-1">'.$badgeLabel.'</span>'.e($payment->payerPerson->person_code);
-            if ($payment->payerPerson->phone) {
-                $donorDetails .= ' • '.e($payment->payerPerson->phone);
-            }
+            $donorDetails = '<div class="fw-bold text-dark">'.e($payment->payerPerson->name).'</div>';
+            $donorDetails .= '<div class="d-flex align-items-center gap-1 flex-wrap mt-1">';
+            $donorDetails .= '<span class="badge '.$badgeClass.'" style="font-size: 0.7rem;">'.$badgeLabel.'</span>';
+            $donorDetails .= '<span class="text-muted font-monospace small">'.e($payment->payerPerson->person_code).'</span>';
             $donorDetails .= '</div>';
+            if ($payment->payerPerson->phone) {
+                $donorDetails .= '<div class="small text-muted mt-1"><i class="bi bi-telephone me-1"></i>'.e($payment->payerPerson->phone).'</div>';
+            }
         } elseif ($payment->payerFamily) {
-            $donorDetails = '<div class="fw-bold">'.e($payment->payerFamily->family_name).'</div>';
-            $donorDetails .= '<div class="small text-muted"><span class="badge bg-info-subtle text-dark border me-1">'.__('families.family').'</span>'.e($payment->payerFamily->family_code).'</div>';
+            $donorDetails = '<div class="fw-bold text-dark">'.e($payment->payerFamily->family_name).'</div>';
+            $donorDetails .= '<div class="d-flex align-items-center gap-1 flex-wrap mt-1">';
+            $donorDetails .= '<span class="badge bg-info-subtle text-dark border" style="font-size: 0.7rem;">'.__('families.family').'</span>';
+            $donorDetails .= '<span class="text-muted font-monospace small">'.e($payment->payerFamily->family_code).'</span>';
+            $donorDetails .= '</div>';
+            if ($payment->payerFamily->phone) {
+                $donorDetails .= '<div class="small text-muted mt-1"><i class="bi bi-telephone me-1"></i>'.e($payment->payerFamily->phone).'</div>';
+            }
         } else {
             $donorName = $payment->payer_name_override ?? __('finance.guest_visitor');
-            $donorDetails = '<div class="fw-bold">'.e($donorName).'</div>';
-            $donorDetails .= '<div class="small text-muted"><span class="badge bg-secondary-subtle text-dark border me-1">'.__('finance.guest_visitor').'</span>';
-            if ($payment->payer_phone_override) {
-                $donorDetails .= e($payment->payer_phone_override);
-            }
+            $donorDetails = '<div class="fw-bold text-dark">'.e($donorName).'</div>';
+            $donorDetails .= '<div class="d-flex align-items-center gap-1 flex-wrap mt-1">';
+            $donorDetails .= '<span class="badge bg-secondary-subtle text-dark border" style="font-size: 0.7rem;">'.__('finance.guest_visitor').'</span>';
             $donorDetails .= '</div>';
+            if ($payment->payer_phone_override) {
+                $donorDetails .= '<div class="small text-muted mt-1"><i class="bi bi-telephone me-1"></i>'.e($payment->payer_phone_override).'</div>';
+            }
         }
 
         // Purpose
         $purposeLabel = match ($payment->collection_type) {
-            CollectionPayment::TYPE_EVENT_PLEDGE => '<span class="badge bg-warning-subtle text-dark border me-1">'.__('finance.event_pledge').'</span>',
-            CollectionPayment::TYPE_EVENT_DONATION => '<span class="badge bg-success-subtle text-success border me-1">'.__('finance.event_donation').'</span>',
-            CollectionPayment::TYPE_MONTHLY_CONTRIBUTION => '<span class="badge bg-primary-subtle text-primary border me-1">'.__('finance.monthly_contribution').'</span>',
-            CollectionPayment::TYPE_GENERAL_DONATION => '<span class="badge bg-info-subtle text-dark border me-1">'.__('finance.general_donation').'</span>',
-            default => '<span class="badge bg-light text-dark border me-1">'.e(ucwords(str_replace('_', ' ', $payment->collection_type))).'</span>',
+            CollectionPayment::TYPE_EVENT_PLEDGE => '<span class="badge bg-warning-subtle text-dark border">'.__('finance.event_pledge').'</span>',
+            CollectionPayment::TYPE_EVENT_DONATION => '<span class="badge bg-success-subtle text-success border">'.__('finance.event_donation').'</span>',
+            CollectionPayment::TYPE_MONTHLY_CONTRIBUTION => '<span class="badge bg-primary-subtle text-primary border">'.__('finance.monthly_contribution').'</span>',
+            CollectionPayment::TYPE_GENERAL_DONATION => '<span class="badge bg-info-subtle text-dark border">'.__('finance.general_donation').'</span>',
+            default => '<span class="badge bg-light text-dark border">'.e(ucwords(str_replace('_', ' ', $payment->collection_type))).'</span>',
         };
-        $purpose = '<div>'.$purposeLabel.'<span class="font-monospace small text-muted">'.e($payment->payment_code).'</span></div>';
-        if ($payment->payment_notes) {
-            $purpose .= '<div class="small text-muted text-truncate" style="max-width: 220px;" title="'.e($payment->payment_notes).'">'.e($payment->payment_notes).'</div>';
+        $purpose = '<div>';
+        $purpose .= '<div class="d-flex align-items-center gap-1 flex-wrap mb-1">'.$purposeLabel;
+        $purpose .= '<span class="font-monospace small text-muted">'.e($payment->payment_code).'</span>';
+        $purpose .= '</div>';
+        if ($payment->payment_method) {
+            $purpose .= '<div class="mb-1">'.view('partials.payment-method-badge', ['method' => $payment->payment_method])->render().'</div>';
         }
+        if ($payment->payment_notes) {
+            $purpose .= '<div class="small text-muted text-truncate" style="max-width: 220px;" title="'.e($payment->payment_notes).'"><i class="bi bi-info-circle me-1"></i>'.e($payment->payment_notes).'</div>';
+        }
+        $purpose .= '</div>';
 
         // Event
         if ($payment->event) {
             $eventTitle = app()->getLocale() === 'bn' && $payment->event->title_bn ? $payment->event->title_bn : $payment->event->title_en;
-            $event = '<div class="fw-semibold">'.e($eventTitle).'</div>';
+            $event = '<div><div class="fw-semibold text-dark">'.e($eventTitle).'</div>';
             if ($payment->event->category) {
-                $event .= '<span class="badge bg-light text-muted border" style="font-size: 0.7rem;">'.e($payment->event->category->name_en).'</span>';
+                $event .= '<span class="badge bg-light text-muted border mt-1" style="font-size: 0.7rem;">'.e($payment->event->category->name_en).'</span>';
             }
+            $event .= '</div>';
         } else {
-            $event = '<span class="badge bg-light text-dark border">'.__('finance.general_temple_fund').'</span>';
+            $event = '<span class="badge bg-light text-dark border"><i class="bi bi-bank me-1 text-secondary"></i>'.__('finance.general_temple_fund').'</span>';
         }
 
         // Amount
-        $amount = '৳'.number_format((float) $payment->amount, 2);
+        $amount = '<span class="fw-bold text-success text-nowrap">৳'.number_format((float) $payment->amount, 2).'</span>';
 
         // Date
-        $date = $payment->payment_date ? Carbon::parse($payment->payment_date)->format('Y-m-d') : '-';
+        $date = '<span class="text-nowrap font-monospace text-muted small"><i class="bi bi-calendar3 me-1"></i>'.($payment->payment_date ? e(Carbon::parse($payment->payment_date)->format('Y-m-d')) : '—').'</span>';
 
         // Status
         $status = match ($payment->status) {
-            CollectionPayment::STATUS_VERIFIED => '<span class="badge bg-success">'.__('finance.verified').'</span>',
-            CollectionPayment::STATUS_PENDING => '<span class="badge bg-warning text-dark">'.__('finance.pending').'</span>',
-            CollectionPayment::STATUS_REJECTED => '<span class="badge bg-danger">'.__('finance.rejected').'</span>',
-            CollectionPayment::STATUS_REVERSED => '<span class="badge bg-secondary">'.__('finance.reversed').'</span>',
+            CollectionPayment::STATUS_VERIFIED => '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1"><i class="bi bi-check-circle-fill me-1" style="font-size: 0.45rem;"></i>'.__('finance.verified').'</span>',
+            CollectionPayment::STATUS_PENDING => '<span class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning border-opacity-25 px-2 py-1"><i class="bi bi-clock-fill me-1" style="font-size: 0.45rem;"></i>'.__('finance.pending').'</span>',
+            CollectionPayment::STATUS_REJECTED => '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1"><i class="bi bi-x-circle-fill me-1" style="font-size: 0.45rem;"></i>'.__('finance.rejected').'</span>',
+            CollectionPayment::STATUS_REVERSED => '<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1">'.__('finance.reversed').'</span>',
             default => '<span class="badge bg-secondary">'.e($payment->status).'</span>',
         };
 
         // Actions
-        $action = '<button type="button" class="btn btn-sm btn-outline-primary btn-view-income-details" data-type="collection" data-id="'.$payment->id.'" title="'.__('finance.view_details').'">'.
-            '<i class="bi bi-eye me-1"></i>'.__('finance.view_details').
+        $action = '<button type="button" class="table-action-btn table-action-btn-view btn-view-income-details" data-type="collection" data-id="'.$payment->id.'" title="'.e(__('finance.view_details')).'">'.
+            '<i class="bi bi-eye"></i>'.
             '</button>';
 
         return [
@@ -808,45 +825,56 @@ class IncomeExpenseReportService
     protected function formatManualIncomeRow(ManualIncome $manual): array
     {
         $payerName = $manual->payer_name ?? __('finance.guest_visitor');
-        $donorDetails = '<div class="fw-bold">'.e($payerName).'</div>';
-        $donorDetails .= '<div class="small text-muted"><span class="badge bg-secondary-subtle text-dark border me-1">'.__('finance.guest_visitor').'</span>'.__('finance.misc_income').'</div>';
+        $donorDetails = '<div class="fw-bold text-dark">'.e($payerName).'</div>';
+        $donorDetails .= '<div class="d-flex align-items-center gap-1 flex-wrap mt-1">';
+        $donorDetails .= '<span class="badge bg-secondary-subtle text-dark border" style="font-size: 0.7rem;">'.__('finance.guest_visitor').'</span>';
+        $donorDetails .= '<span class="text-muted small">'.__('finance.misc_income').'</span>';
+        $donorDetails .= '</div>';
 
         // Purpose
-        $purposeLabel = '<span class="badge bg-secondary-subtle text-secondary border me-1">'.__('finance.misc_income').'</span>';
-        $purpose = '<div>'.$purposeLabel.'<span class="font-monospace small text-muted">'.e($manual->income_number).'</span></div>';
+        $purposeLabel = '<span class="badge bg-secondary-subtle text-secondary border">'.__('finance.misc_income').'</span>';
+        $purpose = '<div>';
+        $purpose .= '<div class="d-flex align-items-center gap-1 flex-wrap mb-1">'.$purposeLabel;
+        $purpose .= '<span class="font-monospace small text-muted">'.e($manual->income_number).'</span>';
+        $purpose .= '</div>';
+        if ($manual->payment_method) {
+            $purpose .= '<div class="mb-1">'.view('partials.payment-method-badge', ['method' => $manual->payment_method])->render().'</div>';
+        }
         $title = app()->getLocale() === 'bn' && $manual->title_bn ? $manual->title_bn : $manual->title_en;
         if ($title || $manual->notes) {
             $desc = $title ?: $manual->notes;
-            $purpose .= '<div class="small text-muted text-truncate" style="max-width: 220px;" title="'.e($desc).'">'.e($desc).'</div>';
+            $purpose .= '<div class="small text-muted text-truncate" style="max-width: 220px;" title="'.e($desc).'"><i class="bi bi-info-circle me-1"></i>'.e($desc).'</div>';
         }
+        $purpose .= '</div>';
 
         // Event
         if ($manual->event) {
             $eventTitle = app()->getLocale() === 'bn' && $manual->event->title_bn ? $manual->event->title_bn : $manual->event->title_en;
-            $event = '<div class="fw-semibold">'.e($eventTitle).'</div>';
+            $event = '<div><div class="fw-semibold text-dark">'.e($eventTitle).'</div>';
             if ($manual->event->category) {
-                $event .= '<span class="badge bg-light text-muted border" style="font-size: 0.7rem;">'.e($manual->event->category->name_en).'</span>';
+                $event .= '<span class="badge bg-light text-muted border mt-1" style="font-size: 0.7rem;">'.e($manual->event->category->name_en).'</span>';
             }
+            $event .= '</div>';
         } else {
-            $event = '<span class="badge bg-light text-dark border">'.__('finance.general_temple_fund').'</span>';
+            $event = '<span class="badge bg-light text-dark border"><i class="bi bi-bank me-1 text-secondary"></i>'.__('finance.general_temple_fund').'</span>';
         }
 
         // Amount
-        $amount = '৳'.number_format((float) $manual->amount, 2);
+        $amount = '<span class="fw-bold text-success text-nowrap">৳'.number_format((float) $manual->amount, 2).'</span>';
 
         // Date
-        $date = $manual->income_date ? Carbon::parse($manual->income_date)->format('Y-m-d') : '-';
+        $date = '<span class="text-nowrap font-monospace text-muted small"><i class="bi bi-calendar3 me-1"></i>'.($manual->income_date ? e(Carbon::parse($manual->income_date)->format('Y-m-d')) : '—').'</span>';
 
         // Status
         $status = match ($manual->status) {
-            ManualIncome::STATUS_POSTED => '<span class="badge bg-success">'.__('finance.posted').'</span>',
-            ManualIncome::STATUS_REVERSED => '<span class="badge bg-secondary">'.__('finance.reversed').'</span>',
+            ManualIncome::STATUS_POSTED => '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1"><i class="bi bi-check-circle-fill me-1" style="font-size: 0.45rem;"></i>'.__('finance.posted').'</span>',
+            ManualIncome::STATUS_REVERSED => '<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1">'.__('finance.reversed').'</span>',
             default => '<span class="badge bg-secondary">'.e($manual->status).'</span>',
         };
 
         // Actions
-        $action = '<button type="button" class="btn btn-sm btn-outline-primary btn-view-income-details" data-type="manual" data-id="'.$manual->id.'" title="'.__('finance.view_details').'">'.
-            '<i class="bi bi-eye me-1"></i>'.__('finance.view_details').
+        $action = '<button type="button" class="table-action-btn table-action-btn-view btn-view-income-details" data-type="manual" data-id="'.$manual->id.'" title="'.e(__('finance.view_details')).'">'.
+            '<i class="bi bi-eye"></i>'.
             '</button>';
 
         return [
@@ -863,53 +891,59 @@ class IncomeExpenseReportService
     protected function formatExpenseRow(Expense $expense): array
     {
         $payeeName = $expense->payee_name ?? $expense->vendor_name ?? '-';
-        $payeeDetails = '<div class="fw-bold">'.e($payeeName).'</div>';
+        $payeeDetails = '<div class="fw-bold text-dark">'.e($payeeName).'</div>';
         if ($expense->vendor_phone) {
-            $payeeDetails .= '<div class="small text-muted font-monospace"><i class="bi bi-telephone me-1"></i>'.e($expense->vendor_phone).'</div>';
+            $payeeDetails .= '<div class="small text-muted font-monospace mt-1"><i class="bi bi-telephone me-1"></i>'.e($expense->vendor_phone).'</div>';
         }
 
         // Purpose
         $title = app()->getLocale() === 'bn' && $expense->title_bn ? $expense->title_bn : $expense->title_en;
         $categoryName = $expense->expenseAccount ? (app()->getLocale() === 'bn' && $expense->expenseAccount->name_bn ? $expense->expenseAccount->name_bn : $expense->expenseAccount->name_en) : '';
         $purpose = '<div>';
+        $purpose .= '<div class="d-flex align-items-center gap-1 flex-wrap mb-1">';
         if ($categoryName) {
-            $purpose .= '<span class="badge bg-secondary-subtle text-secondary border me-1">'.e($categoryName).'</span>';
+            $purpose .= '<span class="badge bg-secondary-subtle text-secondary border">'.e($categoryName).'</span>';
         }
         $purpose .= '<span class="font-monospace small text-muted">'.e($expense->expense_number).'</span>';
         $purpose .= '</div>';
-        if ($title) {
-            $purpose .= '<div class="small text-muted text-truncate" style="max-width: 220px;" title="'.e($title).'">'.e($title).'</div>';
+        if ($expense->payment_method) {
+            $purpose .= '<div class="mb-1">'.view('partials.payment-method-badge', ['method' => $expense->payment_method])->render().'</div>';
         }
+        if ($title) {
+            $purpose .= '<div class="small text-muted text-truncate" style="max-width: 220px;" title="'.e($title).'"><i class="bi bi-info-circle me-1"></i>'.e($title).'</div>';
+        }
+        $purpose .= '</div>';
 
         // Event
         if ($expense->event) {
             $eventTitle = app()->getLocale() === 'bn' && $expense->event->title_bn ? $expense->event->title_bn : $expense->event->title_en;
-            $event = '<div class="fw-semibold">'.e($eventTitle).'</div>';
+            $event = '<div><div class="fw-semibold text-dark">'.e($eventTitle).'</div>';
             if ($expense->event->category) {
-                $event .= '<span class="badge bg-light text-muted border" style="font-size: 0.7rem;">'.e($expense->event->category->name_en).'</span>';
+                $event .= '<span class="badge bg-light text-muted border mt-1" style="font-size: 0.7rem;">'.e($expense->event->category->name_en).'</span>';
             }
+            $event .= '</div>';
         } else {
-            $event = '<span class="badge bg-light text-dark border">'.__('finance.general_temple_fund').'</span>';
+            $event = '<span class="badge bg-light text-dark border"><i class="bi bi-bank me-1 text-secondary"></i>'.__('finance.general_temple_fund').'</span>';
         }
 
         // Amount
-        $amount = '৳'.number_format((float) $expense->amount, 2);
+        $amount = '<span class="fw-bold text-danger text-nowrap">৳'.number_format((float) $expense->amount, 2).'</span>';
 
         // Date
-        $date = $expense->expense_date ? Carbon::parse($expense->expense_date)->format('Y-m-d') : '-';
+        $date = '<span class="text-nowrap font-monospace text-muted small"><i class="bi bi-calendar3 me-1"></i>'.($expense->expense_date ? e(Carbon::parse($expense->expense_date)->format('Y-m-d')) : '—').'</span>';
 
         // Status
         $status = match ($expense->status) {
-            Expense::STATUS_APPROVED => '<span class="badge bg-success">'.__('finance.approved').'</span>',
-            Expense::STATUS_PENDING => '<span class="badge bg-warning text-dark">'.__('finance.pending_approval').'</span>',
-            Expense::STATUS_REJECTED => '<span class="badge bg-danger">'.__('finance.rejected').'</span>',
-            Expense::STATUS_REVERSED => '<span class="badge bg-secondary">'.__('finance.reversed').'</span>',
+            Expense::STATUS_APPROVED => '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1"><i class="bi bi-check-circle-fill me-1" style="font-size: 0.45rem;"></i>'.__('finance.approved').'</span>',
+            Expense::STATUS_PENDING => '<span class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning border-opacity-25 px-2 py-1"><i class="bi bi-clock-fill me-1" style="font-size: 0.45rem;"></i>'.__('finance.pending_approval').'</span>',
+            Expense::STATUS_REJECTED => '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1"><i class="bi bi-x-circle-fill me-1" style="font-size: 0.45rem;"></i>'.__('finance.rejected').'</span>',
+            Expense::STATUS_REVERSED => '<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1">'.__('finance.reversed').'</span>',
             default => '<span class="badge bg-secondary">'.e($expense->status).'</span>',
         };
 
         // Actions
-        $action = '<button type="button" class="btn btn-sm btn-outline-primary btn-view-expense-details" data-id="'.$expense->id.'" title="'.__('finance.view_details').'">'.
-            '<i class="bi bi-eye me-1"></i>'.__('finance.view_details').
+        $action = '<button type="button" class="table-action-btn table-action-btn-view btn-view-expense-details" data-id="'.$expense->id.'" title="'.e(__('finance.view_details')).'">'.
+            '<i class="bi bi-eye"></i>'.
             '</button>';
 
         return [

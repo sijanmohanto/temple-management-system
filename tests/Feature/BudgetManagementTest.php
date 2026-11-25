@@ -117,6 +117,22 @@ class BudgetManagementTest extends TestCase
     {
         $response = $this->actingAs($this->devotee)->get(route('procurement.budgets.index'));
         $response->assertStatus(403);
+
+        $responseCreate = $this->actingAs($this->devotee)->get(route('procurement.budgets.create'));
+        $responseCreate->assertStatus(403);
+        $responseCreate->assertSee('This action is unauthorized.');
+        $responseCreate->assertDontSee('COMMON.UNAUTHORIZED');
+    }
+
+    public function test_committee_member_can_access_budget_create_and_manage_budgets(): void
+    {
+        $committeeRole = Role::where('slug', 'committee_member')->first();
+        $committeeUser = User::factory()->create(['status' => 'active']);
+        $committeeUser->roles()->attach($committeeRole);
+
+        $response = $this->actingAs($committeeUser)->get(route('procurement.budgets.create'));
+        $response->assertStatus(200);
+        $response->assertSee('Create Budget');
     }
 
     public function test_authorized_user_can_view_budget_list_and_create_pages(): void

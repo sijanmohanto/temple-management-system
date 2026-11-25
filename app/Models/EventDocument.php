@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class EventDocument extends Model
 {
@@ -32,11 +33,35 @@ class EventDocument extends Model
         self::TYPE_OTHER,
     ];
 
+    public const CATEGORY_COMPLETE_FINANCIAL_STATEMENT = 'complete_financial_statement';
+
+    public const CATEGORY_INCOME_REPORT = 'income_report';
+
+    public const CATEGORY_EXPENSE_REPORT = 'expense_report';
+
+    public const CATEGORY_EXPENSE_BREAKDOWN = 'expense_breakdown';
+
+    public const CATEGORY_EVENT_SETTLEMENT = 'event_settlement';
+
+    public const CATEGORY_OTHER = 'other';
+
+    public const REPORT_CATEGORIES = [
+        self::CATEGORY_COMPLETE_FINANCIAL_STATEMENT,
+        self::CATEGORY_INCOME_REPORT,
+        self::CATEGORY_EXPENSE_REPORT,
+        self::CATEGORY_EXPENSE_BREAKDOWN,
+        self::CATEGORY_EVENT_SETTLEMENT,
+        self::CATEGORY_OTHER,
+    ];
+
     protected $fillable = [
+        'uuid',
         'event_id',
         'title_en',
         'title_bn',
         'document_type',
+        'report_category',
+        'financial_year',
         'file_path',
         'file_name',
         'file_size',
@@ -57,7 +82,20 @@ class EventDocument extends Model
             'published_at' => 'datetime',
             'unpublished_at' => 'datetime',
             'file_size' => 'integer',
+            'financial_year' => 'integer',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (EventDocument $doc) {
+            if (empty($doc->uuid)) {
+                $doc->uuid = (string) Str::uuid();
+            }
+            if (empty($doc->financial_year) && $doc->event) {
+                $doc->financial_year = $doc->event->event_year;
+            }
+        });
     }
 
     public function event(): BelongsTo
@@ -136,6 +174,15 @@ class EventDocument extends Model
         return $translated !== $key ? $translated : ucwords(str_replace('_', ' ', $this->document_type));
     }
 
+    public function getReportCategoryNameAttribute(): string
+    {
+        $category = $this->report_category ?? self::CATEGORY_OTHER;
+        $key = 'portal.report_categories.'.$category;
+        $translated = __($key);
+
+        return $translated !== $key ? $translated : ucwords(str_replace('_', ' ', $category));
+    }
+
     public function scopePublished($query)
     {
         return $query->where('publication_status', self::PUB_STATUS_PUBLISHED);
@@ -149,5 +196,15 @@ class EventDocument extends Model
     public function scopeOfType($query, string $type)
     {
         return $query->where('document_type', $type);
+    }
+
+    public function scopeOfCategory($query, string $category)
+    {
+        return $query->where('report_category', $category);
+    }
+
+    public function scopeForYear($query, int $year)
+    {
+        return $query->where('financial_year', $year);
     }
 }

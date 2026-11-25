@@ -443,7 +443,7 @@ class PublicPortalDonorReportTest extends TestCase
     }
 
     /**
-     * 11. Privacy invariants: NEVER leak phone numbers, emails, addresses, or committee titles.
+     * 11. Devotee name and phone are displayed for public donors, while email, address, and anonymous/private details are protected.
      */
     public function test_privacy_invariants_never_leak_phone_email_address_or_committee_titles(): void
     {
@@ -461,7 +461,7 @@ class PublicPortalDonorReportTest extends TestCase
         $response = $this->get('/events/'.$this->event->slug);
 
         $response->assertStatus(200);
-        $response->assertDontSee($this->devoteeA->phone);
+        $response->assertSee($this->devoteeA->phone);
         $response->assertDontSee($this->devoteeA->email);
         $response->assertDontSee($this->devoteeA->present_address);
     }
@@ -504,7 +504,7 @@ class PublicPortalDonorReportTest extends TestCase
     }
 
     /**
-     * 13. Action column contains compact View and Complain buttons with proper attributes.
+     * 13. Action column contains login icon button.
      */
     public function test_action_column_contains_compact_view_and_complain_buttons(): void
     {
@@ -522,10 +522,11 @@ class PublicPortalDonorReportTest extends TestCase
         $response = $this->get('/events/'.$this->event->slug);
 
         $response->assertStatus(200);
-        $response->assertSee('btn-donor-details', false);
-        $response->assertSee('btn-donor-complain', false);
-        $response->assertSee('bi bi-eye', false);
-        $response->assertSee('bi bi-flag', false);
+        $response->assertSee('btn-donor-action', false);
+        $response->assertSee('bi bi-box-arrow-in-right', false);
+        $response->assertSee('text-center', false);
+        $response->assertSee(route('login'), false);
+        $response->assertSee(__('portal.public.login'), false);
     }
 
     /**

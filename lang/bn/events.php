@@ -40,6 +40,8 @@ return [
     'event_year' => 'অনুষ্ঠানের বছর',
     'event_year_help' => 'উক্ত অনুষ্ঠানের পঞ্জিকাগত/পূজাবর্ষ।',
     'venue' => 'অনুষ্ঠানস্থল / ভেন্যু',
+    'temple_premises' => 'মন্দির প্রাঙ্গণ',
+    'no_description' => 'বাৎসরিক ধর্মীয় উৎসব ও দেব-দেবীর পূজার্চনা।',
     'date' => 'তারিখ',
     'dates' => 'তারিখ',
     'event_duration' => 'অনুষ্ঠানের সময়কাল',
@@ -188,4 +190,15 @@ return [
     'settlement_completed_banner' => 'অনুষ্ঠানের তহবিল নিষ্পত্তি সম্পন্ন: নীট উদ্বৃত্ত অর্থ সাধারণ মন্দির তহবিলে স্থানান্তরিত হয়েছে।',
     'view_settlement_voucher' => 'লেজার ভাউচার দেখুন',
     'settlement_notes' => 'নিষ্পত্তির মন্তব্য ও বিবরণ',
+
+    // Table Headers (Clean & Short)
+    'donor_short' => 'দাতা',
+    'type_short' => 'ধরন',
+    'pledged_short' => 'অঙ্গীকার (৳)',
+    'collected_short' => 'আদায় (৳)',
+    'excess_short' => 'অতিরিক্ত (৳)',
+    'due_short' => 'বকেয়া (৳)',
+    'lifecycle_action_short' => 'অ্যাকশন',
+    'lifecycle_reason_short' => 'কারণ',
+    'lifecycle_user_short' => 'ব্যবহারকারী',
 ];

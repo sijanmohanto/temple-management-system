@@ -16,8 +16,11 @@
     <link rel="stylesheet" href="{{ asset('assets/vendor/select2/select2-bootstrap-5-theme.min.css') }}">
     <!-- Toastr Notifications CSS -->
     <link rel="stylesheet" href="{{ asset('assets/vendor/toastr/toastr.min.css') }}">
+    <!-- DataTables CSS with Bootstrap 5 Theme -->
+    <link rel="stylesheet" href="{{ asset('assets/vendor/datatables/dataTables.bootstrap5.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/vendor/datatables/responsive.bootstrap5.min.css') }}">
     <!-- Custom Temple Theme -->
-    <link rel="stylesheet" href="{{ asset('assets/css/temple-theme.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/temple-theme.css') }}?v={{ file_exists(public_path('assets/css/temple-theme.css')) ? filemtime(public_path('assets/css/temple-theme.css')) : '1.0' }}">
 
     <style>
         .public-navbar {
@@ -132,9 +135,8 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="public-nav-link text-muted" href="javascript:void(0);" title="{{ __('portal.public.coming_soon') }}">
-                                <i class="bi bi-journal-text me-1"></i> {{ __('portal.public.event_accounts') }}
-                                <span class="badge bg-secondary-subtle text-secondary border small ms-1" style="font-size: 0.65rem;">{{ __('portal.public.coming_soon') }}</span>
+                            <a class="public-nav-link {{ request()->routeIs('public.previous-events.*') ? 'active' : '' }}" href="{{ route('public.previous-events.index') }}">
+                                <i class="bi bi-journal-text me-1"></i> {{ __('portal.public.previous_events_reports') }}
                             </a>
                         </li>
                         @auth
@@ -166,11 +168,11 @@
                             </div>
                         </li>
 
-                        <!-- Authentication link for Staff / Admin -->
+                        <!-- Authentication link for Devotee / Staff / Admin -->
                         <li class="nav-item ms-lg-2">
                             @auth
-                                <a href="{{ route('dashboard') }}" class="btn btn-sm temple-btn-maroon">
-                                    <i class="bi bi-speedometer2 me-1"></i> {{ __('nav.dashboard') }}
+                                <a href="{{ Auth::user()->hasRole('devotee') && !Auth::user()->hasAnyRole(['super_admin', 'temple_admin', 'treasurer']) ? route('devotee.dashboard') : route('dashboard') }}" class="btn btn-sm temple-btn-maroon">
+                                    <i class="bi bi-person-circle me-1"></i> {{ Auth::user()->hasRole('devotee') && !Auth::user()->hasAnyRole(['super_admin', 'temple_admin', 'treasurer']) ? __('devotee.my_dashboard') : __('nav.dashboard') }}
                                 </a>
                             @else
                                 <a href="{{ route('login') }}" class="btn btn-sm btn-outline-secondary">
@@ -227,6 +229,11 @@
                             </a>
                         </li>
                         <li>
+                            <a href="{{ route('public.previous-events.index') }}">
+                                <i class="bi bi-chevron-right text-warning small me-1"></i> {{ __('portal.public.previous_events_reports') }}
+                            </a>
+                        </li>
+                        <li>
                             <a href="{{ route('login') }}">
                                 <i class="bi bi-chevron-right text-warning small me-1"></i> {{ __('portal.public.admin_login') }}
                             </a>
@@ -271,10 +278,16 @@
     <script src="{{ asset('assets/vendor/toastr/toastr.min.js') }}"></script>
     <!-- Select2 JS -->
     <script src="{{ asset('assets/vendor/select2/select2.min.js') }}"></script>
+    <!-- DataTables JS -->
+    <script src="{{ asset('assets/vendor/datatables/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ asset('assets/vendor/datatables/dataTables.bootstrap5.min.js') }}"></script>
+    <script src="{{ asset('assets/vendor/datatables/dataTables.responsive.min.js') }}"></script>
+    <script src="{{ asset('assets/vendor/datatables/responsive.bootstrap5.min.js') }}"></script>
 
     <script>
         window.TempleConfig = {
             locale: "{{ app()->getLocale() }}",
+            datatablesLanguage: @json(trans('datatables')),
             flashes: {
                 success: @json(session('success')),
                 error: @json(session('error')),

@@ -39,11 +39,10 @@ class PaymentSubmissionController extends Controller
         }
 
         $event = Event::published()
-            ->whereNotIn('status', [Event::STATUS_DRAFT])
             ->where('slug', $slug)
             ->firstOrFail();
 
-        if ($event->status === Event::STATUS_CLOSED) {
+        if (! $event->isRunningForPayment()) {
             return redirect()->route('public.events.show', $slug)->with('error', __('portal.public.event_not_open_for_payment'));
         }
 
@@ -92,6 +91,10 @@ class PaymentSubmissionController extends Controller
             ->whereNotIn('status', [Event::STATUS_DRAFT, Event::STATUS_CLOSED])
             ->where('slug', $slug)
             ->firstOrFail();
+
+        if (! $event->isRunningForPayment()) {
+            abort(404, __('portal.public.event_not_open_for_payment'));
+        }
 
         // Validate event collection date boundaries
         $today = now(config('app.timezone'))->startOfDay();
@@ -250,7 +253,7 @@ class PaymentSubmissionController extends Controller
             $query->where('status', $request->status);
         }
 
-        $payments = $query->orderByDesc('id')->paginate(10)->withQueryString();
+        $payments = $query->orderByDesc('id')->get();
         $events = Event::published()
             ->whereNotIn('status', [Event::STATUS_DRAFT])
             ->orderBy('name_en')

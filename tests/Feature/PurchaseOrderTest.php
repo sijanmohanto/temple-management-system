@@ -584,6 +584,8 @@ class PurchaseOrderTest extends TestCase
         $this->assertArrayHasKey('vendor', $firstRow);
         $this->assertArrayHasKey('total_amount', $firstRow);
         $this->assertArrayHasKey('status', $firstRow);
+        $this->assertStringContainsString('data-bs-toggle="dropdown"', $firstRow['actions']);
+        $this->assertStringContainsString('bi-three-dots-vertical', $firstRow['actions']);
     }
 
     public function test_bengali_locale_renders_purchase_order_views_without_errors(): void

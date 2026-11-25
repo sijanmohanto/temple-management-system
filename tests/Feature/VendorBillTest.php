@@ -873,6 +873,8 @@ class VendorBillTest extends TestCase
         $this->assertArrayHasKey('total_amount', $firstRow);
         $this->assertArrayHasKey('status', $firstRow);
         $this->assertArrayHasKey('actions', $firstRow);
+        $this->assertStringContainsString('data-bs-toggle="dropdown"', $firstRow['actions']);
+        $this->assertStringContainsString('bi-three-dots-vertical', $firstRow['actions']);
     }
 
     public function test_bengali_locale_renders_vendor_bill_views_without_errors(): void

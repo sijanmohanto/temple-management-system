@@ -40,6 +40,8 @@ return [
     'event_year' => 'Event Edition Year',
     'event_year_help' => 'The liturgical/calendar year for this event edition.',
     'venue' => 'Venue / Location',
+    'temple_premises' => 'Temple Premises',
+    'no_description' => 'Annual sacred festival and religious observances.',
     'date' => 'Date',
     'dates' => 'Dates',
     'event_duration' => 'Event Duration',
@@ -188,4 +190,15 @@ return [
     'settlement_completed_banner' => 'Event Fund Settlement Completed: Surplus balance formally transferred to General Temple Fund.',
     'view_settlement_voucher' => 'View Ledger Voucher',
     'settlement_notes' => 'Settlement Notes & Justification',
+
+    // Table Headers (Clean & Short)
+    'donor_short' => 'Donor',
+    'type_short' => 'Type',
+    'pledged_short' => 'Pledged (৳)',
+    'collected_short' => 'Collected (৳)',
+    'excess_short' => 'Excess (৳)',
+    'due_short' => 'Due (৳)',
+    'lifecycle_action_short' => 'Action',
+    'lifecycle_reason_short' => 'Reason',
+    'lifecycle_user_short' => 'User',
 ];
